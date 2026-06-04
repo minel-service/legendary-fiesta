@@ -342,9 +342,12 @@ const VSTATUS = new Set(['I arbeid','Klar for fakturering','Venter på elektrike
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ORDRESTYRING API CONFIG
-// API: HTTP Basic auth, nøkkel som brukernavn, hva som helst som passord
-// Merk: API-nøkler ligger i kildekoden — løses med Azure Function proxy ved produksjonssetting
+// API: GraphQL — https://graphql.ordrestyring.dk/graphql
+// Auth: Authorization: Bearer {apiKey}
+// Dokumentasjon: https://system.ordrestyring.no/api
 // ══════════════════════════════════════════════════════════════════════════════
+const OS_GRAPHQL = 'https://graphql.ordrestyring.dk/graphql';
+
 const OS_COMPANIES = [
   {name:'Minel Kreativ Elektro Ski AS',  avtalenr:'23013', key:'qYtkWAowUUo2PbaE'},
   {name:'Minel Skogvang Installasjon AS',avtalenr:'23011', key:'TxE4TJAk6eeWUqQY'},
@@ -357,12 +360,29 @@ const OS_COMPANIES = [
   {name:'Minel Gudbrandsdal AS',         avtalenr:'22486', key:'yEEdLNDUCssPuhOl'},
 ];
 
-// Mulige base-URL-er for det norske Ordrestyring API (prøver i rekkefølge)
-const OS_ENDPOINTS = [
-  'https://v2.api.ordrestyring.no',
-  'https://api.ordrestyring.no/v2',
-  'https://system.ordrestyring.no/api/v2',
-];
+const OS_QUERY = `
+query($cursor: String) {
+  cases(
+    pagination: { cursor: $cursor, limit: 200 }
+    orderBy: { field: "updatedAt", direction: DESC }
+  ) {
+    items {
+      id
+      caseNumber
+      description
+      status { name }
+      caseType { name }
+      customer { name }
+      mainTechnician { name }
+      offerTotal
+      totalCost
+      invoicedTotal
+      expectedSalesValue
+      expectedMargin
+    }
+    nextCursor
+  }
+}`;
 
 // Populate company selector
 (()=>{
@@ -372,7 +392,6 @@ const OS_ENDPOINTS = [
     o.value = i; o.textContent = co.name;
     sel.appendChild(o);
   });
-  // Don't pre-select — user must actively choose their company
 })();
 
 async function fetchFromOS(){
@@ -385,128 +404,112 @@ async function fetchFromOS(){
   const errDiv = document.getElementById('api-err');
 
   btn.disabled = true;
-  stat.innerHTML = '⏳ Kobler til Ordrestyring…';
   errDiv.style.display = 'none';
 
-  const auth = 'Basic ' + btoa(co.key + ':x');
-  const headers = {'Authorization': auth, 'Accept': 'application/json', 'Content-Type': 'application/json'};
+  const headers = {
+    'Authorization': 'Bearer ' + co.key,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
 
-  let casesRaw = null, baseUsed = '';
+  let allCases = [], cursor = null, page = 1;
 
-  // Try each endpoint until one responds
-  for(const base of OS_ENDPOINTS){
-    try{
-      stat.innerHTML = `⏳ Prøver <code>${base}</code>…`;
+  try {
+    // Paginate through all results
+    while(true){
+      stat.innerHTML = `⏳ Henter side ${page} fra Ordrestyring GraphQL…`;
       const r = await Promise.race([
-        fetch(`${base}/cases?per_page=500&include=materials,hours`, {headers}),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+        fetch(OS_GRAPHQL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ query: OS_QUERY, variables: { cursor } })
+        }),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),12000))
       ]);
-      if(r.ok){ casesRaw = await r.json(); baseUsed = base; break; }
-      if(r.status === 401){ throw new Error('401_auth'); }
-    } catch(e){
-      if(e.message === '401_auth') throw e;
-      // CORS or network error — try next endpoint
-      continue;
+
+      if(!r.ok){
+        const txt = await r.text().catch(()=>'');
+        throw new Error(`HTTP ${r.status}: ${txt.substring(0,200)}`);
+      }
+
+      const json = await r.json();
+      if(json.errors && json.errors.length){
+        throw new Error(json.errors[0].message || 'GraphQL-feil');
+      }
+
+      const result = json.data && json.data.cases;
+      if(!result) throw new Error('Uventet respons fra API');
+
+      allCases = allCases.concat(result.items || []);
+      cursor = result.nextCursor;
+      if(!cursor) break;
+      page++;
     }
-  }
 
-  if(!casesRaw){
-    btn.disabled = false;
-    stat.innerHTML = '';
-    errDiv.innerHTML = `
-      <strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer direkte API-kall til Ordrestyring.<br>
-      Dette er normalt for klient-side applikasjoner. <strong>To løsninger:</strong><br>
-      <span style="margin-left:12px;">1. <strong>Bruk Excel-import</strong> (nederst) — eksporter «Forventet dekningsgradsmetode» fra Ordrestyring som vanlig</span><br>
-      <span style="margin-left:12px;">2. <strong>Azure-hosting</strong> — når appen er deployet som Azure Static Web App med Azure Function proxy, vil API-kall gå via serveren og CORS-problemet forsvinner. Dette settes opp av ECIT.</span><br><br>
-      <em>Teknisk detalj: forsøkte ${OS_ENDPOINTS.map(e=>`<code>${e}</code>`).join(', ')}</em>`;
-    errDiv.style.display = 'block';
-    return;
-  }
+    stat.innerHTML = `✅ Hentet ${allCases.length} ordrer. Behandler…`;
+    parseFromAPI(allCases, co.name);
 
-  // Parse the response
-  try{
-    const cases = Array.isArray(casesRaw) ? casesRaw : (casesRaw.data || casesRaw.cases || []);
-    stat.innerHTML = `✅ Hentet ${cases.length} ordrer fra ${baseUsed}. Behandler…`;
-    parseFromAPI(cases, co.name);
   } catch(e){
     btn.disabled = false;
-    stat.innerHTML = `❌ Feil ved behandling av data: ${e.message}`;
-    console.error('OS API parse error:', e);
+    stat.innerHTML = '';
+    const isCORS = e.message === 'Failed to fetch' || e.name === 'TypeError';
+    errDiv.innerHTML = isCORS
+      ? `<strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer kall til <code>graphql.ordrestyring.dk</code>.<br>
+         Bruk <strong>Excel-import</strong> (nederst) inntil Azure Function proxy er satt opp av ECIT.`
+      : `<strong>❌ API-feil:</strong> ${e.message}<br>Sjekk at API-nøkkelen er gyldig for dette selskapet.`;
+    errDiv.style.display = 'block';
+    console.error('OS GraphQL error:', e);
   }
 }
 
 function parseFromAPI(cases, coName){
-  // Filter active statuses
-  const active = cases.filter(c => {
-    const st = (c.status_name || c.case_status_name || c.status || '').trim();
-    return VSTATUS.has(st) || st === '' || !st; // include unknown status — filter after inspection
-  });
+  // GraphQL field mapping (Ordrestyring GraphQL API — graphql.ordrestyring.dk)
+  const gn = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
 
-  // Map API fields → our internal format
-  // Field names vary between versions; we try multiple fallbacks
-  const g = (obj,...keys) => { for(const k of keys){ if(obj[k]!=null) return obj[k]; } return null; };
-  const gn = (obj,...keys) => { const v=g(obj,...keys); const n=parseFloat(v); return isNaN(n)?null:n; };
+  const rows = cases.map(c => {
+    const statusName = (c.status && c.status.name) || '';
+    const typeName   = (c.caseType && c.caseType.name) || '';
+    const kundeName  = (c.customer && c.customer.name) || '';
+    const plName     = (c.mainTechnician && c.mainTechnician.name) || '';
 
-  const rows = active.map(c => {
-    // Hours: included as c.hours[] — each has duration (minutes) or start/stop time
-    let hourCost = 0;
-    const hrs = c.hours || c.case_hours || [];
-    hrs.forEach(h => {
-      const mins = h.duration_minutes || h.duration || 0;
-      const rate = h.hourly_rate || h.cost_price || h.price || 0;
-      hourCost += (mins / 60) * rate;
-    });
-
-    // Materials: included as c.materials[] — each has cost_price × quantity
-    let matCost = 0;
-    const mats = c.materials || c.case_materials || [];
-    mats.forEach(m => {
-      const qty = parseFloat(m.quantity || 0);
-      const cp = parseFloat(m.cost_price || m.buying_price || m.purchase_price || 0);
-      matCost += qty * cp;
-    });
-
-    const totOmk = (hourCost + matCost) > 0 ? hourCost + matCost
-                   : gn(c,'total_cost','costs_total','total_omk','totale_omk');
-
-    // DG% — stored as decimal (0.35) or integer (35) depending on system
-    let dg = gn(c,'expected_margin','forventet_dekningsgrad','expected_dg','margin_pct');
-    if(dg != null && dg > 1) dg = dg / 100; // normalize to decimal
-
-    // Contract sum / Tilbudspris
-    const tilbud = gn(c,'offer_total','contract_sum','offer_amount','tilbudspris','budget');
-
-    // Invoiced amount
-    const fakt = gn(c,'invoiced_total','invoiced','fakturert','total_invoiced');
-
-    // Periodisert inntekt (expected sales value)
-    const via = gn(c,'expected_sales_value','periodisert_inntekt','accrued_revenue');
+    // DG% — API returns as decimal (0.35) or percentage (35) — normalise
+    let dg = gn(c.expectedMargin);
+    if(dg != null && dg > 1) dg = dg / 100;
 
     return {
-      ordreNr: String(g(c,'case_number','id','order_number','case_nr') || '').trim(),
-      status:  (g(c,'status_name','case_status_name','status') || 'I arbeid').trim(),
-      type:    (g(c,'case_type_name','type_name','case_type','type') || '').trim(),
-      beskr:   String(g(c,'description','title','name') || '').replace(/[\n\r\xa0]+/g,' ').trim(),
-      kunde:   String(g(c,'customer_name','debtor_name','customer_number') || '').trim(),
-      pl:      String(g(c,'main_technician_name','technician_name','project_manager','main_technician') || '').trim(),
-      totOmk,
+      ordreNr: String(c.caseNumber || c.id || '').trim(),
+      status:  statusName.trim() || 'I arbeid',
+      type:    typeName.trim(),
+      beskr:   String(c.description || '').replace(/[\n\r\xa0]+/g,' ').trim(),
+      kunde:   kundeName.trim(),
+      pl:      plName.trim(),
+      totOmk:  gn(c.totalCost),
       dg,
-      tilbud,
-      fakt,
-      via,
+      tilbud:  gn(c.offerTotal),
+      fakt:    gn(c.invoicedTotal),
+      via:     gn(c.expectedSalesValue),
     };
-  }).filter(r => r.ordreNr); // must have an order number
+  }).filter(r => r.ordreNr);
 
-  if(!rows.length){
-    document.getElementById('api-status').innerHTML = '⚠️ Ingen aktive ordrer funnet i responsen.';
+  // Filter to active statuses (log unrecognised for debugging)
+  const active = rows.filter(r => VSTATUS.has(r.status) || !r.status);
+  if(active.length === 0 && rows.length > 0){
+    // If nothing matches known statuses, show all — statuses may differ per account
+    console.warn('Ingen rader matchet kjente statuser. Statuser funnet:', [...new Set(rows.map(r=>r.status))]);
+  }
+
+  const finalRows = active.length > 0 ? active : rows; // fallback: vis alle hvis statuser ikke matcher
+
+  if(!finalRows.length){
+    document.getElementById('api-status').innerHTML = '⚠️ Ingen ordrer funnet i responsen.';
     document.getElementById('api-btn').disabled = false;
-    console.log('Raw API cases:', cases.slice(0,3)); // debug
+    console.log('Rådata fra API (første 3):', cases.slice(0,3));
     return;
   }
 
   // Hand off to existing parse pipeline
   const period = new Date().toLocaleDateString('no',{month:'long',year:'numeric'});
-  parseRows(rows, `${coName} (Ordrestyring API)`, period);
+  parseRows(finalRows, `${coName} (Ordrestyring API)`, period);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
