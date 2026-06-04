@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>Kapasitetsprognose — Minel Konsern</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{color-scheme:light}
@@ -290,20 +290,26 @@ const CONFIG = {
 // ════════════════════════════════════════════
 // AZURE AD + MSAL.js
 // ════════════════════════════════════════════
-const AZURE = {
-  clientId: 'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',
-  tenantId: '7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',
-};
-const _msalCfg = {
-  auth: { clientId: AZURE.clientId, authority: `https://login.microsoftonline.com/${AZURE.tenantId}`, redirectUri: location.href.split('?')[0] },
-  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
-};
-const msalApp = new msal.PublicClientApplication(_msalCfg);
-const _scopes = ['https://graph.microsoft.com/Sites.Selected'];
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 const SP_SITE = 'elkonorno.sharepoint.com:/sites/IntranettMinel:';
+let msalApp = null, _scopes = ['https://graph.microsoft.com/Sites.Selected'];
+
+try {
+  const AZURE = {
+    clientId: 'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',
+    tenantId: '7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',
+  };
+  msalApp = new msal.PublicClientApplication({
+    auth: { clientId: AZURE.clientId, authority: `https://login.microsoftonline.com/${AZURE.tenantId}`, redirectUri: location.href.split('?')[0] },
+    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+  });
+  console.log('[MSAL] Initialisert OK');
+} catch(e) {
+  console.warn('[MSAL] Init feilet — bruker localStorage-modus:', e.message);
+}
 
 async function getToken() {
+  if (!msalApp) throw new Error('MSAL ikke tilgjengelig');
   const accs = msalApp.getAllAccounts();
   if (accs.length === 0) { const r = await msalApp.loginPopup({scopes:_scopes}); return r.accessToken; }
   try { const r = await msalApp.acquireTokenSilent({scopes:_scopes, account:accs[0]}); return r.accessToken; }
@@ -1890,10 +1896,12 @@ async function postToSharePointList(p){
 // STARTUP — MSAL
 // ════════════════════════════════════════════
 (async()=>{
-  try{await msalApp.handleRedirectPromise();}catch(e){console.warn('MSAL redirect:',e);}
+  if(msalApp){
+    try{await msalApp.handleRedirectPromise();}catch(e){console.warn('MSAL redirect:',e);}
+  }
   buildLoginGrid();
-  const accs=msalApp.getAllAccounts();
-  if(accs.length===0){
+  const accs=msalApp?msalApp.getAllAccounts():[];
+  if(msalApp && accs.length===0){
     document.getElementById('msLoginBox').style.display='block';
     document.getElementById('coSelBox').style.display='none';
     document.getElementById('loginScreen').style.display='flex';
