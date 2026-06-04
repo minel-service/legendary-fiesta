@@ -17,8 +17,6 @@
   --font:'Segoe UI',Arial,sans-serif;
 }
 body{font-family:var(--font);background:#F0F0F0;color:var(--dark);min-height:100vh;}
-
-/* ── Header ── */
 header{background:var(--navy);display:flex;align-items:center;gap:0;}
 .hd-red{background:var(--red);padding:14px 22px;display:flex;align-items:center;gap:10px;}
 .hd-red svg{width:32px;height:32px;fill:#fff;}
@@ -27,9 +25,6 @@ header{background:var(--navy);display:flex;align-items:center;gap:0;}
 .hd-main h1{font-size:1rem;font-weight:700;color:#fff;}
 .hd-main p{font-size:.78rem;color:#8fa4cc;margin-top:2px;}
 .hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;white-space:nowrap;}
-.locked-bar{background:#FFF8E1;border-bottom:3px solid var(--amber);padding:7px 24px;font-size:.86rem;color:var(--amber);font-weight:600;display:none;}
-
-/* ── Upload ── */
 #upload{max-width:600px;margin:56px auto;text-align:center;}
 #dz{border:2.5px dashed var(--red);border-radius:14px;background:#fff;padding:52px 28px;cursor:pointer;transition:background .15s;}
 #dz:hover,#dz.over{background:var(--redlight);}
@@ -46,20 +41,14 @@ header{background:var(--navy);display:flex;align-items:center;gap:0;}
 .btn-dark:hover{background:var(--navydark);}
 .btn-grn{background:var(--green);}
 .btn-grn:hover{background:#155a27;}
-
-/* ── App ── */
 #app{display:none;padding:18px 24px;max-width:1750px;margin:0 auto;}
 .appbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
 .apptitle{font-size:1rem;font-weight:700;color:var(--dark);}
 .pill{background:var(--dark);color:#fff;border-radius:20px;padding:3px 14px;font-size:.8rem;font-weight:600;}
-
-/* ── Tabs ── */
 .tabs{display:flex;gap:3px;border-bottom:3px solid var(--red);margin-bottom:18px;}
 .tab{padding:9px 17px;font-size:.88rem;cursor:pointer;border-radius:8px 8px 0 0;border:2px solid transparent;border-bottom:none;color:var(--mid);font-weight:500;background:var(--grey);}
 .tab.active{background:#fff;border-color:var(--red);color:var(--red);font-weight:700;}
 .tab-panel{display:none;}.tab-panel.active{display:block;}
-
-/* ── KPIs ── */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:18px;}
 .kpi{background:#fff;border-radius:8px;padding:15px 16px;border-left:4px solid var(--red);box-shadow:0 1px 3px rgba(0,0,0,.07);}
 .kpi .lb{font-size:.73rem;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
@@ -67,48 +56,33 @@ header{background:var(--navy);display:flex;align-items:center;gap:0;}
 .kpi.g{border-left-color:var(--green);}.kpi.g .vl{color:var(--green);}
 .kpi.r{border-left-color:var(--red);}.kpi.r .vl{color:var(--red);}
 .kpi.a{border-left-color:var(--amber);}.kpi.a .vl{color:var(--amber);}
-
-/* ── Risk cards ── */
 .riskcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
 .rc{border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.07);}
 .rc .n{font-size:2rem;font-weight:900;}.rc .l{font-size:.82rem;font-weight:700;margin-top:3px;}
 .rc.h{background:#FFE8E8;color:var(--red);}
 .rc.m{background:var(--amberbg);color:var(--amber);}
 .rc.lo{background:var(--greenbg);color:var(--green);}
-
 .secttitle{font-size:.92rem;font-weight:700;color:var(--dark);margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--redborder);}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 @media(max-width:860px){.two-col{grid-template-columns:1fr;}}
-
-/* ── Tables with sticky header ──
-   Outer div handles vertical scroll (position:sticky works here).
-   Inner div handles horizontal overflow.
-   This keeps thead sticky while allowing wide tables to scroll horizontally. ── */
 .tw{border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.08);background:#fff;overflow-y:auto;overflow-x:auto;max-height:520px;}
 table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:max-content;}
 thead th{background:var(--red);color:#fff;padding:9px 10px;text-align:left;white-space:nowrap;font-weight:700;position:sticky;top:0;z-index:10;box-shadow:0 1px 0 rgba(0,0,0,.15);}
-/* No ::after tooltips on th — they escape the overflow container */
 td{padding:6px 10px;border-bottom:1px solid #F0F0F0;vertical-align:middle;}
 tr:nth-child(even) td{background:#FAFAFA;}
 tr:hover td{background:#FFF0F0!important;}
 td.r{text-align:right;font-variant-numeric:tabular-nums;}
 td.c{text-align:center;}
-
-/* ── Badges ── */
 .bh{background:#FFE8E8;color:var(--red);border-radius:5px;padding:2px 9px;font-weight:700;font-size:.74rem;}
 .bm{background:var(--amberbg);color:var(--amber);border-radius:5px;padding:2px 9px;font-weight:700;font-size:.74rem;}
 .bl{background:var(--greenbg);color:var(--green);border-radius:5px;padding:2px 9px;font-size:.74rem;}
 .flag{display:inline-block;background:#FFF3CC;color:#7A5500;border-radius:4px;padding:1px 6px;font-size:.73rem;margin:1px 2px;}
 .flag.ok{background:var(--greenbg);color:var(--green);}
 .flag.er{background:#FFE8E8;color:var(--red);}
-
-/* ── Filter bar ── */
 .fb{display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap;align-items:center;}
 .fb input,.fb select{border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-family:var(--font);font-size:.84rem;background:#fff;}
 .fb input:focus,.fb select:focus{outline:none;border-color:var(--red);}
 .fb label{font-size:.82rem;color:#555;display:flex;align-items:center;gap:5px;}
-
-/* ── POC inputs ── */
 .sec-hdr{background:var(--navy);color:#fff;padding:8px 14px;font-weight:700;font-size:.86rem;border-radius:8px 8px 0 0;margin-top:16px;}
 .sec-note{background:var(--amberbg);padding:8px 14px;font-size:.81rem;color:var(--amber);border-left:3px solid var(--amber);}
 input.pi{width:100%;border:1.5px solid #C8D8F0;border-radius:5px;padding:4px 7px;font-size:.79rem;font-family:var(--font);text-align:right;background:#EEF4FF;color:#003090;}
@@ -121,23 +95,15 @@ input.ci:disabled{background:#f0f0f0;color:#666;}
 .vpos{color:#003090;font-weight:800;}
 .vneg{color:var(--red);font-weight:800;}
 .rwarn td{background:#FFFAED!important;}
-/* data-tip only used in body content, NOT in thead — avoids floating tooltip on scroll */
 [data-tip]{position:relative;cursor:help;border-bottom:1px dotted #aaa;}
-[data-tip]:hover::after{content:attr(data-tip);position:fixed;top:auto;bottom:auto;background:var(--navy);color:#fff;padding:6px 12px;border-radius:6px;font-size:.76rem;white-space:pre-wrap;max-width:320px;z-index:999;font-weight:400;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+[data-tip]:hover::after{content:attr(data-tip);position:fixed;background:var(--navy);color:#fff;padding:6px 12px;border-radius:6px;font-size:.76rem;white-space:pre-wrap;max-width:320px;z-index:999;font-weight:400;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2);}
 .totbar{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;}
 .totbar span{background:#fff;border-radius:7px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.85rem;font-weight:600;color:var(--dark);}
-
-/* ── History ── */
 .hist-empty{text-align:center;padding:52px;color:#888;font-size:.95rem;}
 .hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 @media(max-width:860px){.hist-grid{grid-template-columns:1fr;}}
 .chart-box{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 5px rgba(0,0,0,.08);}
 .chart-box h3{font-size:.88rem;font-weight:700;color:var(--dark);margin-bottom:12px;}
-.proj-search{display:flex;gap:8px;margin-bottom:12px;}
-.proj-search input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:7px 11px;font-family:var(--font);font-size:.85rem;}
-.proj-search input:focus{outline:none;border-color:var(--red);}
-
-/* ── Modal ── */
 .mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
 .mbg.open{display:flex;}
 .modal{background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.2);}
@@ -147,15 +113,10 @@ input.ci:disabled{background:#f0f0f0;color:#666;}
 .modal input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-family:var(--font);font-size:.88rem;margin-bottom:12px;}
 .modal input:focus{outline:none;border-color:var(--red);}
 .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
-
 footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20px;}
 </style>
 </head>
 <body>
-
-<div class="locked-bar" id="lbar">
-  🔒 Låst av <strong id="lby"></strong> — <span id="ldate"></span>
-</div>
 
 <header>
   <div class="hd-red">
@@ -166,13 +127,10 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Last opp perioderapport fra ERP for automatisk QA og periodeavslutning</p>
   </div>
-  <span class="hd-badge">v4.0</span>
+  <span class="hd-badge">v5.0</span>
 </header>
 
-<!-- Upload -->
 <div id="upload">
-
-  <!-- ── Ordrestyring API panel ── -->
   <div style="background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.09);overflow:hidden;margin-bottom:18px;">
     <div style="background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;gap:10px;">
       <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
@@ -195,14 +153,12 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     </div>
   </div>
 
-  <!-- ── Divider ── -->
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
     <div style="flex:1;height:1px;background:var(--border);"></div>
     <span style="white-space:nowrap;font-size:.8rem;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">eller importer fra Excel</span>
     <div style="flex:1;height:1px;background:var(--border);"></div>
   </div>
 
-  <!-- ── Excel drop zone ── -->
   <div id="dz" onclick="document.getElementById('fi').click()">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -213,10 +169,8 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
   <input type="file" id="fi" accept=".xlsx,.xls">
   <p style="margin-top:10px;color:#888;font-size:.78rem;">Data behandles kun lokalt i nettleseren — ingenting sendes til server.</p>
-  <div style="margin-top:18px;" id="hist-btn-wrap"></div>
 </div>
 
-<!-- App -->
 <div id="app">
   <div class="appbar">
     <span class="apptitle" id="atitle"></span>
@@ -235,7 +189,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div class="tab" onclick="ST('hist')">📈 Historikk</div>
   </div>
 
-  <!-- DASHBOARD -->
   <div class="tab-panel active" id="tab-dash">
     <div class="kpis" id="kpis"></div>
     <div class="two-col">
@@ -252,7 +205,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     </div>
   </div>
 
-  <!-- QA ALL -->
   <div class="tab-panel" id="tab-qa">
     <div class="fb">
       <input type="text" id="qs" placeholder="🔍 Søk ordre, kunde, beskrivelse…" style="width:260px" oninput="rQA()">
@@ -265,7 +217,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div id="qacnt" style="font-size:.79rem;color:#888;margin-top:6px;"></div>
   </div>
 
-  <!-- RISK -->
   <div class="tab-panel" id="tab-risk">
     <div class="fb">
       <select id="rsel" onchange="rRisk()"><option value="HØY,MIDDELS">HØY + MIDDELS</option><option value="HØY">Kun HØY</option><option value="MIDDELS">Kun MIDDELS</option></select>
@@ -273,13 +224,10 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div class="tw"><table id="risktbl"></table></div>
   </div>
 
-  <!-- POC + DG -->
   <div class="tab-panel" id="tab-poc">
     <div style="background:var(--redlight);border-left:4px solid var(--red);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px;font-size:.84rem;line-height:1.8;color:var(--dark);">
       <strong>📋 To seksjoner:</strong><br>
-      <strong>1. POC (fastpriskontrakter):</strong> Prosjektleder anslår gjenstående timer og materialer.
-      <span data-tip="Inntekt = Kontraktssum × Ferdiggrad, der Ferdiggrad = Påløpte kost ÷ (Påløpte + Gjenstående kost)">Periodisert inntekt</span>
-      = Kontraktssum × Ferdiggrad. VIA = Periodisert inntekt − Fakturert.<br>
+      <strong>1. POC (fastpriskontrakter):</strong> Prosjektleder anslår gjenstående timer og materialer. Periodisert inntekt = Kontraktssum × Ferdiggrad.<br>
       <strong>2. DG-bekreftelses (uten fastpris):</strong> Prosjektleder skriver inn og begrunner DG%-estimat.
       &nbsp;|&nbsp; 🔵 Blå felt = input &nbsp;|&nbsp; 🟡 Gul rad = kommentar påkrevet
     </div>
@@ -288,19 +236,15 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <label>Std. timekost: <input type="number" id="stk" value="650" min="100" step="50" style="width:72px;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;" onchange="rPOC()"> kr/t</label>
       <button class="btn btn-dark" onclick="expPOC()">💾 Eksporter til Excel</button>
     </div>
-
     <div class="sec-hdr">Seksjon 1 – Fastpriskontrakter (POC-metoden) <span id="poc-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
     <div class="tw" style="border-radius:0 0 8px 8px;"><table id="poctbl"></table></div>
     <div class="totbar" id="poctot"></div>
-    <div style="font-size:.76rem;color:#888;margin-top:6px;">① Periodisert inntekt = Kontraktssum × Ferdiggrad, der Ferdiggrad = Påløpte kostnader ÷ Estimert sluttkostnad. VIA = Periodisert inntekt − Fakturert.</div>
-
     <div class="sec-hdr" style="margin-top:24px;">Seksjon 2 – Uten kontraktssum (DG%-bekreftelses) <span id="dg-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
     <div class="sec-note">Ingen fastpris — prosjektleder skriver inn DG% og begrunner estimatet konkret.</div>
     <div class="tw" style="border-radius:0 0 8px 8px;"><table id="dgtbl"></table></div>
     <div class="totbar" id="dgtot"></div>
   </div>
 
-  <!-- HISTORY -->
   <div class="tab-panel" id="tab-hist">
     <div class="fb" style="margin-bottom:16px;">
       <span style="font-size:.88rem;font-weight:600;color:var(--dark);">Historikk lagres automatisk ved låsing.</span>
@@ -311,7 +255,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<!-- Lock modal -->
 <div class="mbg" id="lmodal">
   <div class="modal">
     <h2>🔒 Lås periode og generer rapport</h2>
@@ -329,7 +272,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA · Alle data behandles lokalt i nettleseren · Historikk lagres i nettleseren (localStorage)</footer>
+<footer>Minel AS · VIA QA v5.0 · Alle data behandles lokalt i nettleseren · Historikk lagres i nettleseren (localStorage)</footer>
 
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
@@ -342,9 +285,9 @@ const VSTATUS = new Set(['I arbeid','Klar for fakturering','Venter på elektrike
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ORDRESTYRING API CONFIG
-// API: GraphQL — https://graphql.ordrestyring.dk/graphql
+// GraphQL API: https://graphql.ordrestyring.dk/graphql
 // Auth: Authorization: Bearer {apiKey}
-// Dokumentasjon: https://system.ordrestyring.no/api
+// Docs: https://system.ordrestyring.no/api
 // ══════════════════════════════════════════════════════════════════════════════
 const OS_GRAPHQL = 'https://graphql.ordrestyring.dk/graphql';
 
@@ -360,29 +303,44 @@ const OS_COMPANIES = [
   {name:'Minel Gudbrandsdal AS',         avtalenr:'22486', key:'yEEdLNDUCssPuhOl'},
 ];
 
-const OS_QUERY = `
-query($cursor: String) {
-  cases(
-    pagination: { cursor: $cursor, limit: 200 }
-    orderBy: { field: "updatedAt", direction: DESC }
-  ) {
-    items {
-      id
-      caseNumber
-      description
-      status { name }
-      caseType { name }
-      customer { name }
-      mainTechnician { name }
-      offerTotal
-      totalCost
-      invoicedTotal
-      expectedSalesValue
-      expectedMargin
-    }
-    nextCursor
-  }
+// Introspection query — finner riktige feltnavn for nestede typer
+const OS_INTROSPECT = `{
+  caseStatus: __type(name: "CaseStatus") { fields { name } }
+  caseType:   __type(name: "CaseType")   { fields { name } }
+  customer:   __type(name: "Customer")   { fields { name } }
+  user:       __type(name: "User")       { fields { name } }
 }`;
+
+function pick(typeObj, ...candidates){
+  if(!typeObj || !typeObj.fields) return null;
+  const names = typeObj.fields.map(f=>f.name);
+  for(const c of candidates){ if(names.includes(c)) return c; }
+  return names.filter(n => !n.startsWith('_'))[0] || null;
+}
+
+async function gql(apiKey, query, variables){
+  const r = await Promise.race([
+    fetch(OS_GRAPHQL, {
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer ' + apiKey,
+        'Content-Type':'application/json',
+        'Accept':'application/json'
+      },
+      body: JSON.stringify({query, variables})
+    }),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))
+  ]);
+  if(!r.ok){
+    const txt = await r.text().catch(()=>'');
+    throw new Error('HTTP ' + r.status + (txt ? ': ' + txt.substring(0,200) : ''));
+  }
+  const json = await r.json();
+  if(json.errors && json.errors.length){
+    throw new Error(json.errors.map(e=>e.message).join('; '));
+  }
+  return json.data;
+}
 
 // Populate company selector
 (()=>{
@@ -405,111 +363,105 @@ async function fetchFromOS(){
 
   btn.disabled = true;
   errDiv.style.display = 'none';
-
-  const headers = {
-    'Authorization': 'Bearer ' + co.key,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  };
-
-  let allCases = [], cursor = null, page = 1;
+  stat.innerHTML = '⏳ Kobler til Ordrestyring GraphQL…';
 
   try {
-    // Paginate through all results
+    // Steg 1: Introspection — finn riktige feltnavn
+    stat.innerHTML = '⏳ Henter skjemainformasjon…';
+    const schema = await gql(co.key, OS_INTROSPECT, {});
+
+    const statusF = pick(schema.caseStatus, 'name','label','value','title','status') || 'id';
+    const typeF   = pick(schema.caseType,   'name','label','value','title','type')   || 'id';
+    const custF   = pick(schema.customer,   'name','companyName','title','label')    || 'id';
+    const techF   = pick(schema.user,       'name','fullName','displayName','firstName') || 'id';
+
+    console.log('OS feltnavn:', {statusF, typeF, custF, techF});
+
+    const OS_QUERY = `
+query($cursor: String) {
+  cases(
+    pagination: { cursor: $cursor, limit: 200 }
+    orderBy: { field: "updatedAt", direction: DESC }
+  ) {
+    items {
+      id
+      caseNumber
+      description
+      status { ${statusF} }
+      caseType { ${typeF} }
+      customer { ${custF} }
+      mainTechnician { ${techF} }
+      offerTotal
+      totalCost
+      invoicedTotal
+      expectedSalesValue
+      expectedMargin
+    }
+    nextCursor
+  }
+}`;
+
+    // Steg 2: Hent alle ordrer med paginering
+    let allCases = [], cursor = null, page = 1;
     while(true){
-      stat.innerHTML = `⏳ Henter side ${page} fra Ordrestyring GraphQL…`;
-      const r = await Promise.race([
-        fetch(OS_GRAPHQL, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ query: OS_QUERY, variables: { cursor } })
-        }),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),12000))
-      ]);
-
-      if(!r.ok){
-        const txt = await r.text().catch(()=>'');
-        throw new Error(`HTTP ${r.status}: ${txt.substring(0,200)}`);
-      }
-
-      const json = await r.json();
-      if(json.errors && json.errors.length){
-        throw new Error(json.errors[0].message || 'GraphQL-feil');
-      }
-
-      const result = json.data && json.data.cases;
-      if(!result) throw new Error('Uventet respons fra API');
-
+      stat.innerHTML = '⏳ Henter side ' + page + '…';
+      const data = await gql(co.key, OS_QUERY, {cursor});
+      const result = data && data.cases;
+      if(!result) throw new Error('Uventet API-respons');
       allCases = allCases.concat(result.items || []);
       cursor = result.nextCursor;
       if(!cursor) break;
       page++;
     }
 
-    stat.innerHTML = `✅ Hentet ${allCases.length} ordrer. Behandler…`;
-    parseFromAPI(allCases, co.name);
+    stat.innerHTML = '✅ Hentet ' + allCases.length + ' ordrer. Behandler…';
 
-  } catch(e){
+    // Map GraphQL-felter til intern struktur
+    const gn = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+    const rows = allCases.map(c => {
+      let dg = gn(c.expectedMargin);
+      if(dg != null && dg > 1) dg = dg / 100;
+      return {
+        ordreNr: String(c.caseNumber || c.id || '').trim(),
+        status:  (c.status && (c.status[statusF] || c.status.name || c.status.label || '')) || 'I arbeid',
+        type:    (c.caseType && (c.caseType[typeF] || '')) || '',
+        beskr:   String(c.description || '').replace(/[\n\r\xa0]+/g,' ').trim(),
+        kunde:   (c.customer && (c.customer[custF] || '')) || '',
+        pl:      (c.mainTechnician && (c.mainTechnician[techF] || '')) || '',
+        totOmk:  gn(c.totalCost),
+        dg,
+        tilbud:  gn(c.offerTotal),
+        fakt:    gn(c.invoicedTotal),
+        via:     gn(c.expectedSalesValue),
+      };
+    }).filter(r => r.ordreNr);
+
+    const active = rows.filter(r => VSTATUS.has(r.status));
+    const finalRows = active.length > 0 ? active : rows;
+
+    if(!finalRows.length){
+      stat.innerHTML = '⚠️ Ingen ordrer funnet.';
+      btn.disabled = false;
+      console.log('Statuser mottatt:', [...new Set(rows.map(r=>r.status))]);
+      return;
+    }
+
+    const period = new Date().toLocaleDateString('no',{month:'long',year:'numeric'});
+    parseRows(finalRows, co.name + ' (Ordrestyring API)', period);
+
+    // Pre-fill lock modal
+    document.getElementById('lentity').value = co.name;
+
+  } catch(e) {
     btn.disabled = false;
     stat.innerHTML = '';
     const isCORS = e.message === 'Failed to fetch' || e.name === 'TypeError';
     errDiv.innerHTML = isCORS
-      ? `<strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer kall til <code>graphql.ordrestyring.dk</code>.<br>
-         Bruk <strong>Excel-import</strong> (nederst) inntil Azure Function proxy er satt opp av ECIT.`
-      : `<strong>❌ API-feil:</strong> ${e.message}<br>Sjekk at API-nøkkelen er gyldig for dette selskapet.`;
+      ? '<strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer kall til Ordrestyring.<br>Bruk <strong>Excel-import</strong> (nederst) inntil dette er løst.'
+      : '<strong>❌ API-feil:</strong> ' + e.message + '<br>Sjekk at API-nøkkelen er gyldig for dette selskapet.';
     errDiv.style.display = 'block';
     console.error('OS GraphQL error:', e);
   }
-}
-
-function parseFromAPI(cases, coName){
-  // GraphQL field mapping (Ordrestyring GraphQL API — graphql.ordrestyring.dk)
-  const gn = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
-
-  const rows = cases.map(c => {
-    const statusName = (c.status && c.status.name) || '';
-    const typeName   = (c.caseType && c.caseType.name) || '';
-    const kundeName  = (c.customer && c.customer.name) || '';
-    const plName     = (c.mainTechnician && c.mainTechnician.name) || '';
-
-    // DG% — API returns as decimal (0.35) or percentage (35) — normalise
-    let dg = gn(c.expectedMargin);
-    if(dg != null && dg > 1) dg = dg / 100;
-
-    return {
-      ordreNr: String(c.caseNumber || c.id || '').trim(),
-      status:  statusName.trim() || 'I arbeid',
-      type:    typeName.trim(),
-      beskr:   String(c.description || '').replace(/[\n\r\xa0]+/g,' ').trim(),
-      kunde:   kundeName.trim(),
-      pl:      plName.trim(),
-      totOmk:  gn(c.totalCost),
-      dg,
-      tilbud:  gn(c.offerTotal),
-      fakt:    gn(c.invoicedTotal),
-      via:     gn(c.expectedSalesValue),
-    };
-  }).filter(r => r.ordreNr);
-
-  // Filter to active statuses (log unrecognised for debugging)
-  const active = rows.filter(r => VSTATUS.has(r.status) || !r.status);
-  if(active.length === 0 && rows.length > 0){
-    // If nothing matches known statuses, show all — statuses may differ per account
-    console.warn('Ingen rader matchet kjente statuser. Statuser funnet:', [...new Set(rows.map(r=>r.status))]);
-  }
-
-  const finalRows = active.length > 0 ? active : rows; // fallback: vis alle hvis statuser ikke matcher
-
-  if(!finalRows.length){
-    document.getElementById('api-status').innerHTML = '⚠️ Ingen ordrer funnet i responsen.';
-    document.getElementById('api-btn').disabled = false;
-    console.log('Rådata fra API (første 3):', cases.slice(0,3));
-    return;
-  }
-
-  // Hand off to existing parse pipeline
-  const period = new Date().toLocaleDateString('no',{month:'long',year:'numeric'});
-  parseRows(finalRows, `${coName} (Ordrestyring API)`, period);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -531,7 +483,6 @@ function go(f){
   r.readAsArrayBuffer(f);
 }
 
-// Excel → row objects, then hand off to parseRows
 function parse(raw, fname){
   const H={};
   raw[0].forEach((h,i)=>{if(h) H[h.toString().trim()]=i;});
@@ -555,11 +506,11 @@ function parse(raw, fname){
   parseRows(rows, fname);
 }
 
-// Core pipeline — called from both Excel (parse) and API (parseFromAPI)
+// ══════════════════════════════════════════════════════════════════════════════
+// CORE PIPELINE
+// ══════════════════════════════════════════════════════════════════════════════
 function parseRows(rows, sourceName, periodOverride){
   ACTIVE = rows;
-
-  // Type norms (average DG% per type — baseline for deviation detection)
   const ts={},tc={};
   ACTIVE.forEach(r=>{if(r.dg!=null){ts[r.type]=(ts[r.type]||0)+r.dg;tc[r.type]=(tc[r.type]||0)+1;}});
   const tn={};Object.keys(ts).forEach(t=>tn[t]=ts[t]/tc[t]);
@@ -568,7 +519,6 @@ function parseRows(rows, sourceName, periodOverride){
     r.normDG=(tn[r.type]??null);
     r.dgAvvik=(r.dg!=null&&r.normDG!=null)?r.dg-r.normDG:null;
     r.hasTilbud=r.tilbud!=null&&r.tilbud>0;
-    // Risk scoring
     let s=0;
     if(r.dg===0)s+=3;
     if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))s+=1;
@@ -584,41 +534,27 @@ function parseRows(rows, sourceName, periodOverride){
     else if(r.via!=null&&r.via<-5000)f.push({t:'Negativ VIA',c:''});
     if(r.via!=null&&r.via>100000)f.push({t:'Svært stor VIA – høy usikkerhet',c:'er'});
     else if(r.via!=null&&r.via>50000)f.push({t:'Stor VIA (>50k)',c:''});
-    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)f.push({t:`DG avviker ${(r.dgAvvik*100).toFixed(0)}% fra type-norm`,c:''});
+    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)f.push({t:'DG avviker '+(r.dgAvvik*100).toFixed(0)+'% fra type-norm',c:''});
     if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)f.push({t:'Mangler kontraktssum (stor ordre)',c:''});
     r.flags=f.length?f:[{t:'OK',c:'ok'}];
-    // Init POC / DG inputs
     if(r.hasTilbud){
-      if(!POC[r.ordreNr]){
-        const dg=r.dg??0.35;
-        const gjenst=Math.max(0,r.tilbud*(1-dg)-(r.totOmk||0));
-        POC[r.ordreNr]={timer:Math.round(gjenst/650),tk:650,mat:0,k:''};
-      }
+      if(!POC[r.ordreNr]){const dg=r.dg??0.35;const gjenst=Math.max(0,r.tilbud*(1-dg)-(r.totOmk||0));POC[r.ordreNr]={timer:Math.round(gjenst/650),tk:650,mat:0,k:''};}
     } else {
       if(!DGI[r.ordreNr]) DGI[r.ordreNr]={dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
     }
   });
 
-  // Populate filter dropdowns
   const pls=[...new Set(ACTIVE.map(r=>r.pl))].filter(x=>x&&x!=='Not specified').sort();
   const types=[...new Set(ACTIVE.map(r=>r.type))].filter(x=>x&&x!=='Not specified').sort();
   ['qp','pp'].forEach(id=>{const s=document.getElementById(id);pls.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;s.appendChild(o);});});
   ['qt'].forEach(id=>{const s=document.getElementById(id);types.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;s.appendChild(o);});});
 
-  // Update header
   const now=new Date();
   document.getElementById('atitle').textContent=sourceName;
   const prd=periodOverride||now.toLocaleDateString('no',{month:'long',year:'numeric'});
   document.getElementById('aperiod').textContent=prd;
   document.getElementById('lperiod').value=prd;
 
-  // Pre-fill entity in lock modal from company selector if API was used
-  const coIdx = parseInt(document.getElementById('co-sel').value);
-  if(!isNaN(coIdx) && OS_COMPANIES[coIdx]){
-    document.getElementById('lentity').value = OS_COMPANIES[coIdx].name;
-  }
-
-  // Show app
   document.getElementById('upload').style.display='none';
   document.getElementById('app').style.display='block';
   rDash();rQA();rRisk();rPOC();rHist();
@@ -630,31 +566,13 @@ function parseRows(rows, sourceName, periodOverride){
 const NK=v=>v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';
 const NR=v=>v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));
 const PC=v=>v==null?'–':(v*100).toFixed(1)+' %';
-
-// Thousand-separator helpers for text inputs
-function fmtInput(v){
-  const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
-  if(isNaN(n))return'0';
-  return new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(n));
-}
-function parseInput(v){
-  // strip all non-digit/period/comma
-  const s=String(v).replace(/\s/g,'').replace(',','.');
-  const n=parseFloat(s);
-  return isNaN(n)?0:n;
-}
-// Called on focus: show raw number
+function fmtInput(v){const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));if(isNaN(n))return'0';return new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(n));}
+function parseInput(v){const s=String(v).replace(/\s/g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:n;}
 function piFocus(el){el.value=parseInput(el.value);}
-// Called on blur: reformat
 function piBlur(el){el.value=fmtInput(el.value);}
-// Called on change: parse and store, then re-render
-function piChange(ordreNr,field,el){
-  const v=parseInput(el.value);
-  if(field==='timer'||field==='tk'||field==='mat') sP(ordreNr,field,v);
-  else if(field==='dg') sD(ordreNr,'dg',v);
-}
-const rb=r=>r==='HØY'?`<span class="bh">HØY</span>`:r==='MIDDELS'?`<span class="bm">MIDDELS</span>`:`<span class="bl">LAV</span>`;
-const fh=fs=>fs.map(f=>`<span class="flag ${f.c}">${f.t}</span>`).join('');
+function piChange(ordreNr,field,el){const v=parseInput(el.value);if(field==='timer'||field==='tk'||field==='mat')sP(ordreNr,field,v);else if(field==='dg')sD(ordreNr,'dg',v);}
+const rb=r=>r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';
+const fh=fs=>fs.map(f=>'<span class="flag '+f.c+'">'+f.t+'</span>').join('');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -667,30 +585,27 @@ function rDash(){
   const avgDG=a.filter(r=>r.dg!=null).reduce((s,r)=>s+r.dg,0)/a.filter(r=>r.dg!=null).length;
   const rnd=a.filter(r=>r.dg!=null&&ROUND.has(+r.dg.toFixed(3))).length;
   const noT=a.filter(r=>!r.hasTilbud).length;
-  document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="lb">Aktive prosjekter</div><div class="vl">${a.length}</div></div>
-    <div class="kpi"><div class="lb">Total VIA</div><div class="vl">${NK(tv)}</div></div>
-    <div class="kpi g"><div class="lb">Positiv VIA (ubetalt inntekt)</div><div class="vl">${NK(pv)}</div></div>
-    <div class="kpi r"><div class="lb">Negativ VIA (overfakturert)</div><div class="vl">${NK(nv)}</div></div>
-    <div class="kpi"><div class="lb">Gjennomsnittlig DG%</div><div class="vl">${PC(avgDG)}</div></div>
-    <div class="kpi a"><div class="lb">Runde DG%-estimater</div><div class="vl">${rnd} av ${a.length}</div></div>
-    <div class="kpi a"><div class="lb">Uten kontraktssum</div><div class="vl">${noT}</div></div>
-  `;
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi"><div class="lb">Aktive prosjekter</div><div class="vl">'+a.length+'</div></div>'+
+    '<div class="kpi"><div class="lb">Total VIA</div><div class="vl">'+NK(tv)+'</div></div>'+
+    '<div class="kpi g"><div class="lb">Positiv VIA (ubetalt inntekt)</div><div class="vl">'+NK(pv)+'</div></div>'+
+    '<div class="kpi r"><div class="lb">Negativ VIA (overfakturert)</div><div class="vl">'+NK(nv)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Gjennomsnittlig DG%</div><div class="vl">'+PC(avgDG)+'</div></div>'+
+    '<div class="kpi a"><div class="lb">Runde DG%-estimater</div><div class="vl">'+rnd+' av '+a.length+'</div></div>'+
+    '<div class="kpi a"><div class="lb">Uten kontraktssum</div><div class="vl">'+noT+'</div></div>';
   const h=a.filter(r=>r.risk==='HØY').length,m=a.filter(r=>r.risk==='MIDDELS').length,l=a.filter(r=>r.risk==='LAV').length;
-  document.getElementById('rcards').innerHTML=`
-    <div class="rc h"><div class="n">${h}</div><div class="l">🔴 HØY RISIKO</div></div>
-    <div class="rc m"><div class="n">${m}</div><div class="l">🟡 MIDDELS RISIKO</div></div>
-    <div class="rc lo"><div class="n">${l}</div><div class="l">🟢 LAV RISIKO</div></div>
-  `;
+  document.getElementById('rcards').innerHTML=
+    '<div class="rc h"><div class="n">'+h+'</div><div class="l">🔴 HØY RISIKO</div></div>'+
+    '<div class="rc m"><div class="n">'+m+'</div><div class="l">🟡 MIDDELS RISIKO</div></div>'+
+    '<div class="rc lo"><div class="n">'+l+'</div><div class="l">🟢 LAV RISIKO</div></div>';
   const fs=[];
-  if(rnd>a.length*.6)fs.push(`⚠️ ${rnd} av ${a.length} prosjekter har rund DG% — mange estimater virker å være tommelfingerregel.`);
-  const dg0=a.filter(r=>r.dg===0);if(dg0.length)fs.push(`🔴 ${dg0.length} prosjekt(er) med DG% = 0 — sannsynligvis ikke oppdatert.`);
-  const bn=a.filter(r=>(r.via||0)<-20000);if(bn.length)fs.push(`🔴 ${bn.length} prosjekt(er) med stor negativ VIA — overfakturert, risiko for nedskriving.`);
-  const bp=a.filter(r=>(r.via||0)>100000);if(bp.length)fs.push(`🟡 ${bp.length} prosjekt(er) med VIA over 100 000 kr — høy eksponering.`);
-  if(noT>a.length*.3)fs.push(`ℹ️ ${noT} prosjekter uten kontraktssum — kun DG%-bekreftelse mulig, sikre at alle er vurdert.`);
+  if(rnd>a.length*.6)fs.push('⚠️ '+rnd+' av '+a.length+' prosjekter har rund DG% — mange estimater virker å være tommelfingerregel.');
+  const dg0=a.filter(r=>r.dg===0);if(dg0.length)fs.push('🔴 '+dg0.length+' prosjekt(er) med DG% = 0 — sannsynligvis ikke oppdatert.');
+  const bn=a.filter(r=>(r.via||0)<-20000);if(bn.length)fs.push('🔴 '+bn.length+' prosjekt(er) med stor negativ VIA — overfakturert, risiko for nedskriving.');
+  const bp=a.filter(r=>(r.via||0)>100000);if(bp.length)fs.push('🟡 '+bp.length+' prosjekt(er) med VIA over 100 000 kr — høy eksponering.');
+  if(noT>a.length*.3)fs.push('ℹ️ '+noT+' prosjekter uten kontraktssum — kun DG%-bekreftelse mulig.');
   if(!fs.length)fs.push('✅ Ingen kritiske funn. Gjennomfør stikkprøvekontroll av store VIA-prosjekter.');
-  document.getElementById('findings').innerHTML=fs.map(f=>`<div style="margin-bottom:5px">${f}</div>`).join('');
-  // PL table
+  document.getElementById('findings').innerHTML=fs.map(f=>'<div style="margin-bottom:5px">'+f+'</div>').join('');
   const pm={};
   a.forEach(r=>{const p=r.pl||'(ukjent)';if(!pm[p])pm[p]={c:0,ds:0,dc:0,dmn:1,dmx:0,v:0,h:0,rn:0};
     pm[p].c++;pm[p].v+=(r.via||0);if(r.risk==='HØY')pm[p].h++;
@@ -698,16 +613,14 @@ function rDash(){
     if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))pm[p].rn++;
   });
   const pr=Object.entries(pm).sort((a,b)=>Math.abs(b[1].v)-Math.abs(a[1].v));
-  document.getElementById('pltbl').innerHTML=`
-    <thead><tr><th>Prosjektleder</th><th>Proj.</th><th>Avg DG%</th><th>Min/Max</th><th style="text-align:right">Total VIA</th><th>HØY</th><th>Runde</th></tr></thead>
-    <tbody>${pr.map(([pl,p])=>`<tr>
-      <td>${pl}</td><td class="c">${p.c}</td>
-      <td class="r">${p.dc?PC(p.ds/p.dc):'–'}</td>
-      <td class="r">${p.dc?PC(p.dmn)+'/'+PC(p.dmx):'–'}</td>
-      <td class="r" style="font-weight:700;color:${p.v<0?'var(--red)':'var(--dark)'}">${NK(p.v)}</td>
-      <td class="c">${p.h>0?`<span style="color:var(--red);font-weight:800">${p.h}</span>`:'–'}</td>
-      <td class="c">${p.rn}/${p.c}</td>
-    </tr>`).join('')}</tbody>`;
+  document.getElementById('pltbl').innerHTML=
+    '<thead><tr><th>Prosjektleder</th><th>Proj.</th><th>Avg DG%</th><th>Min/Max</th><th style="text-align:right">Total VIA</th><th>HØY</th><th>Runde</th></tr></thead>'+
+    '<tbody>'+pr.map(([pl,p])=>'<tr><td>'+pl+'</td><td class="c">'+p.c+'</td>'+
+      '<td class="r">'+(p.dc?PC(p.ds/p.dc):'–')+'</td>'+
+      '<td class="r">'+(p.dc?PC(p.dmn)+'/'+PC(p.dmx):'–')+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+(p.v<0?'var(--red)':'var(--dark)')+'">'+NK(p.v)+'</td>'+
+      '<td class="c">'+(p.h>0?'<span style="color:var(--red);font-weight:800">'+p.h+'</span>':'–')+'</td>'+
+      '<td class="c">'+p.rn+'/'+p.c+'</td></tr>').join('')+'</tbody>';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -722,23 +635,23 @@ function rQA(){
     (!rf||r.risk===rf)&&(!pl||r.pl===pl)&&(!tp||r.type===tp)&&
     (!nz||(r.via!=null&&Math.abs(r.via)>10))
   );
-  document.getElementById('qacnt').textContent=`Viser ${rows.length} av ${ACTIVE.length} prosjekter`;
-  document.getElementById('qatbl').innerHTML=`
-    <thead><tr><th>Ordre</th><th>Status</th><th>Type</th><th>Prosjektleder</th><th>Beskrivelse</th><th>Kunde</th>
-    <th style="text-align:right">Totale omk.</th><th style="text-align:right">Forv. DG%</th><th style="text-align:right">Norm DG%</th>
-    <th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th><th style="text-align:right">VIA</th>
-    <th style="text-align:center">Risiko</th><th>QA Flagg</th></tr></thead>
-    <tbody>${rows.map(r=>{
+  document.getElementById('qacnt').textContent='Viser '+rows.length+' av '+ACTIVE.length+' prosjekter';
+  document.getElementById('qatbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Status</th><th>Type</th><th>Prosjektleder</th><th>Beskrivelse</th><th>Kunde</th>'+
+    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">Forv. DG%</th><th style="text-align:right">Norm DG%</th>'+
+    '<th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th><th style="text-align:right">VIA</th>'+
+    '<th style="text-align:center">Risiko</th><th>QA Flagg</th></tr></thead>'+
+    '<tbody>'+rows.map(r=>{
       const vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
-      return `<tr><td><strong>${r.ordreNr}</strong></td><td>${r.status}</td><td>${r.type}</td>
-        <td style="white-space:nowrap">${r.pl}</td>
-        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.beskr}">${r.beskr.substring(0,48)}${r.beskr.length>48?'…':''}</td>
-        <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.kunde}</td>
-        <td class="r">${NK(r.totOmk)}</td><td class="r">${PC(r.dg)}</td><td class="r">${PC(r.normDG)}</td>
-        <td class="r">${NK(r.tilbud)}</td><td class="r">${NK(r.fakt)}</td>
-        <td class="r" style="${vc}">${NK(r.via)}</td>
-        <td class="c">${rb(r.risk)}</td><td>${fh(r.flags)}</td></tr>`;
-    }).join('')}</tbody>`;
+      return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td>'+
+        '<td style="white-space:nowrap">'+r.pl+'</td>'+
+        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td>'+
+        '<td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.kunde+'</td>'+
+        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td><td class="r">'+PC(r.normDG)+'</td>'+
+        '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r" style="'+vc+'">'+NK(r.via)+'</td>'+
+        '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
+    }).join('')+'</tbody>';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -747,16 +660,16 @@ function rQA(){
 function rRisk(){
   const f=document.getElementById('rsel').value.split(',');
   const rows=ACTIVE.filter(r=>f.includes(r.risk)).sort((a,b)=>b.sc-a.sc);
-  document.getElementById('risktbl').innerHTML=`
-    <thead><tr><th>Ordre</th><th>Type</th><th>Prosjektleder</th><th>Kunde</th>
-    <th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>
-    <th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th>
-    <th style="text-align:right">VIA</th><th style="text-align:center">Risiko</th><th>Identifiserte risikoer</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr><td><strong>${r.ordreNr}</strong></td><td>${r.type}</td><td>${r.pl}</td><td>${r.kunde}</td>
-      <td class="r">${NK(r.totOmk)}</td><td class="r">${PC(r.dg)}</td>
-      <td class="r">${NK(r.tilbud)}</td><td class="r">${NK(r.fakt)}</td>
-      <td class="r" style="${(r.via||0)<0?'color:var(--red);font-weight:700':''}">${NK(r.via)}</td>
-      <td class="c">${rb(r.risk)}</td><td>${fh(r.flags)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('risktbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Type</th><th>Prosjektleder</th><th>Kunde</th>'+
+    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>'+
+    '<th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">VIA</th><th style="text-align:center">Risiko</th><th>Identifiserte risikoer</th></tr></thead>'+
+    '<tbody>'+rows.map(r=>'<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td>'+
+      '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td>'+
+      '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+      '<td class="r" style="'+((r.via||0)<0?'color:var(--red);font-weight:700':'')+'">'+NK(r.via)+'</td>'+
+      '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>').join('')+'</tbody>';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -786,128 +699,107 @@ function rPOC(){
   const dis=LOCKED?'disabled':'';
   const pocR=ACTIVE.filter(r=>r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl));
   const dgR=ACTIVE.filter(r=>!r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl));
-  document.getElementById('poc-cnt').textContent=`(${pocR.length} prosjekter)`;
-  document.getElementById('dg-cnt').textContent=`(${dgR.length} prosjekter)`;
+  document.getElementById('poc-cnt').textContent='('+pocR.length+' prosjekter)';
+  document.getElementById('dg-cnt').textContent='('+dgR.length+' prosjekter)';
 
   let pv=0;
-  document.getElementById('poctbl').innerHTML=`
-    <thead><tr>
-      <th>Ordre</th><th>Prosjektleder</th><th>Type</th>
-      <th style="text-align:right">Kontrakts-<br>sum</th>
-      <th style="text-align:right">Påløpte<br>kostnader</th>
-      <th style="text-align:right;color:#9EC8FF">Gjenst.<br>timer</th>
-      <th style="text-align:right;color:#9EC8FF">Timekost<br>kr/t</th>
-      <th style="text-align:right;color:#9EC8FF">Gjenst.<br>materialer</th>
-      <th style="text-align:right">Gjenst.<br>kost</th>
-      <th style="text-align:right">Est.<br>sluttkostnad</th>
-      <th style="text-align:right">Ferdig-<br>grad</th>
-      <th style="text-align:right" title="Kontraktssum × Ferdiggrad = opptjent inntekt basert på fremdrift">Periodisert<br>inntekt ①</th>
-      <th style="text-align:right">Est. DG%<br>ved ferdig</th>
-      <th style="text-align:right">Fakturert</th>
-      <th style="text-align:right">VIA</th>
-      <th style="color:#9EC8FF">Kommentar</th>
-    </tr></thead>
-    <tbody>${pocR.map((r,i)=>{
+  document.getElementById('poctbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Prosjektleder</th><th>Type</th>'+
+    '<th style="text-align:right">Kontrakts-<br>sum</th>'+
+    '<th style="text-align:right">Påløpte<br>kostnader</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst.<br>timer</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Timekost<br>kr/t</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst.<br>materialer</th>'+
+    '<th style="text-align:right">Gjenst.<br>kost</th>'+
+    '<th style="text-align:right">Est.<br>sluttkostnad</th>'+
+    '<th style="text-align:right">Ferdig-<br>grad</th>'+
+    '<th style="text-align:right">Periodisert<br>inntekt</th>'+
+    '<th style="text-align:right">Est. DG%<br>ved ferdig</th>'+
+    '<th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">VIA</th>'+
+    '<th style="color:#9EC8FF">Kommentar</th></tr></thead>'+
+    '<tbody>'+pocR.map(r=>{
       const inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
       inp.tk=inp.tk||stk;
       const{gk,esk,fg,innt,estDG,via}=calcPOC(r);
       if(via!=null)pv+=via;
       const warn=via!=null&&Math.abs(via)>50000&&!inp.k;
-      return `<tr class="${warn?'rwarn':''}">
-        <td><strong>${r.ordreNr}</strong></td><td style="white-space:nowrap">${r.pl}</td><td>${r.type}</td>
-        <td class="r">${NK(r.tilbud)}</td><td class="r">${NK(r.totOmk)}</td>
-        <td><input class="pi" type="text" value="${fmtInput(inp.timer||0)}" ${dis} onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange('${r.ordreNr}','timer',this)" style="width:74px"></td>
-        <td><input class="pi" type="text" value="${fmtInput(inp.tk)}" ${dis} onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange('${r.ordreNr}','tk',this)" style="width:74px"></td>
-        <td><input class="pi" type="text" value="${fmtInput(inp.mat||0)}" ${dis} onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange('${r.ordreNr}','mat',this)" style="width:96px"></td>
-        <td class="r calc">${NR(gk)}</td>
-        <td class="r calc">${NR(esk)}</td>
-        <td class="r calc">${fg!=null?PC(fg):'–'}</td>
-        <td class="r calc">${NK(innt)}</td>
-        <td class="r calc">${estDG!=null?PC(estDG):'–'}</td>
-        <td class="r">${NK(r.fakt)}</td>
-        <td class="r ${via==null?'':(via<0?'vneg':'vpos')}">${NK(via)}</td>
-        <td><input class="ci${warn?' req':''}" placeholder="${warn?'⚠️ Påkrevet':'Kommentar…'}" value="${inp.k||''}" ${dis} onchange="sP('${r.ordreNr}','k',this.value)"></td>
-      </tr>`;
-    }).join('')}</tbody>`;
-  document.getElementById('poctot').innerHTML=`
-    <span>Prosjekter: <strong>${pocR.length}</strong></span>
-    <span>Total VIA (POC): <strong style="color:${pv<0?'var(--red)':'var(--dark)'}">${NK(pv)}</strong></span>`;
+      return '<tr class="'+(warn?'rwarn':'')+'">'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td style="white-space:nowrap">'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.totOmk)+'</td>'+
+        '<td><input class="pi" type="text" value="'+fmtInput(inp.timer||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'timer\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtInput(inp.tk)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'tk\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtInput(inp.mat||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'mat\',this)" style="width:96px"></td>'+
+        '<td class="r calc">'+NR(gk)+'</td>'+
+        '<td class="r calc">'+NR(esk)+'</td>'+
+        '<td class="r calc">'+(fg!=null?PC(fg):'–')+'</td>'+
+        '<td class="r calc">'+NK(innt)+'</td>'+
+        '<td class="r calc">'+(estDG!=null?PC(estDG):'–')+'</td>'+
+        '<td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r '+(via==null?'':(via<0?'vneg':'vpos'))+'">'+NK(via)+'</td>'+
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
+        '</tr>';
+    }).join('')+'</tbody>';
+  document.getElementById('poctot').innerHTML=
+    '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
+    '<span>Total VIA (POC): <strong style="color:'+(pv<0?'var(--red)':'var(--dark)')+'">'+NK(pv)+'</strong></span>';
 
   let dv=0;
-  document.getElementById('dgtbl').innerHTML=`
-    <thead><tr>
-      <th>Ordre</th><th>Prosjektleder</th><th>Type</th><th>Beskrivelse</th><th>Kunde</th>
-      <th style="text-align:right">Påløpte<br>kostnader</th>
-      <th style="text-align:right">Fakturert</th>
-      <th style="text-align:right">DG%<br>(system)</th>
-      <th style="text-align:right;color:#9EC8FF">DG%<br>(bekreftet)</th>
-      <th style="text-align:right">Forv.<br>salgsverdi</th>
-      <th style="text-align:right">VIA</th>
-      <th style="text-align:center">Risiko</th>
-      <th style="color:#9EC8FF">Begrunnelse (obligatorisk)</th>
-    </tr></thead>
-    <tbody>${dgR.map((r,i)=>{
+  document.getElementById('dgtbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Prosjektleder</th><th>Type</th><th>Beskrivelse</th><th>Kunde</th>'+
+    '<th style="text-align:right">Påløpte<br>kostnader</th>'+
+    '<th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">DG%<br>(system)</th>'+
+    '<th style="text-align:right;color:#9EC8FF">DG%<br>(bekreftet)</th>'+
+    '<th style="text-align:right">Forv.<br>salgsverdi</th>'+
+    '<th style="text-align:right">VIA</th>'+
+    '<th style="text-align:center">Risiko</th>'+
+    '<th style="color:#9EC8FF">Begrunnelse (obligatorisk)</th></tr></thead>'+
+    '<tbody>'+dgR.map(r=>{
       const inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
       const{dg,fs,via}=calcDG(r);
       if(via!=null)dv+=via;
       const warn=!inp.k;
-      return `<tr>
-        <td><strong>${r.ordreNr}</strong></td><td style="white-space:nowrap">${r.pl}</td><td>${r.type}</td>
-        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.beskr}">${r.beskr.substring(0,38)}…</td>
-        <td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.kunde}</td>
-        <td class="r">${NK(r.totOmk)}</td><td class="r">${NK(r.fakt)}</td>
-        <td class="r">${PC(r.dg)}</td>
-        <td><div style="display:flex;align-items:center;gap:4px;">
-          <input class="pi" type="text" inputmode="numeric" value="${inp.dg||35}" ${dis}
-            onfocus="piFocus(this)" onblur="piBlur(this)"
-            onchange="piChange('${r.ordreNr}','dg',this)" style="width:56px">
-          <span style="font-size:.8rem;color:#666">%</span>
-        </div></td>
-        <td class="r calc">${NK(fs)}</td>
-        <td class="r ${via==null?'':(via<0?'vneg':'vpos')}">${NK(via)}</td>
-        <td class="c">${rb(r.risk)}</td>
-        <td><input class="ci${warn?' req':''}" placeholder="${warn?'⚠️ Begrunnelse for DG%-estimat':'Kommentar…'}" value="${inp.k||''}" ${dis} onchange="sD('${r.ordreNr}','k',this.value)"></td>
-      </tr>`;
-    }).join('')}</tbody>`;
-  document.getElementById('dgtot').innerHTML=`
-    <span>Prosjekter: <strong>${dgR.length}</strong></span>
-    <span>VIA DG-bekreftet: <strong style="color:${dv<0?'var(--red)':'var(--dark)'}">${NK(dv)}</strong></span>
-    <span>Kombinert VIA: <strong style="color:${(pv+dv)<0?'var(--red)':'var(--dark)'}">${NK(pv+dv)}</strong></span>`;
+      return '<tr>'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td style="white-space:nowrap">'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,38)+'…</td>'+
+        '<td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.kunde+'</td>'+
+        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r">'+PC(r.dg)+'</td>'+
+        '<td><div style="display:flex;align-items:center;gap:4px;">'+
+          '<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg||35)+'" '+dis+
+          ' onfocus="piFocus(this)" onblur="piBlur(this)"'+
+          ' onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px">'+
+          '<span style="font-size:.8rem;color:#666">%</span></div></td>'+
+        '<td class="r calc">'+NK(fs)+'</td>'+
+        '<td class="r '+(via==null?'':(via<0?'vneg':'vpos'))+'">'+NK(via)+'</td>'+
+        '<td class="c">'+rb(r.risk)+'</td>'+
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse for DG%-estimat':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
+        '</tr>';
+    }).join('')+'</tbody>';
+  document.getElementById('dgtot').innerHTML=
+    '<span>Prosjekter: <strong>'+dgR.length+'</strong></span>'+
+    '<span>VIA DG-bekreftet: <strong style="color:'+(dv<0?'var(--red)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
+    '<span>Kombinert VIA: <strong style="color:'+((pv+dv)<0?'var(--red)':'var(--dark)')+'">'+NK(pv+dv)+'</strong></span>';
 }
 function sP(id,f,v){if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''};POC[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
 function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
 
 // ══════════════════════════════════════════════════════════════════════════════
-// HISTORY — the smart bit
+// HISTORY
 // ══════════════════════════════════════════════════════════════════════════════
 function getHist(){return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}
 function saveSnap(name,entity,period){
   const hist=getHist();
-  const stk=parseFloat(document.getElementById('stk').value)||650;
   let pv=0,dv=0;
   const projects=ACTIVE.filter(r=>r.status==='I arbeid').map(r=>{
     let via=null,dg=null;
     if(r.hasTilbud){const c=calcPOC(r);via=c.via;dg=c.estDG;if(c.via!=null)pv+=c.via;}
     else{const c=calcDG(r);via=c.via;dg=c.dg;if(c.via!=null)dv+=c.via;}
-    return{
-      ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,
-      beskr:r.beskr.substring(0,60),
-      tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,
-      via:via!=null?Math.round(via):null,
-      dg:dg!=null?Math.round(dg*1000)/1000:null,
-      hasTilbud:r.hasTilbud,risk:r.risk,
-    };
+    return{ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,beskr:r.beskr.substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,via:via!=null?Math.round(via):null,dg:dg!=null?Math.round(dg*1000)/1000:null,hasTilbud:r.hasTilbud,risk:r.risk};
   });
-  const snap={
-    id:Date.now(),period,entity,lockedBy:name,
-    lockedAt:new Date().toISOString(),
-    summary:{
-      totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),
-      projectCount:ACTIVE.length,
-      highRisk:ACTIVE.filter(r=>r.risk==='HØY').length,
-    },
-    projects,
-  };
+  const snap={id:Date.now(),period,entity,lockedBy:name,lockedAt:new Date().toISOString(),
+    summary:{totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),projectCount:ACTIVE.length,highRisk:ACTIVE.filter(r=>r.risk==='HØY').length},projects};
   const filtered=hist.filter(e=>e.period!==period);
   filtered.push(snap);
   filtered.sort((a,b)=>a.id-b.id);
@@ -917,322 +809,38 @@ function saveSnap(name,entity,period){
 function rHist(){
   const hist=getHist();
   const el=document.getElementById('histcontent');
-  if(!hist.length){
-    el.innerHTML=`<div class="hist-empty">📭 Ingen historikk enda.<br>Lås en periode for å starte historikksporing.</div>`;
-    return;
-  }
-  // Build VIA trend chart (SVG)
+  if(!hist.length){el.innerHTML='<div class="hist-empty">📭 Ingen historikk enda.<br>Lås en periode for å starte historikksporing.</div>';return;}
   const W=560,H=200,PAD=60,RPAD=20,TOP=20,BOT=50;
   const vias=hist.map(h=>h.summary.totalVIA);
   const maxV=Math.max(...vias.map(Math.abs),1);
   const xStep=(W-PAD-RPAD)/(hist.length-1||1);
   const yCtr=TOP+(H-TOP-BOT)/2;
   const yScale=(H-TOP-BOT)/(2*maxV||1);
-  const pts=hist.map((h,i)=>[PAD+i*xStep, yCtr-h.summary.totalVIA*yScale]);
-
+  const pts=hist.map((h,i)=>[PAD+i*xStep,yCtr-h.summary.totalVIA*yScale]);
   const polyline=pts.map(p=>p.join(',')).join(' ');
-  const dots=pts.map((p,i)=>{
-    const v=hist[i].summary.totalVIA;
-    const col=v<0?'var(--red)':v>0?'var(--green)':'#888';
-    return `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${col}" stroke="#fff" stroke-width="2">
-      <title>${hist[i].period}: ${NK(v)}</title></circle>`;
-  }).join('');
-  const xLabels=hist.map((h,i)=>`<text x="${PAD+i*xStep}" y="${H-8}" text-anchor="middle" font-size="11" fill="#666">${h.period.split(' ')[0].substring(0,3)+' '+h.period.split(' ').pop()}</text>`).join('');
-  const zeroY=yCtr;
-
-  const trendSVG=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;overflow:visible;">
-    <line x1="${PAD}" y1="${TOP}" x2="${PAD}" y2="${H-BOT}" stroke="#ddd" stroke-width="1"/>
-    <line x1="${PAD}" y1="${zeroY}" x2="${W-RPAD}" y2="${zeroY}" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>
-    <text x="${PAD-5}" y="${zeroY+4}" text-anchor="end" font-size="10" fill="#aaa">0</text>
-    <text x="${PAD-5}" y="${TOP+4}" text-anchor="end" font-size="10" fill="#aaa">${NR(maxV)}</text>
-    <text x="${PAD-5}" y="${H-BOT}" text-anchor="end" font-size="10" fill="#aaa">-${NR(maxV)}</text>
-    ${hist.length>1?`<polyline points="${polyline}" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linejoin="round"/>`:''}
-    ${dots}${xLabels}
-  </svg>`;
-
-  // Per-project VIA history: find projects that appear in multiple periods
-  const projMap={};
-  hist.forEach(h=>{
-    h.projects.forEach(p=>{
-      if(!projMap[p.ordreNr])projMap[p.ordreNr]={ordreNr:p.ordreNr,pl:p.pl,kunde:p.kunde,periods:[]};
-      projMap[p.ordreNr].periods.push({period:h.period,via:p.via,dg:p.dg,fakt:p.fakt,totOmk:p.totOmk});
-    });
-  });
-  const multiPeriod=Object.values(projMap).filter(p=>p.periods.length>1).sort((a,b)=>b.periods.length-a.periods.length);
-
-  // Period summary table
-  const periodTable=`
-    <div class="tw" style="margin-bottom:18px;">
-      <table>
-        <thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th>
-          <th style="text-align:right">Total VIA</th>
-          <th style="text-align:right">POC-VIA</th>
-          <th style="text-align:right">DG-VIA</th>
-          <th style="text-align:center">Prosjekter</th>
-          <th style="text-align:center">HØY risiko</th>
-        </tr></thead>
-        <tbody>${hist.slice().reverse().map((h,i)=>`<tr>
-          <td><strong>${h.period}</strong></td>
-          <td>${h.entity}</td><td>${h.lockedBy}</td>
-          <td>${new Date(h.lockedAt).toLocaleDateString('no')}</td>
-          <td class="r" style="font-weight:700;color:${h.summary.totalVIA<0?'var(--red)':'var(--dark)'}">${NK(h.summary.totalVIA)}</td>
-          <td class="r">${NK(h.summary.pocVIA)}</td>
-          <td class="r">${NK(h.summary.dgVIA)}</td>
-          <td class="c">${h.summary.projectCount}</td>
-          <td class="c">${h.summary.highRisk>0?`<span style="color:var(--red);font-weight:700">${h.summary.highRisk}</span>`:'–'}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-
-  // Project drill-down table — Est. DG% ved ferdig per periode
-  const projDrill=multiPeriod.length?`
-    <div class="secttitle" style="margin-top:4px;">🔎 Prosjekter med historikk – Est. DG% ved ferdig (flere perioder)</div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>Ordre</th><th>Prosjektleder</th><th>Kunde</th>
-          ${hist.map(h=>`<th style="text-align:right">${h.period}</th>`).join('')}
-          <th style="text-align:right">Endring<br>(pp)</th>
-        </tr></thead>
-        <tbody>${multiPeriod.slice(0,30).map(p=>{
-          const cells=hist.map(h=>{
-            const pe=p.periods.find(x=>x.period===h.period);
-            if(!pe||pe.dg==null)return`<td class="r" style="color:#ccc">–</td>`;
-            const dg=pe.dg*100;
-            const col=dg<20?'color:var(--red);font-weight:700':dg>40?'color:var(--green);font-weight:700':'font-weight:600';
-            return`<td class="r" style="${col}">${dg.toFixed(1)} %</td>`;
-          }).join('');
-          // Delta: nyeste periode (venstre i tabell) minus eldste (høyre)
-          const vals=p.periods.filter(x=>x.dg!=null);
-          const first=vals.length?vals[0].dg*100:null;
-          const last=vals.length?vals[vals.length-1].dg*100:null;
-          const delta=first!=null&&last!=null?first-last:null;
-          const deltaCol=delta==null?'':delta>0?'color:var(--green)':delta<0?'color:var(--red)':'';
-          const deltaTxt=delta==null?'–':`${delta>0?'+':''}${delta.toFixed(1)} pp`;
-          return`<tr><td><strong>${p.ordreNr}</strong></td><td>${p.pl}</td><td>${p.kunde}</td>
-            ${cells}
-            <td class="r" style="${deltaCol};font-weight:700">${deltaTxt}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>
-    <div style="font-size:.76rem;color:#aaa;margin-top:5px;">pp = prosentpoeng endring. Grønt = DG% &gt; 40%, rødt = DG% &lt; 20%.</div>`:
-    `<div style="color:#888;font-size:.85rem;margin-top:8px;">Ingen prosjekter har historikk over flere perioder enda.</div>`;
-
-  el.innerHTML=`
-    <div class="secttitle">📋 Periodeoversikt (${hist.length} ${hist.length===1?'periode':'perioder'} lagret)</div>
-    ${periodTable}
-    <div class="hist-grid">
-      <div class="chart-box">
-        <h3>📉 VIA-utvikling over tid (total)</h3>
-        ${trendSVG}
-      </div>
-      <div class="chart-box">
-        <h3>📊 VIA per periode (NOK)</h3>
-        ${buildBarChart(hist)}
-      </div>
-    </div>
-    ${projDrill}
-    <div style="margin-top:28px;">
-      <div class="secttitle">🔎 Historikk per ordre</div>
-      <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 5px rgba(0,0,0,.08);">
-        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-          <input type="text" id="hist-ordre-search" placeholder="Søk ordrenummer eller kunde…"
-            style="width:260px;border:1.5px solid var(--border);border-radius:6px;padding:7px 11px;font-family:var(--font);font-size:.86rem;"
-            oninput="renderOrdreHist()" onkeydown="if(event.key==='Enter')renderOrdreHist()">
-          <span style="font-size:.82rem;color:#888;">Søk i alle lagrede perioder</span>
-        </div>
-        <div id="ordre-hist-result"></div>
-      </div>
-    </div>`;
-}
-
-function renderOrdreHist(){
-  const q=(document.getElementById('hist-ordre-search')?.value||'').toLowerCase().trim();
-  const el=document.getElementById('ordre-hist-result');
-  if(!el)return;
-  const hist=getHist();
-  if(!hist.length){el.innerHTML='<div style="color:#888;font-size:.84rem;">Ingen historikk lagret.</div>';return;}
-  if(!q){el.innerHTML='<div style="color:#888;font-size:.84rem;">Skriv inn ordrenummer eller kundenavn for å se historikk.</div>';return;}
-
-  // Collect all projects matching the query across all periods
-  const found={};
-  hist.forEach(h=>{
-    h.projects.forEach(p=>{
-      if(p.ordreNr.toLowerCase().includes(q)||p.kunde.toLowerCase().includes(q)||(p.pl||'').toLowerCase().includes(q)){
-        if(!found[p.ordreNr])found[p.ordreNr]={ordreNr:p.ordreNr,pl:p.pl,kunde:p.kunde,beskr:p.beskr,type:p.type,entries:[]};
-        found[p.ordreNr].entries.push({period:h.period,lockedAt:h.lockedAt,via:p.via,dg:p.dg,fakt:p.fakt,totOmk:p.totOmk,tilbud:p.tilbud,risk:p.risk});
-      }
-    });
-  });
-
-  const matches=Object.values(found).sort((a,b)=>b.entries.length-a.entries.length);
-  if(!matches.length){el.innerHTML=`<div style="color:#888;font-size:.84rem;">Ingen treff på «${q}».</div>`;return;}
-
-  el.innerHTML=matches.map(proj=>{
-    const entries=proj.entries;
-    // Mini trend chart — DG% over tid
-    const W=340,H=90,PL=8,PR=8,PT=8,PB=24;
-    const dgs=entries.map(e=>e.dg!=null?e.dg*100:null);
-    const dgVals=dgs.filter(x=>x!=null);
-    const minDG=dgVals.length?Math.min(...dgVals,0):0;
-    const maxDG=dgVals.length?Math.max(...dgVals,1):1;
-    const range=Math.max(maxDG-minDG,5); // at least 5pp range for readability
-    const xStep=entries.length>1?(W-PL-PR)/(entries.length-1):0;
-    const yTop=PT, yBot=H-PB;
-    const yScale=(yBot-yTop)/range;
-    const pts=entries.map((e,i)=>{
-      const v=e.dg!=null?e.dg*100:null;
-      const y=v!=null?yBot-(v-minDG)*yScale:null;
-      return[PL+i*xStep, y];
-    });
-    // Only connect dots where dg is not null
-    const polySegs=[];let seg=[];
-    pts.forEach((p,i)=>{if(p[1]!=null){seg.push(p);}else{if(seg.length>1)polySegs.push(seg);seg=[];}});
-    if(seg.length>1)polySegs.push(seg);
-    const polys=polySegs.map(s=>`<polyline points="${s.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--navy)" stroke-width="2" stroke-linejoin="round"/>`).join('');
-    const dots=pts.map((p,i)=>{
-      if(p[1]==null)return'';
-      const v=dgs[i];
-      const c=v<20?'var(--red)':v>40?'var(--green)':'var(--amber)';
-      return`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="${c}" stroke="#fff" stroke-width="1.5"><title>${entries[i].period}: ${v.toFixed(1)} %</title></circle>`;
-    }).join('');
-    const xlbls=entries.map((e,i)=>`<text x="${PL+i*xStep}" y="${H-4}" text-anchor="middle" font-size="9" fill="#888">${e.period.split(' ')[0].substring(0,3)}</text>`).join('');
-    // Y-axis labels
-    const yLabels=`<text x="${PL}" y="${yTop+8}" font-size="9" fill="#aaa">${maxDG.toFixed(0)}%</text>
-      <text x="${PL}" y="${yBot}" font-size="9" fill="#aaa">${minDG.toFixed(0)}%</text>`;
-
-    // Delta: nyeste (venstre/første i visning) minus eldste
-    const dgFirst=dgs.find(x=>x!=null)??null;
-    const dgLast=[...dgs].reverse().find(x=>x!=null)??null;
-    const delta=dgFirst!=null&&dgLast!=null?dgFirst-dgLast:null;
-    const dCol=delta==null?'#888':delta>0?'var(--green)':delta<0?'var(--red)':'#888';
-    const dTxt=delta==null?'–':delta===0?'→':delta>0?`▲ +${delta.toFixed(1)} pp`:`▼ ${delta.toFixed(1)} pp`;
-
-    // Per-period table rows
-    const rows=entries.map((e,i)=>{
-      const dgPrev=i>0?entries[i-1].dg:null;
-      const dgDelta=e.dg!=null&&dgPrev!=null?(e.dg-dgPrev)*100:null;
-      const dgCol=e.dg!=null?(e.dg*100<20?'color:var(--red)':e.dg*100>40?'color:var(--green)':''):''
-      return`<tr>
-        <td style="white-space:nowrap;color:var(--navy);font-weight:600">${e.period}</td>
-        <td class="r">${NK(e.totOmk)}</td>
-        <td class="r">${NK(e.fakt)}</td>
-        <td class="r" style="font-weight:700;color:${(e.via??0)<0?'var(--red)':(e.via??0)>0?'var(--navy)':'#888'}">${NK(e.via)}</td>
-        <td class="r" style="font-weight:800;${dgCol}">${e.dg!=null?PC(e.dg):'–'}</td>
-        <td class="c"><span class="${e.risk==='HØY'?'bh':e.risk==='MIDDELS'?'bm':'bl'}">${e.risk}</span></td>
-        <td class="r" style="color:${dgDelta==null?'#ccc':dgDelta>0?'var(--green)':'var(--red)'};font-weight:600">
-          ${dgDelta==null?'–':dgDelta>0?`▲ +${dgDelta.toFixed(1)} pp`:`▼ ${dgDelta.toFixed(1)} pp`}
-        </td>
-      </tr>`;
-    }).join('');
-
-    return`<div style="background:var(--navylight);border-radius:10px;padding:14px 16px;margin-bottom:14px;border-left:4px solid var(--navy);">
-      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-        <div style="flex:1;min-width:220px;">
-          <div style="font-size:.92rem;font-weight:800;color:var(--navy);">${proj.ordreNr} — ${proj.type}</div>
-          <div style="font-size:.82rem;color:#555;margin-bottom:4px;">${proj.pl} · ${proj.kunde}</div>
-          <div style="font-size:.79rem;color:#777;margin-bottom:8px;">${(proj.beskr||'').substring(0,60)}${(proj.beskr||'').length>60?'…':''}</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span style="font-size:.8rem;background:var(--navy);color:#fff;border-radius:12px;padding:2px 10px;">${entries.length} ${entries.length===1?'periode':'perioder'}</span>
-            <span style="font-size:.85rem;font-weight:700;color:${dCol};">${dTxt}</span>
-          </div>
-        </div>
-        <div style="flex:0 0 ${W}px;">
-          <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;background:#fff;border-radius:6px;padding:4px;">
-            ${yLabels}${polys}${dots}${xlbls}
-          </svg>
-        </div>
-      </div>
-      <div style="margin-top:10px;overflow-x:auto;">
-        <table style="min-width:520px;font-size:.79rem;">
-          <thead><tr style="background:var(--navy);">
-            <th style="color:#fff;padding:5px 8px;">Periode</th>
-            <th style="color:#fff;padding:5px 8px;text-align:right;">Påløpte kost.</th>
-            <th style="color:#fff;padding:5px 8px;text-align:right;">Fakturert</th>
-            <th style="color:#fff;padding:5px 8px;text-align:right;">VIA</th>
-            <th style="color:#fff;padding:5px 8px;text-align:right;">Est. DG%</th>
-            <th style="color:#fff;padding:5px 8px;text-align:center;">Risiko</th>
-            <th style="color:#fff;padding:5px 8px;text-align:right;">Endring DG%</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function buildBarChart(hist){
-  const W=440,H=180,PAD=80,RPAD=10,TOP=16,BOT=40;
-  if(!hist.length)return'';
-  const vals=hist.map(h=>h.summary.totalVIA);
-  const minVal=Math.min(...vals);
-  const maxVal=Math.max(...vals);
-  const allPos=minVal>=0, allNeg=maxVal<=0, mixed=!allPos&&!allNeg;
-  const bw=Math.max(12,(W-PAD-RPAD)/hist.length-6);
-
-  // Smart y-axis: use full height when all same sign, centered when mixed
-  let yMin, yMax;
-  if(allPos){  yMin=0; yMax=maxVal*1.08; }
-  else if(allNeg){ yMin=minVal*1.08; yMax=0; }
-  else{ const mx=Math.max(Math.abs(minVal),Math.abs(maxVal))*1.05; yMin=-mx; yMax=mx; }
-
-  const yRange=yMax-yMin||1;
-  const yScale=(H-TOP-BOT)/yRange;
-  const yZero=TOP+(yMax)*yScale; // pixel position of y=0
-
-  const bars=hist.map((h,i)=>{
-    const v=h.summary.totalVIA;
-    const x=PAD+i*(W-PAD-RPAD)/hist.length+(W-PAD-RPAD)/hist.length/2-bw/2;
-    const barH=Math.abs(v)*yScale;
-    const y=v>=0?yZero-barH:yZero;
-    const col=v<0?'var(--red)':v>50000?'var(--green)':'var(--dark)';
-    const lbl=h.period.split(' ')[0].substring(0,3)+' '+h.period.split(' ').pop().slice(2);
-    const lblY=v>=0?Math.max(TOP+10,y-4):y+barH+11;
-    return`<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(barH,1)}" fill="${col}" rx="3" opacity=".85">
-      <title>${h.period}: ${NK(v)}</title></rect>
-      <text x="${x+bw/2}" y="${lblY}" text-anchor="middle" font-size="9" fill="${col}" font-weight="700">${NR(v)}</text>
-      <text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="10" fill="#666">${lbl}</text>`;
-  }).join('');
-
-  // Y-axis: 5 evenly spaced ticks
-  const nTicks=5;
-  const yAxisLabels=Array.from({length:nTicks+1},(_,k)=>{
-    const frac=k/nTicks;
-    const val=yMin+(yMax-yMin)*frac;
-    const y=TOP+(yMax-val)*yScale;
-    const isZero=Math.abs(val)<yRange*0.01;
-    return`<line x1="${PAD}" y1="${y}" x2="${W-RPAD}" y2="${y}" stroke="${isZero?'#bbb':'#eee'}" stroke-width="1" stroke-dasharray="${isZero?'4,3':'2,4'}"/>
-      <text x="${PAD-6}" y="${y+4}" text-anchor="end" font-size="8" fill="#aaa">${NR(Math.round(val))}</text>`;
-  }).join('');
-
-  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;">
-    <line x1="${PAD}" y1="${TOP}" x2="${PAD}" y2="${H-BOT}" stroke="#ddd"/>
-    ${yAxisLabels}${bars}
-  </svg>`;
-}
-
-function clearHist(){
-  if(confirm('Slette all historikk? Dette kan ikke angres.'))
-    {localStorage.removeItem(HIST_KEY);rHist();}
-}
-function expHist(){
-  const hist=getHist();if(!hist.length){alert('Ingen historikk å eksportere.');return;}
-  const wb=XLSX.utils.book_new();
-  // Summary sheet
-  const sumHdr=['Periode','Selskap','Låst av','Dato','Total VIA','POC-VIA','DG-VIA','Prosjekter','HØY risiko'];
-  const sumData=[sumHdr,...hist.map(h=>[h.period,h.entity,h.lockedBy,
-    new Date(h.lockedAt).toLocaleDateString('no'),
-    h.summary.totalVIA,h.summary.pocVIA,h.summary.dgVIA,
-    h.summary.projectCount,h.summary.highRisk])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumData),'Periodeoversikt');
-  // Per-period sheets (last 6)
-  hist.slice(-6).forEach(h=>{
-    const hdr=['Ordre','PL','Type','Kunde','Tilbud','Påløpte kost','Fakturert','VIA','DG%','Risiko'];
-    const rows=[hdr,...h.projects.map(p=>[p.ordreNr,p.pl,p.type,p.kunde,p.tilbud,p.totOmk,p.fakt,p.via,p.dg!=null?+(p.dg*100).toFixed(1):null,p.risk])];
-    const sname=h.period.replace(/[^a-zA-Z0-9æøåÆØÅ\s]/g,'').substring(0,28);
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),sname);
-  });
-  XLSX.writeFile(wb,`Minel_VIA_Historikk_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const dots=pts.map((p,i)=>{const v=hist[i].summary.totalVIA;const col=v<0?'var(--red)':v>0?'var(--green)':'#888';return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"><title>'+hist[i].period+': '+NK(v)+'</title></circle>';}).join('');
+  const xLabels=hist.map((h,i)=>'<text x="'+(PAD+i*xStep)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="#666">'+h.period.split(' ')[0].substring(0,3)+' '+h.period.split(' ').pop()+'</text>').join('');
+  const trendSVG='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;overflow:visible;">'+
+    '<line x1="'+PAD+'" y1="'+TOP+'" x2="'+PAD+'" y2="'+(H-BOT)+'" stroke="#ddd" stroke-width="1"/>'+
+    '<line x1="'+PAD+'" y1="'+yCtr+'" x2="'+(W-RPAD)+'" y2="'+yCtr+'" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>'+
+    '<text x="'+(PAD-5)+'" y="'+(yCtr+4)+'" text-anchor="end" font-size="10" fill="#aaa">0</text>'+
+    (hist.length>1?'<polyline points="'+polyline+'" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linejoin="round"/>';'')+
+    dots+xLabels+'</svg>';
+  const periodTable='<div class="tw" style="margin-bottom:18px;"><table>'+
+    '<thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th>'+
+    '<th style="text-align:right">Total VIA</th><th style="text-align:right">POC-VIA</th><th style="text-align:right">DG-VIA</th>'+
+    '<th style="text-align:center">Prosjekter</th><th style="text-align:center">HØY risiko</th></tr></thead>'+
+    '<tbody>'+hist.slice().reverse().map(h=>'<tr>'+
+      '<td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td>'+
+      '<td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td>'+
+      '<td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td>'+
+      '<td class="c">'+h.summary.projectCount+'</td>'+
+      '<td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td>'+
+      '</tr>').join('')+'</tbody></table></div>';
+  el.innerHTML='<div class="hist-grid">'+
+    '<div class="chart-box"><h3>📈 VIA-trend over perioder</h3>'+trendSVG+'</div>'+
+    '<div><div class="secttitle">Periodeoversikt</div>'+periodTable+'</div></div>';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1244,119 +852,81 @@ function doLock(){
   const name=document.getElementById('lname').value.trim();
   const entity=document.getElementById('lentity').value.trim();
   const period=document.getElementById('lperiod').value.trim();
-  if(!name){alert('Angi ditt navn.');return;}
-  LOCKED=true;closeLock();
-  document.getElementById('lbar').style.display='block';
-  document.getElementById('lby').textContent=name;
-  document.getElementById('ldate').textContent=new Date().toLocaleDateString('no',{dateStyle:'long'});
-  document.getElementById('btnlock').disabled=true;
-  document.getElementById('btnlock').textContent='🔒 Låst';
+  if(!name){alert('Skriv inn ditt navn.');return;}
   saveSnap(name,entity,period);
-  rPOC();rHist();ST('hist');
-  expReport(name,entity,period);
+  LOCKED=true;
+  closeLock();
+  document.getElementById('btnlock').textContent='✅ Låst: '+period;
+  document.getElementById('btnlock').disabled=true;
+  rPOC();rHist();
+  ST('hist');
+  alert('Periode låst og lagret i historikk!');
 }
 
-function expReport(name,entity,period){
-  const stk=parseFloat(document.getElementById('stk').value)||650;
-  const wb=XLSX.utils.book_new();
-  const now=new Date().toLocaleDateString('no',{dateStyle:'long'});
-  let pv=0,dv=0;
-  const pocR=ACTIVE.filter(r=>r.hasTilbud&&r.status==='I arbeid');
-  const dgR=ACTIVE.filter(r=>!r.hasTilbud&&r.status==='I arbeid');
-  // Sheet 1: Sammendrag
-  pocR.forEach(r=>{const c=calcPOC(r);if(c.via!=null)pv+=c.via;});
-  dgR.forEach(r=>{const c=calcDG(r);if(c.via!=null)dv+=c.via;});
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['PERIODEAVSLUTNING – VIA / FAKTURARESERVE'],[''],
-    ['Selskap:',entity],['Periode:',period],['Godkjent av:',name],['Dato:',now],[''],
-    ['SAMMENDRAG'],
-    ['Ordre med kontraktssum (POC)',pocR.length],
-    ['Ordre uten kontraktssum (DG-bekreftet)',dgR.length],
-    ['VIA – POC-modell',Math.round(pv)],
-    ['VIA – DG-bekreftet',Math.round(dv)],
-    ['TOTAL VIA',Math.round(pv+dv)],[''],
-    ['Rapporten er godkjent av: '+name],['Dato: '+now],
-  ]),'1 – Sammendrag');
-  // Sheet 2: POC
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['Ordre','PL','Type','Kontraktssum','Påløpte kost','Gjenst. timer','Timekost','Gjenst. mat','Gjenst. kost','Est. sluttkostnad','Ferdiggrad %','Periodisert inntekt','Est. DG%','Fakturert','VIA','Kommentar'],
-    ...pocR.map(r=>{
-      const inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
+// ══════════════════════════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════════════════════════
+function expPOC(){
+  const rows=[];
+  ACTIVE.filter(r=>r.status==='I arbeid').forEach(r=>{
+    if(r.hasTilbud){
       const{gk,esk,fg,innt,estDG,via}=calcPOC(r);
-      return[r.ordreNr,r.pl,r.type,r.tilbud,r.totOmk,inp.timer,inp.tk,inp.mat,
-        Math.round(gk),Math.round(esk),fg!=null?+(fg*100).toFixed(1):null,
-        innt!=null?Math.round(innt):null,estDG!=null?+(estDG*100).toFixed(1):null,
-        r.fakt,via!=null?Math.round(via):null,inp.k];
-    }),
-  ]),'2 – POC-modell');
-  // Sheet 3: DG
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['Ordre','PL','Type','Beskrivelse','Kunde','Påløpte kost','Fakturert','DG% system','DG% bekreftet','Forv. salgsverdi','VIA','Begrunnelse'],
-    ...dgR.map(r=>{
-      const inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
+      const inp=POC[r.ordreNr]||{};
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,Kontraktssum:r.tilbud,PåløpteKostnader:r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(gk),EstSluttkostnad:Math.round(esk),Ferdiggrad:fg!=null?Math.round(fg*1000)/10:null,PeriodisertInntekt:Math.round(innt||0),EstDG:estDG!=null?Math.round(estDG*1000)/10:null,Fakturert:r.fakt,VIA:Math.round(via||0),Kommentar:(inp.k||'')});
+    } else {
       const{dg,fs,via}=calcDG(r);
-      return[r.ordreNr,r.pl,r.type,r.beskr.substring(0,80),r.kunde,r.totOmk,r.fakt,
-        r.dg!=null?+(r.dg*100).toFixed(1):null,+(dg*100).toFixed(1),
-        fs!=null?Math.round(fs):null,via!=null?Math.round(via):null,inp.k];
-    }),
-  ]),'3 – DG-bekreftelses');
-  // Sheet 4: Full QA
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['Ordre','Status','Type','PL','Kunde','Totale omk.','DG%','Norm DG%','Kontraktssum','Fakturert','VIA','Risikoklasse','QA Flagg'],
-    ...ACTIVE.map(r=>[r.ordreNr,r.status,r.type,r.pl,r.kunde,r.totOmk,
-      r.dg!=null?+(r.dg*100).toFixed(1):null,r.normDG!=null?+(r.normDG*100).toFixed(1):null,
-      r.tilbud,r.fakt,r.via,r.risk,r.flags.map(f=>f.t).join(' | ')]),
-  ]),'4 – Komplett QA');
-  XLSX.writeFile(wb,`Minel_VIA_${period.replace(/\s/g,'_')}_${name.split(' ')[0]}.xlsx`);
+      const inp=DGI[r.ordreNr]||{};
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,PåløpteKostnader:r.totOmk,Fakturert:r.fakt,DGSystem:r.dg!=null?Math.round(r.dg*1000)/10:null,DGBekreftet:Math.round(dg*1000)/10,ForventetSalgsverdi:Math.round(fs||0),VIA:Math.round(via||0),Begrunnelse:(inp.k||'')});
+    }
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
+  XLSX.writeFile(wb,'POC_DG_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+
+function expHist(){
+  const hist=getHist();
+  if(!hist.length){alert('Ingen historikk å eksportere.');return;}
+  const rows=[];
+  hist.forEach(h=>h.projects.forEach(p=>rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,Tilbud:p.tilbud,Kostnader:p.totOmk,Fakturert:p.fakt,VIA:p.via,DG:p.dg,Risiko:p.risk})));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Historikk',ws);
+  XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+
+function clearHist(){
+  if(confirm('Slette all historikk? Dette kan ikke angres.')){
+    localStorage.removeItem(HIST_KEY);
+    rHist();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// EXPORT POC only
+// TABS + RESET
 // ══════════════════════════════════════════════════════════════════════════════
-function expPOC(){expReport('(eksport)','',document.getElementById('aperiod').textContent);}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TABS / RESET
-// ══════════════════════════════════════════════════════════════════════════════
-const TABS=['dash','qa','risk','poc','hist'];
-function ST(id){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===id));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${id}`));
+function ST(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const tabs={'dash':0,'qa':1,'risk':2,'poc':3,'hist':4};
+  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
 }
+
 function resetApp(){
   ACTIVE=[];POC={};DGI={};LOCKED=false;
-  document.getElementById('app').style.display='none';
   document.getElementById('upload').style.display='block';
-  document.getElementById('fi').value='';
-  document.getElementById('lbar').style.display='none';
-  document.getElementById('btnlock').disabled=false;
-  document.getElementById('btnlock').textContent='🔒 Lås og generer rapport';
-  document.getElementById('api-btn').disabled=false;
-  document.getElementById('api-status').textContent='';
+  document.getElementById('app').style.display='none';
+  document.getElementById('api-status').innerHTML='';
   document.getElementById('api-err').style.display='none';
-  ['qp','pp'].forEach(id=>{const s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
-  ['qt'].forEach(id=>{const s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
+  document.getElementById('api-btn').disabled=false;
+  document.getElementById('btnlock').textContent='🔒 Lås og generer rapport';
+  document.getElementById('btnlock').disabled=false;
+  ['qp','pp','qt'].forEach(id=>{const s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
+  document.getElementById('co-sel').value='';
   ST('dash');
-  // Show history shortcut on upload screen
-  const hist=getHist();
-  const w=document.getElementById('hist-btn-wrap');
-  if(hist.length){
-    w.innerHTML=`<button class="btn btn-dark" onclick="showHistOnly()">📈 Vis historikk (${hist.length} ${hist.length===1?'periode':'perioder'} lagret)</button>`;
-  } else w.innerHTML='';
 }
-function showHistOnly(){
-  document.getElementById('upload').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('atitle').textContent='Historikkvisning (ingen ny fil lastet)';
-  document.getElementById('aperiod').textContent='';
-  document.getElementById('btnlock').style.display='none';
-  rHist();ST('hist');
-}
-
-// Init: show history button if history exists
-(()=>{const h=getHist();const w=document.getElementById('hist-btn-wrap');
-  if(h.length)w.innerHTML=`<button class="btn btn-dark" onclick="showHistOnly()">📈 Vis historikk (${h.length} ${h.length===1?'periode':'perioder'} lagret)</button>`;
-})();
 </script>
 </body>
 </html>
