@@ -287,46 +287,24 @@ const CONFIG = {
   // ──────────────────────────────────────────
 };
 
-// ════════════════════════════════════════════
-// AZURE AD + MSAL.js
-// ════════════════════════════════════════════
-const GRAPH = 'https://graph.microsoft.com/v1.0';
-const SP_SITE = 'elkonorno.sharepoint.com:/sites/IntranettMinel:';
-let msalApp = null, _scopes = ['https://graph.microsoft.com/Sites.Selected'];
-
-try {
-  const AZURE = {
-    clientId: 'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',
-    tenantId: '7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',
-  };
-  msalApp = new msal.PublicClientApplication({
-    auth: { clientId: AZURE.clientId, authority: `https://login.microsoftonline.com/${AZURE.tenantId}`, redirectUri: location.href.split('?')[0] },
-    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
-  });
-  console.log('[MSAL] Initialisert OK');
-} catch(e) {
-  console.warn('[MSAL] Init feilet — bruker localStorage-modus:', e.message);
+const GRAPH='https://graph.microsoft.com/v1.0';
+const SP_SITE='elkonorno.sharepoint.com:/sites/IntranettMinel:';
+let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected'];
+try{
+  msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});
+  console.log('[MSAL] OK');
+}catch(e){console.warn('[MSAL] feil:',e.message);}
+async function getToken(){
+  if(!msalApp)throw new Error('MSAL N/A');
+  const accs=msalApp.getAllAccounts();
+  if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}
+  try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}
+  catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}
 }
-
-async function getToken() {
-  if (!msalApp) throw new Error('MSAL ikke tilgjengelig');
-  const accs = msalApp.getAllAccounts();
-  if (accs.length === 0) {
-    // Redirect-flyt — lagre destinasjon og omdiriger til Microsoft
-    sessionStorage.setItem('msal_post_login', localStorage.getItem('minel_company')||'');
-    await msalApp.loginRedirect({scopes:_scopes});
-    return null; // siden lastes på nytt etter redirect
-  }
-  try { const r = await msalApp.acquireTokenSilent({scopes:_scopes, account:accs[0]}); return r.accessToken; }
-  catch(e) {
-    sessionStorage.setItem('msal_post_login', localStorage.getItem('minel_company')||'');
-    await msalApp.acquireTokenRedirect({scopes:_scopes});
-    return null;
-  }
-}
-async function gFetch(url, opts={}) {
-  const tok = await getToken();
-  return fetch(url, {...opts, headers: {'Authorization':'Bearer '+tok, 'Content-Type':'application/json', ...(opts.headers||{})}});
+async function gFetch(url,opts={}){
+  const tok=await getToken();
+  if(!tok)return new Response(null,{status:0});
+  return fetch(url,{...opts,headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json',...(opts.headers||{})}});
 }
 </script>
 <!-- ══════════════════════════════════════════ -->
@@ -340,12 +318,12 @@ async function gFetch(url, opts={}) {
     </div>
     <p class="login-sub">Velg ditt selskap for å logge inn. Du vil kun kunne registrere prosjekter for ditt eget selskap.</p>
 
-    <div class="login-label">Konsernvisning</div>
-    <div id="msLoginBox" style="display:none;margin-bottom:20px;padding:16px;background:#f0f4ff;border-radius:12px;border:1.5px solid #c7d4f8;text-align:center">
-      <p style="margin-bottom:10px;color:#1C2344;font-weight:600;font-size:.95rem">Logg inn med Microsoft for å bruke dashbordet</p>
+    <div id="msLoginBox" style="margin-bottom:16px;padding:14px;background:#f0f4ff;border-radius:12px;border:1.5px solid #c7d4f8;text-align:center">
+      <p style="margin-bottom:10px;color:#1C2344;font-weight:600;font-size:.92rem">Logg inn med Microsoft</p>
       <button onclick="msLogin()" style="background:#1C2344;color:white;border:none;border-radius:9px;padding:10px 28px;font-size:.9rem;font-weight:700;cursor:pointer">🔑 Logg inn med Microsoft</button>
     </div>
-    <div id="coSelBox">
+    <div id="coSelBox" style="display:none">
+    <div class="login-label">Konsernvisning</div>
     <div class="admin-card" id="adminCard" onclick="selectCompany('__admin__')">
       <div style="width:36px;height:36px;background:#C8102E;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏢</div>
       <div>
@@ -358,6 +336,7 @@ async function gFetch(url, opts={}) {
     <div class="co-grid" id="coGrid"></div>
 
     <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Logg inn</button>
+    </div><!-- /coSelBox -->
   </div>
 </div>
 
@@ -759,6 +738,7 @@ function doLogin(){
 function selectCompany(name){
   currentCompany=name;
   localStorage.setItem('minel_company',name);
+  document.getElementById('app').style.display='block';
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   initApp();
@@ -1601,11 +1581,10 @@ async function loadProjects(){
   try{
     const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`;
     const r=await gFetch(url);
-    if(r.status===404){console.log('[Graph] Ingen lagret data ennå');}
-    else if(r.ok){const j=await r.json();if(Array.isArray(j))allProjects=j;}
-    else throw new Error('HTTP '+r.status);
+    if(r&&r.status===404){console.log('[Graph] ingen data');}
+    else if(r&&r.ok){const j=await r.json();if(Array.isArray(j))allProjects=j;}
+    else throw new Error('HTTP '+(r?.status||'?'));
   } catch(e){
-    console.warn('[Graph] loadProjects feilet:',e.message);
     try{const ls=localStorage.getItem('minel_projects');if(ls)allProjects=JSON.parse(ls);}catch(_){}
   }
   // Rydd bort ev. testdata fra utvikling
@@ -1621,10 +1600,22 @@ async function saveToSharePoint(){
   const payload=JSON.stringify(allProjects);
   try{localStorage.setItem('minel_projects',payload);}catch(_){}
   try{
-    const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`;
-    const r=await gFetch(url,{method:'PUT',body:payload});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-  } catch(e){console.warn('[Graph] saveToSharePoint feilet:',e.message);}
+    const gr=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:payload});
+    if(gr&&!gr.ok)console.warn('[Graph] save HTTP',gr.status);
+  }catch(e){console.warn('[Graph] save:',e.message);}
+  try{
+    const ctx=await fetch(`${location.origin}/_api/contextinfo`,{
+      method:'POST',headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
+    });
+    if(!ctx.ok) return;
+    const digest=(await ctx.json()).FormDigestValue;
+    await fetch(`${location.origin}${CONFIG.sharepointFil}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-RequestDigest':digest,
+               'IF-MATCH':'*','X-HTTP-Method':'PUT','Accept':'application/json;odata=nometadata'},
+      body:payload
+    });
+  } catch(e){ /* localStorage er backup */ }
 }
 
 function showToast(msg,ok=true){
@@ -1902,38 +1893,29 @@ async function postToSharePointList(p){
   }catch(e){console.warn('[SP] feilet:',e.message);}
 }
 
-// STARTUP — MSAL
+// STARTUP
 // ════════════════════════════════════════════
 (async()=>{
-  if(msalApp){
-    try{
-      const resp = await msalApp.handleRedirectPromise();
-      if(resp) console.log('[MSAL] Redirect innlogging OK:', resp.account?.username);
-    }catch(e){console.warn('MSAL redirect feil:',e);}
-  }
+  if(msalApp){try{const r=await msalApp.handleRedirectPromise();if(r)console.log('[MSAL] redirect OK:',r.account?.username);}catch(e){console.warn('[MSAL]',e);}}
   buildLoginGrid();
   const accs=msalApp?msalApp.getAllAccounts():[];
-  if(msalApp && accs.length===0){
+  if(msalApp&&accs.length===0){
     document.getElementById('msLoginBox').style.display='block';
     document.getElementById('coSelBox').style.display='none';
     document.getElementById('loginScreen').style.display='flex';
-  } else {
+  }else{
     document.getElementById('msLoginBox').style.display='none';
     document.getElementById('coSelBox').style.display='block';
-    // Gjenopprett selskapsvalg etter redirect
-    const _post = sessionStorage.getItem('msal_post_login');
-    const _saved = _post || localStorage.getItem('minel_company');
+    const _post=sessionStorage.getItem('msal_post_login');
+    const _saved=_post||localStorage.getItem('minel_company');
     sessionStorage.removeItem('msal_post_login');
     if(_saved){selectCompany(_saved);}
     else{document.getElementById('loginScreen').style.display='flex';}
   }
 })();
-
 async function msLogin(){
-  try{
-    sessionStorage.setItem('msal_post_login', '');
-    await msalApp.loginRedirect({scopes:_scopes});
-  }catch(e){alert('Innlogging feilet: '+e.message);}
+  try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}
+  catch(e){alert('Innlogging feilet: '+e.message);}
 }
 
 </script>
