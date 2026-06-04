@@ -311,9 +311,18 @@ try {
 async function getToken() {
   if (!msalApp) throw new Error('MSAL ikke tilgjengelig');
   const accs = msalApp.getAllAccounts();
-  if (accs.length === 0) { const r = await msalApp.loginPopup({scopes:_scopes}); return r.accessToken; }
+  if (accs.length === 0) {
+    // Redirect-flyt — lagre destinasjon og omdiriger til Microsoft
+    sessionStorage.setItem('msal_post_login', localStorage.getItem('minel_company')||'');
+    await msalApp.loginRedirect({scopes:_scopes});
+    return null; // siden lastes på nytt etter redirect
+  }
   try { const r = await msalApp.acquireTokenSilent({scopes:_scopes, account:accs[0]}); return r.accessToken; }
-  catch(e) { const r = await msalApp.acquireTokenPopup({scopes:_scopes}); return r.accessToken; }
+  catch(e) {
+    sessionStorage.setItem('msal_post_login', localStorage.getItem('minel_company')||'');
+    await msalApp.acquireTokenRedirect({scopes:_scopes});
+    return null;
+  }
 }
 async function gFetch(url, opts={}) {
   const tok = await getToken();
@@ -1897,7 +1906,10 @@ async function postToSharePointList(p){
 // ════════════════════════════════════════════
 (async()=>{
   if(msalApp){
-    try{await msalApp.handleRedirectPromise();}catch(e){console.warn('MSAL redirect:',e);}
+    try{
+      const resp = await msalApp.handleRedirectPromise();
+      if(resp) console.log('[MSAL] Redirect innlogging OK:', resp.account?.username);
+    }catch(e){console.warn('MSAL redirect feil:',e);}
   }
   buildLoginGrid();
   const accs=msalApp?msalApp.getAllAccounts():[];
@@ -1908,7 +1920,10 @@ async function postToSharePointList(p){
   } else {
     document.getElementById('msLoginBox').style.display='none';
     document.getElementById('coSelBox').style.display='block';
-    const _saved=localStorage.getItem('minel_company');
+    // Gjenopprett selskapsvalg etter redirect
+    const _post = sessionStorage.getItem('msal_post_login');
+    const _saved = _post || localStorage.getItem('minel_company');
+    sessionStorage.removeItem('msal_post_login');
     if(_saved){selectCompany(_saved);}
     else{document.getElementById('loginScreen').style.display='flex';}
   }
@@ -1916,9 +1931,8 @@ async function postToSharePointList(p){
 
 async function msLogin(){
   try{
-    await msalApp.loginPopup({scopes:_scopes});
-    document.getElementById('msLoginBox').style.display='none';
-    document.getElementById('coSelBox').style.display='block';
+    sessionStorage.setItem('msal_post_login', '');
+    await msalApp.loginRedirect({scopes:_scopes});
   }catch(e){alert('Innlogging feilet: '+e.message);}
 }
 
