@@ -25,11 +25,11 @@ header{background:var(--navy);display:flex;align-items:center;}
 .hd-main h1{font-size:1rem;font-weight:700;color:#fff;}
 .hd-main p{font-size:.78rem;color:#8fa4cc;margin-top:2px;}
 .hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;}
-#upload{max-width:620px;margin:56px auto;text-align:center;}
-#dz{border:2.5px dashed var(--red);border-radius:14px;background:#fff;padding:52px 28px;cursor:pointer;transition:background .15s;}
+#upload{max-width:680px;margin:48px auto;text-align:center;}
+#dz{border:2.5px dashed var(--red);border-radius:14px;background:#fff;padding:48px 28px;cursor:pointer;transition:background .15s;}
 #dz:hover,#dz.over{background:var(--redlight);}
-#dz svg{width:52px;height:52px;stroke:var(--red);}
-#dz h2{font-size:1.05rem;font-weight:700;color:var(--dark);margin:14px 0 6px;}
+#dz svg{width:48px;height:48px;stroke:var(--red);}
+#dz h2{font-size:1.05rem;font-weight:700;color:var(--dark);margin:12px 0 6px;}
 #dz p{color:#666;font-size:.88rem;}
 #fi{display:none;}
 .btn{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:.87rem;font-weight:600;cursor:pointer;font-family:var(--font);}
@@ -108,6 +108,13 @@ input.ci:disabled{background:#f0f0f0;color:#666;}
 .modal input:focus{outline:none;border-color:var(--red);}
 .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
 footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20px;}
+.api-panel{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.09);overflow:hidden;margin-bottom:18px;}
+.api-header{background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;gap:10px;}
+.api-body{padding:18px 20px;}
+.api-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px;}
+.api-field{display:flex;flex-direction:column;gap:4px;}
+.api-field label{font-size:.78rem;color:#666;font-weight:600;}
+.api-field select,.api-field input[type=date]{border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;font-family:var(--font);font-size:.88rem;background:#fff;}
 </style>
 </head>
 <body>
@@ -118,33 +125,43 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
   <div class="hd-main">
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
-    <p>Last opp perioderapport fra ERP for automatisk QA og periodeavslutning</p>
+    <p>Hent perioderegnskap direkte fra Ordrestyring eller last opp Excel-rapport</p>
   </div>
-  <span class="hd-badge">v5.1</span>
+  <span class="hd-badge">v6.0</span>
 </header>
 
 <div id="upload">
-  <div style="background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.09);overflow:hidden;margin-bottom:18px;">
-    <div style="background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;gap:10px;">
+  <div class="api-panel">
+    <div class="api-header">
       <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-      <span style="font-weight:700;font-size:.95rem;">Hent direkte fra Ordrestyring</span>
-      <span style="margin-left:auto;font-size:.75rem;opacity:.7;">Ingen Excel-eksport nødvendig</span>
+      <span style="font-weight:700;font-size:.95rem;">Hent perioderegnskap fra Ordrestyring</span>
+      <span style="margin-left:auto;font-size:.75rem;opacity:.7;">Bygger din egen PA-modul 🚀</span>
     </div>
-    <div style="padding:18px 20px;">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <select id="co-sel" style="border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;font-family:var(--font);font-size:.88rem;min-width:240px;background:#fff;">
-          <option value="">— Velg selskap —</option>
-        </select>
-        <button class="btn btn-dark" id="api-btn" onclick="fetchFromOS()">
+    <div class="api-body">
+      <div class="api-row">
+        <div class="api-field">
+          <label>Selskap</label>
+          <select id="co-sel" style="min-width:240px;">
+            <option value="">— Velg selskap —</option>
+          </select>
+        </div>
+        <div class="api-field">
+          <label>Periodeslutt (t.o.m. dato)</label>
+          <input type="date" id="period-date" value="">
+        </div>
+        <button class="btn btn-dark" id="api-btn" onclick="fetchFromOS()" style="align-self:flex-end;">
           <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-          Hent data
+          Hent perioderegnskap
         </button>
-        <span id="api-status" style="font-size:.83rem;color:#666;"></span>
+        <span id="api-status" style="font-size:.83rem;color:#666;align-self:flex-end;"></span>
       </div>
       <div id="api-err" style="display:none;background:#FFF8E1;border-left:4px solid var(--amber);border-radius:6px;padding:12px 16px;font-size:.82rem;color:var(--amber);line-height:1.7;"></div>
-      <div style="font-size:.76rem;color:#aaa;margin-top:4px;">API-nøkler er konfigurert i appen. Kontakt Øyvind for å legge til nøkkel for ditt selskap.</div>
+      <div style="font-size:.76rem;color:#aaa;margin-top:4px;">
+        Periodeslutt = siste bokføringsdag i måneden (f.eks. 31.05.2026). Henter alle prosjekter med økonomidata opp til denne datoen.
+      </div>
     </div>
   </div>
+
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
     <div style="flex:1;height:1px;background:var(--border);"></div>
     <span style="white-space:nowrap;font-size:.8rem;color:#aaa;font-weight:600;text-transform:uppercase;">eller importer fra Excel</span>
@@ -253,13 +270,21 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v5.1 · Data behandles lokalt · Historikk lagres i nettleseren</footer>
+<footer>Minel AS · VIA QA v6.0 · Data behandles lokalt · Historikk lagres i nettleseren</footer>
 
 <script>
 var ACTIVE=[], POC={}, DGI={}, LOCKED=false;
 var HIST_KEY='minel_via_history_v1';
 var ROUND=new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50,.55,.60,.65,.70]);
 var VSTATUS=new Set(['I arbeid','Klar for fakturering','Venter på elektriker','Åpen']);
+
+// ── Init: sett standarddato til siste dag i forrige måned ─────────────────────
+(function(){
+  var d=new Date();
+  d.setDate(0); // siste dag i forrige måned
+  var iso=d.toISOString().substring(0,10);
+  document.getElementById('period-date').value=iso;
+})();
 
 // ── Ordrestyring GraphQL ───────────────────────────────────────────────────────
 var OS_GRAPHQL='https://graphql.ordrestyring.dk/graphql';
@@ -297,123 +322,61 @@ function gqlPost(apiKey,query,variables){
   });
 }
 
-function firstOf(names, list){
-  for(var i=0;i<names.length;i++){if(list.indexOf(names[i])>=0)return names[i];}
-  return null;
-}
+// Hoved-query med riktige feltnavn funnet via introspection
+// economy.expenses       = Totale omk. (NOK)
+// economy.revisedOffer   = Kontraktssum / tilbudspris
+// economy.acontoSalesprice = Fakturert (NOK)
+// economy.revenue        = Periodisert inntekt (NOK)
+// economy.expectedCoverageRatio = Forventet DG%
+// economy.contributionMarginDifference = VIA (difference)
+var OS_CASES_QUERY='query($cursor:String,$updatedBefore:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC},filter:{updatedBefore:$updatedBefore}){items{id caseNumber description status{name} caseType{name} customer{name} responsibleUser{name} economy{expenses revisedOffer acontoSalesprice revenue expectedCoverageRatio contributionMarginDifference}} nextCursor}}';
+
+// Fallback uten datofilter (hvis filter ikke støttes)
+var OS_CASES_QUERY_NOFILTER='query($cursor:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{id caseNumber description status{name} caseType{name} customer{name} responsibleUser{name} economy{expenses revisedOffer acontoSalesprice revenue expectedCoverageRatio contributionMarginDifference}} nextCursor}}';
 
 function fetchFromOS(){
   var sel=document.getElementById('co-sel');
   var idx=parseInt(sel.value);
   if(isNaN(idx)){alert('Velg et selskap først.');return;}
   var co=OS_COMPANIES[idx];
+  var periodDate=document.getElementById('period-date').value;
+  if(!periodDate){alert('Velg periodeslutt-dato.');return;}
+
   var btn=document.getElementById('api-btn');
   var stat=document.getElementById('api-status');
   var errDiv=document.getElementById('api-err');
   btn.disabled=true; errDiv.style.display='none';
-  stat.innerHTML='⏳ Henter skjemainformasjon…';
+  stat.innerHTML='⏳ Henter ordrer…';
 
-  // Steg 1: Introspect alle relevante typer inkludert Case
-  var introspect=[
-    '{',
-    'caseFields:__type(name:"Case"){fields{name}}',
-    'caseStatus:__type(name:"CaseStatus"){fields{name}}',
-    'caseType:__type(name:"CaseType"){fields{name}}',
-    'customer:__type(name:"Customer"){fields{name}}',
-    'userType:__type(name:"User"){fields{name}}',
-    '}'
-  ].join(' ');
+  var allCases=[],cursor=null,page=1;
+  var useFilter=true;
 
-  gqlPost(co.key,introspect).then(function(schema){
-    // Felt på Case
-    var cf=(schema.caseFields&&schema.caseFields.fields||[]).map(function(f){return f.name;});
-    console.log('Case-felter:',cf);
+  function fetchPage(query,vars){
+    gqlPost(co.key,query,vars).then(function(data){
+      var result=data&&data.cases;
+      if(!result) throw new Error('Uventet API-respons');
+      allCases=allCases.concat(result.items||[]);
+      if(result.nextCursor){
+        cursor=result.nextCursor;page++;
+        stat.innerHTML='⏳ Henter side '+page+' ('+allCases.length+' hittil)…';
+        fetchPage(query,{cursor:cursor,updatedBefore:periodDate});
+      } else {
+        processResults(allCases,co,periodDate);
+      }
+    }).catch(function(e){
+      // Hvis filter feiler, prøv uten filter
+      if(useFilter&&e.message.indexOf('filter')>=0){
+        useFilter=false;
+        allCases=[];cursor=null;page=1;
+        stat.innerHTML='⏳ Henter uten datofilter (filtrerer lokalt)…';
+        fetchPage(OS_CASES_QUERY_NOFILTER,{cursor:null});
+      } else {
+        handleErr(e);
+      }
+    });
+  }
 
-    // Felt på nestede typer
-    var sF=firstOf(['name','label','value','title'],
-                   (schema.caseStatus&&schema.caseStatus.fields||[]).map(function(f){return f.name;})) || 'id';
-    var tF=firstOf(['name','label','value','title'],
-                   (schema.caseType&&schema.caseType.fields||[]).map(function(f){return f.name;})) || 'id';
-    var cF=firstOf(['name','companyName','title','label'],
-                   (schema.customer&&schema.customer.fields||[]).map(function(f){return f.name;})) || 'id';
-    var uF=firstOf(['name','fullName','displayName','firstName'],
-                   (schema.userType&&schema.userType.fields||[]).map(function(f){return f.name;})) || 'id';
-
-    // Case-felter vi trenger
-    var fCost   =firstOf(['totalCost','totalExpenses','costs','costsTotal','totalCosts','expenses','totalAmount'],cf);
-    var fInv    =firstOf(['invoicedTotal','invoiced','totalInvoiced','billedTotal','billed','invoicedAmount'],cf);
-    var fSales  =firstOf(['expectedSalesValue','salesValue','expectedRevenue','accrued','accruedRevenue','revenue'],cf);
-    var fMargin =firstOf(['expectedMargin','margin','expectedDg','dg','marginPct','forecastedMargin','grossMargin'],cf);
-    var fTech   =firstOf(['mainTechnician','technician','projectManager','responsible','assignee','owner'],cf);
-    var fStatus =firstOf(['status','caseStatus'],cf);
-    var fType   =firstOf(['caseType','type'],cf);
-    var fCustomer=firstOf(['customer','client','debtor'],cf);
-
-    console.log('Mappede Case-felter:',{fCost,fInv,fSales,fMargin,fTech,fStatus,fType,fCustomer});
-    stat.innerHTML='⏳ Henter ordrer…';
-
-    // Bygg query dynamisk
-    var items=['id','caseNumber','description','offerTotal'];
-    if(fStatus) items.push(fStatus+'{'+sF+'}'); else items.push('status{id}');
-    if(fType)   items.push(fType+'{'+tF+'}');
-    if(fCustomer) items.push(fCustomer+'{'+cF+'}');
-    if(fTech)   items.push(fTech+'{'+uF+'}');
-    if(fCost)   items.push(fCost);
-    if(fInv)    items.push(fInv);
-    if(fSales)  items.push(fSales);
-    if(fMargin) items.push(fMargin);
-
-    var query='query($cursor:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{'+items.join(' ')+'} nextCursor}}';
-
-    // Steg 2: Hent alle ordrer
-    var allCases=[],cursor=null,page=1;
-    function nextPage(){
-      stat.innerHTML='⏳ Henter side '+page+'…';
-      gqlPost(co.key,query,{cursor:cursor}).then(function(data){
-        var result=data&&data.cases;
-        if(!result) throw new Error('Uventet API-respons');
-        allCases=allCases.concat(result.items||[]);
-        if(result.nextCursor){cursor=result.nextCursor;page++;nextPage();}
-        else{
-          stat.innerHTML='✅ Hentet '+allCases.length+' ordrer. Behandler…';
-          var gn=function(v){var n=parseFloat(v);return isNaN(n)?null:n;};
-          var rows=allCases.map(function(c){
-            var statusObj=fStatus?c[fStatus]:c.status;
-            var typeObj=fType?c[fType]:c.caseType;
-            var custObj=fCustomer?c[fCustomer]:c.customer;
-            var techObj=fTech?c[fTech]:null;
-            var dg=gn(fMargin?c[fMargin]:null);
-            if(dg!=null&&dg>1) dg=dg/100;
-            return{
-              ordreNr:String(c.caseNumber||c.id||'').trim(),
-              status:(statusObj&&statusObj[sF])||'I arbeid',
-              type:(typeObj&&typeObj[tF])||'',
-              beskr:String(c.description||'').replace(/[\n\r\xa0]+/g,' ').trim(),
-              kunde:(custObj&&custObj[cF])||'',
-              pl:(techObj&&techObj[uF])||'',
-              totOmk:gn(fCost?c[fCost]:null),
-              dg:dg,
-              tilbud:gn(c.offerTotal),
-              fakt:gn(fInv?c[fInv]:null),
-              via:gn(fSales?c[fSales]:null)
-            };
-          }).filter(function(r){return r.ordreNr;});
-
-          var active=rows.filter(function(r){return VSTATUS.has(r.status);});
-          var finalRows=active.length>0?active:rows;
-          console.log('Statuser funnet:',[...new Set(rows.map(function(r){return r.status;}))]);
-
-          if(!finalRows.length){
-            stat.innerHTML='⚠️ Ingen ordrer funnet.';
-            btn.disabled=false;return;
-          }
-          document.getElementById('lentity').value=co.name;
-          parseRows(finalRows,co.name+' (Ordrestyring API)',new Date().toLocaleDateString('no',{month:'long',year:'numeric'}));
-        }
-      }).catch(handleErr);
-    }
-    nextPage();
-  }).catch(handleErr);
+  fetchPage(OS_CASES_QUERY,{cursor:null,updatedBefore:periodDate});
 
   function handleErr(e){
     btn.disabled=false;stat.innerHTML='';
@@ -424,6 +387,65 @@ function fetchFromOS(){
     errDiv.style.display='block';
     console.error('OS error:',e);
   }
+
+  function processResults(cases,co,periodDate){
+    var gn=function(v){var n=parseFloat(v);return isNaN(n)?null:n;};
+    var cutoff=new Date(periodDate+'T23:59:59');
+
+    var rows=cases.map(function(c){
+      var eco=c.economy||{};
+      var dg=gn(eco.expectedCoverageRatio);
+      // DG% kan komme som 0-100 eller 0-1 — normaliser til desimal
+      if(dg!=null&&dg>1) dg=dg/100;
+
+      var totOmk=gn(eco.expenses);
+      var tilbud=gn(eco.revisedOffer)||gn(c.offerTotal);
+      var fakt=gn(eco.acontoSalesprice);
+      var periInnt=gn(eco.revenue);
+      // VIA = Periodisert inntekt - Fakturert
+      var via=periInnt!=null&&fakt!=null?periInnt-fakt:null;
+      // Alternativt bruk contributionMarginDifference direkte
+      if(via==null) via=gn(eco.contributionMarginDifference);
+
+      var statusName=(c.status&&c.status.name)||'';
+      var typeName=(c.caseType&&c.caseType.name)||'';
+      var kundeName=(c.customer&&c.customer.name)||'';
+      var plName=(c.responsibleUser&&c.responsibleUser.name)||'';
+
+      return{
+        ordreNr:String(c.caseNumber||c.id||'').trim(),
+        status:statusName,
+        type:typeName,
+        beskr:String(c.description||'').replace(/[\n\r\xa0]+/g,' ').trim(),
+        kunde:kundeName,
+        pl:plName,
+        totOmk:totOmk,
+        dg:dg,
+        tilbud:tilbud,
+        fakt:fakt,
+        via:via,
+        _eco:eco  // behold rå economy for debugging
+      };
+    }).filter(function(r){return r.ordreNr;});
+
+    // Filtrer til aktive statuser (eller vis alle om ingen matcher)
+    var active=rows.filter(function(r){return VSTATUS.has(r.status);});
+    // Logg statuser for debugging
+    var allStatuses=[...new Set(rows.map(function(r){return r.status;}))];
+    console.log('Statuser funnet:',allStatuses);
+    console.log('Første 3 rå economy-objekter:',cases.slice(0,3).map(function(c){return c.economy;}));
+
+    var finalRows=active.length>0?active:rows;
+    stat.innerHTML='✅ Hentet '+finalRows.length+' aktive ordrer (av '+rows.length+' totalt). Behandler…';
+
+    // Formater periode
+    var d=new Date(periodDate);
+    var prd=d.toLocaleDateString('no',{month:'long',year:'numeric'});
+
+    document.getElementById('lentity').value=co.name;
+    parseRows(finalRows,co.name+' (Ordrestyring API – t.o.m. '+periodDate+')',prd);
+    document.getElementById('api-btn').disabled=false;
+  }
 }
 
 // ── Excel-import ──────────────────────────────────────────────────────────────
@@ -433,7 +455,7 @@ dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');go(e.dataTransfer.files[0]);});
 document.getElementById('fi').addEventListener('change',function(e){go(e.target.files[0]);});
 function go(f){
-  if(!f) return;
+  if(!f)return;
   var r=new FileReader();
   r.onload=function(e){
     var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
@@ -464,7 +486,7 @@ function parse(raw,fname){
   parseRows(rows,fname);
 }
 
-// ── Core ──────────────────────────────────────────────────────────────────────
+// ── Core pipeline ─────────────────────────────────────────────────────────────
 function parseRows(rows,sourceName,periodOverride){
   ACTIVE=rows;
   var ts={},tc={};
@@ -509,7 +531,7 @@ function parseRows(rows,sourceName,periodOverride){
   rDash();rQA();rRisk();rPOC();rHist();
 }
 
-// ── Format ─────────────────────────────────────────────────────────────────
+// ── Format ────────────────────────────────────────────────────────────────────
 function NK(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';}
 function NR(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));}
 function PC(v){return v==null?'–':(v*100).toFixed(1)+' %';}
@@ -521,7 +543,7 @@ function piChange(id,f,el){var v=parseI(el.value);if(f==='timer'||f==='tk'||f===
 function rb(r){return r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';}
 function fh(fs){return fs.map(function(f){return '<span class="flag '+f.c+'">'+f.t+'</span>';}).join('');}
 
-// ── Dashboard ─────────────────────────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 function rDash(){
   var a=ACTIVE;
   var tv=a.reduce(function(s,r){return s+(r.via||0);},0);
@@ -568,7 +590,6 @@ function rDash(){
       '<td class="c">'+(p.h>0?'<span style="color:var(--red);font-weight:800">'+p.h+'</span>':'–')+'</td>'+
       '<td class="c">'+p.rn+'/'+p.c+'</td></tr>';}).join('')+'</tbody>';
 }
-// ── QA ────────────────────────────────────────────────────────────────────
 function rQA(){
   var s=document.getElementById('qs').value.toLowerCase();
   var rf=document.getElementById('qr').value,pl=document.getElementById('qp').value;
@@ -596,7 +617,6 @@ function rQA(){
         '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
     }).join('')+'</tbody>';
 }
-// ── Risk ──────────────────────────────────────────────────────────────────
 function rRisk(){
   var f=document.getElementById('rsel').value.split(',');
   var rows=ACTIVE.filter(function(r){return f.indexOf(r.risk)>=0;}).sort(function(a,b){return b.sc-a.sc;});
@@ -611,7 +631,6 @@ function rRisk(){
       '<td class="r" style="'+((r.via||0)<0?'color:var(--red);font-weight:700':'')+'">'+NK(r.via)+'</td>'+
       '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';}).join('')+'</tbody>';
 }
-// ── POC + DG ──────────────────────────────────────────────────────────────
 function calcPOC(r){
   var inp=POC[r.ordreNr]||{timer:0,tk:650,mat:0,k:''};
   var gk=(inp.timer||0)*inp.tk+(inp.mat||0);
@@ -633,8 +652,8 @@ function rPOC(){
   var pl=document.getElementById('pp').value;
   var stk=parseFloat(document.getElementById('stk').value)||650;
   var dis=LOCKED?'disabled':'';
-  var pocR=ACTIVE.filter(function(r){return r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl);});
-  var dgR=ACTIVE.filter(function(r){return!r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl);});
+  var pocR=ACTIVE.filter(function(r){return r.hasTilbud&&(!pl||r.pl===pl);});
+  var dgR=ACTIVE.filter(function(r){return!r.hasTilbud&&(!pl||r.pl===pl);});
   document.getElementById('poc-cnt').textContent='('+pocR.length+' prosjekter)';
   document.getElementById('dg-cnt').textContent='('+dgR.length+' prosjekter)';
   var pv=0;
@@ -663,8 +682,7 @@ function rPOC(){
         '<td class="r calc">'+(c.estDG!=null?PC(c.estDG):'–')+'</td>'+
         '<td class="r">'+NK(r.fakt)+'</td>'+
         '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
-        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
-        '</tr>';
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td></tr>';
     }).join('')+'</tbody>';
   document.getElementById('poctot').innerHTML=
     '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
@@ -692,8 +710,7 @@ function rPOC(){
         '<td class="r calc">'+NK(c.fs)+'</td>'+
         '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
         '<td class="c">'+rb(r.risk)+'</td>'+
-        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
-        '</tr>';
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td></tr>';
     }).join('')+'</tbody>';
   document.getElementById('dgtot').innerHTML=
     '<span>Prosjekter: <strong>'+dgR.length+'</strong></span>'+
@@ -702,12 +719,10 @@ function rPOC(){
 }
 function sP(id,f,v){if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''};POC[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
 function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
-
-// ── Historikk ─────────────────────────────────────────────────────────────
 function getHist(){return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}
 function saveSnap(name,entity,period){
   var hist=getHist(),pv=0,dv=0;
-  var projects=ACTIVE.filter(function(r){return r.status==='I arbeid';}).map(function(r){
+  var projects=ACTIVE.map(function(r){
     var via=null,dg=null;
     if(r.hasTilbud){var c=calcPOC(r);via=c.via;dg=c.estDG;if(c.via!=null)pv+=c.via;}
     else{var c=calcDG(r);via=c.via;dg=c.dg;if(c.via!=null)dv+=c.via;}
@@ -723,21 +738,18 @@ function saveSnap(name,entity,period){
 function rHist(){
   var hist=getHist(),el=document.getElementById('histcontent');
   if(!hist.length){el.innerHTML='<div class="hist-empty">📭 Ingen historikk enda.<br>Lås en periode for å starte historikksporing.</div>';return;}
-  var rows=hist.slice().reverse().map(function(h){
-    return'<tr><td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td>'+
-      '<td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td>'+
-      '<td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td>'+
-      '<td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td>'+
-      '<td class="c">'+h.summary.projectCount+'</td>'+
-      '<td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td></tr>';
-  }).join('');
   el.innerHTML='<div class="tw"><table>'+
     '<thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th>'+
     '<th style="text-align:right">Total VIA</th><th style="text-align:right">POC-VIA</th><th style="text-align:right">DG-VIA</th>'+
     '<th style="text-align:center">Prosjekter</th><th style="text-align:center">HØY</th></tr></thead>'+
-    '<tbody>'+rows+'</tbody></table></div>';
+    '<tbody>'+hist.slice().reverse().map(function(h){return'<tr>'+
+      '<td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td>'+
+      '<td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td>'+
+      '<td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td>'+
+      '<td class="c">'+h.summary.projectCount+'</td>'+
+      '<td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td></tr>';}).join('')+'</tbody></table></div>';
 }
-// ── Lås ──────────────────────────────────────────────────────────────────
 function openLock(){document.getElementById('lmodal').classList.add('open');}
 function closeLock(){document.getElementById('lmodal').classList.remove('open');}
 function doLock(){
@@ -752,10 +764,9 @@ function doLock(){
   rPOC();rHist();ST('hist');
   alert('Periode låst og lagret i historikk!');
 }
-// ── Eksport ───────────────────────────────────────────────────────────────
 function expPOC(){
   var rows=[];
-  ACTIVE.filter(function(r){return r.status==='I arbeid';}).forEach(function(r){
+  ACTIVE.forEach(function(r){
     if(r.hasTilbud){var c=calcPOC(r);var inp=POC[r.ordreNr]||{};
       rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,Kontraktssum:r.tilbud,PåløpteKostnader:r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),EstDG:c.estDG!=null?Math.round(c.estDG*1000)/10:null,Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});}
     else{var c=calcDG(r);var inp=DGI[r.ordreNr]||{};
@@ -774,7 +785,6 @@ function expHist(){
   XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
 }
 function clearHist(){if(confirm('Slette all historikk?')){localStorage.removeItem(HIST_KEY);rHist();}}
-// ── Tabs + Reset ──────────────────────────────────────────────────────────
 function ST(name){
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
