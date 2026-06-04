@@ -127,7 +127,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Hent perioderegnskap direkte fra Ordrestyring eller last opp Excel-rapport</p>
   </div>
-  <span class="hd-badge">v6.0</span>
+  <span class="hd-badge">v6.1</span>
 </header>
 
 <div id="upload">
@@ -157,7 +157,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       </div>
       <div id="api-err" style="display:none;background:#FFF8E1;border-left:4px solid var(--amber);border-radius:6px;padding:12px 16px;font-size:.82rem;color:var(--amber);line-height:1.7;"></div>
       <div style="font-size:.76rem;color:#aaa;margin-top:4px;">
-        Periodeslutt = siste bokføringsdag i måneden (f.eks. 31.05.2026). Henter alle prosjekter med økonomidata opp til denne datoen.
+        Periodeslutt = siste bokføringsdag i måneden (f.eks. 31.05.2026).
       </div>
     </div>
   </div>
@@ -270,7 +270,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v6.0 · Data behandles lokalt · Historikk lagres i nettleseren</footer>
+<footer>Minel AS · VIA QA v6.1 · Data behandles lokalt · Historikk lagres i nettleseren</footer>
 
 <script>
 var ACTIVE=[], POC={}, DGI={}, LOCKED=false;
@@ -278,15 +278,11 @@ var HIST_KEY='minel_via_history_v1';
 var ROUND=new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50,.55,.60,.65,.70]);
 var VSTATUS=new Set(['I arbeid','Klar for fakturering','Venter på elektriker','Åpen']);
 
-// ── Init: sett standarddato til siste dag i forrige måned ─────────────────────
 (function(){
-  var d=new Date();
-  d.setDate(0); // siste dag i forrige måned
-  var iso=d.toISOString().substring(0,10);
-  document.getElementById('period-date').value=iso;
+  var d=new Date(); d.setDate(0);
+  document.getElementById('period-date').value=d.toISOString().substring(0,10);
 })();
 
-// ── Ordrestyring GraphQL ───────────────────────────────────────────────────────
 var OS_GRAPHQL='https://graphql.ordrestyring.dk/graphql';
 var OS_COMPANIES=[
   {name:'Minel Kreativ Elektro Ski AS',  key:'qYtkWAowUUo2PbaE'},
@@ -322,17 +318,12 @@ function gqlPost(apiKey,query,variables){
   });
 }
 
-// Hoved-query med riktige feltnavn funnet via introspection
-// economy.expenses       = Totale omk. (NOK)
-// economy.revisedOffer   = Kontraktssum / tilbudspris
-// economy.acontoSalesprice = Fakturert (NOK)
-// economy.revenue        = Periodisert inntekt (NOK)
-// economy.expectedCoverageRatio = Forventet DG%
-// economy.contributionMarginDifference = VIA (difference)
-var OS_CASES_QUERY='query($cursor:String,$updatedBefore:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC},filter:{updatedBefore:$updatedBefore}){items{id caseNumber description status{name} caseType{name} customer{name} responsibleUser{name} economy{expenses revisedOffer acontoSalesprice revenue expectedCoverageRatio contributionMarginDifference}} nextCursor}}';
-
-// Fallback uten datofilter (hvis filter ikke støttes)
-var OS_CASES_QUERY_NOFILTER='query($cursor:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{id caseNumber description status{name} caseType{name} customer{name} responsibleUser{name} economy{expenses revisedOffer acontoSalesprice revenue expectedCoverageRatio contributionMarginDifference}} nextCursor}}';
+// Bekreftet via introspection:
+// CaseStatus: id, text, color, hourLocked, hourEditable, materialsLocked, protected, isUsed, editable, sortOrder
+// CaseType:   id, text, sortOrder, isUsed
+// User:       id, userName, firstName, lastName, fullName, initials, ...
+// CaseEconomy: expenses, revisedOffer, acontoSalesprice, revenue, expectedCoverageRatio, contributionMarginDifference, ...
+var OS_QUERY='query($cursor:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{id caseNumber description status{text} caseType{text} customer{name} responsibleUser{fullName} economy{expenses revisedOffer acontoSalesprice revenue expectedCoverageRatio contributionMarginDifference}} nextCursor}}';
 
 function fetchFromOS(){
   var sel=document.getElementById('co-sel');
@@ -341,7 +332,6 @@ function fetchFromOS(){
   var co=OS_COMPANIES[idx];
   var periodDate=document.getElementById('period-date').value;
   if(!periodDate){alert('Velg periodeslutt-dato.');return;}
-
   var btn=document.getElementById('api-btn');
   var stat=document.getElementById('api-status');
   var errDiv=document.getElementById('api-err');
@@ -349,37 +339,25 @@ function fetchFromOS(){
   stat.innerHTML='⏳ Henter ordrer…';
 
   var allCases=[],cursor=null,page=1;
-  var useFilter=true;
 
-  function fetchPage(query,vars){
-    gqlPost(co.key,query,vars).then(function(data){
+  function fetchPage(){
+    gqlPost(co.key,OS_QUERY,{cursor:cursor}).then(function(data){
       var result=data&&data.cases;
       if(!result) throw new Error('Uventet API-respons');
       allCases=allCases.concat(result.items||[]);
       if(result.nextCursor){
-        cursor=result.nextCursor;page++;
+        cursor=result.nextCursor; page++;
         stat.innerHTML='⏳ Henter side '+page+' ('+allCases.length+' hittil)…';
-        fetchPage(query,{cursor:cursor,updatedBefore:periodDate});
+        fetchPage();
       } else {
         processResults(allCases,co,periodDate);
       }
-    }).catch(function(e){
-      // Hvis filter feiler, prøv uten filter
-      if(useFilter&&e.message.indexOf('filter')>=0){
-        useFilter=false;
-        allCases=[];cursor=null;page=1;
-        stat.innerHTML='⏳ Henter uten datofilter (filtrerer lokalt)…';
-        fetchPage(OS_CASES_QUERY_NOFILTER,{cursor:null});
-      } else {
-        handleErr(e);
-      }
-    });
+    }).catch(handleErr);
   }
-
-  fetchPage(OS_CASES_QUERY,{cursor:null,updatedBefore:periodDate});
+  fetchPage();
 
   function handleErr(e){
-    btn.disabled=false;stat.innerHTML='';
+    btn.disabled=false; stat.innerHTML='';
     var isCORS=(e.message==='Failed to fetch'||e.name==='TypeError');
     errDiv.innerHTML=isCORS
       ?'<strong>🔒 CORS-sperre</strong> — Bruk Excel-import inntil dette er løst.'
@@ -390,61 +368,49 @@ function fetchFromOS(){
 
   function processResults(cases,co,periodDate){
     var gn=function(v){var n=parseFloat(v);return isNaN(n)?null:n;};
-    var cutoff=new Date(periodDate+'T23:59:59');
 
     var rows=cases.map(function(c){
       var eco=c.economy||{};
       var dg=gn(eco.expectedCoverageRatio);
-      // DG% kan komme som 0-100 eller 0-1 — normaliser til desimal
       if(dg!=null&&dg>1) dg=dg/100;
 
       var totOmk=gn(eco.expenses);
-      var tilbud=gn(eco.revisedOffer)||gn(c.offerTotal);
+      var tilbud=gn(eco.revisedOffer);
       var fakt=gn(eco.acontoSalesprice);
       var periInnt=gn(eco.revenue);
       // VIA = Periodisert inntekt - Fakturert
-      var via=periInnt!=null&&fakt!=null?periInnt-fakt:null;
-      // Alternativt bruk contributionMarginDifference direkte
-      if(via==null) via=gn(eco.contributionMarginDifference);
-
-      var statusName=(c.status&&c.status.name)||'';
-      var typeName=(c.caseType&&c.caseType.name)||'';
-      var kundeName=(c.customer&&c.customer.name)||'';
-      var plName=(c.responsibleUser&&c.responsibleUser.name)||'';
+      var via=(periInnt!=null&&fakt!=null)?periInnt-fakt:gn(eco.contributionMarginDifference);
 
       return{
         ordreNr:String(c.caseNumber||c.id||'').trim(),
-        status:statusName,
-        type:typeName,
+        status:(c.status&&c.status.text)||'',
+        type:(c.caseType&&c.caseType.text)||'',
         beskr:String(c.description||'').replace(/[\n\r\xa0]+/g,' ').trim(),
-        kunde:kundeName,
-        pl:plName,
-        totOmk:totOmk,
-        dg:dg,
-        tilbud:tilbud,
-        fakt:fakt,
-        via:via,
-        _eco:eco  // behold rå economy for debugging
+        kunde:(c.customer&&c.customer.name)||'',
+        pl:(c.responsibleUser&&c.responsibleUser.fullName)||'',
+        totOmk:totOmk, dg:dg, tilbud:tilbud, fakt:fakt, via:via
       };
     }).filter(function(r){return r.ordreNr;});
 
-    // Filtrer til aktive statuser (eller vis alle om ingen matcher)
-    var active=rows.filter(function(r){return VSTATUS.has(r.status);});
-    // Logg statuser for debugging
+    // Logg statuser for verifisering
     var allStatuses=[...new Set(rows.map(function(r){return r.status;}))];
     console.log('Statuser funnet:',allStatuses);
-    console.log('Første 3 rå economy-objekter:',cases.slice(0,3).map(function(c){return c.economy;}));
 
+    // Filtrer til aktive statuser; vis alle om ingen matcher
+    var active=rows.filter(function(r){return VSTATUS.has(r.status);});
     var finalRows=active.length>0?active:rows;
-    stat.innerHTML='✅ Hentet '+finalRows.length+' aktive ordrer (av '+rows.length+' totalt). Behandler…';
 
-    // Formater periode
+    if(!finalRows.length){
+      stat.innerHTML='⚠️ Ingen ordrer funnet.';
+      btn.disabled=false; return;
+    }
+
     var d=new Date(periodDate);
     var prd=d.toLocaleDateString('no',{month:'long',year:'numeric'});
-
+    stat.innerHTML='✅ '+finalRows.length+' aktive ordrer ('+rows.length+' totalt)';
     document.getElementById('lentity').value=co.name;
-    parseRows(finalRows,co.name+' (Ordrestyring API – t.o.m. '+periodDate+')',prd);
-    document.getElementById('api-btn').disabled=false;
+    parseRows(finalRows,co.name+' – t.o.m. '+periodDate,prd);
+    btn.disabled=false;
   }
 }
 
@@ -531,7 +497,6 @@ function parseRows(rows,sourceName,periodOverride){
   rDash();rQA();rRisk();rPOC();rHist();
 }
 
-// ── Format ────────────────────────────────────────────────────────────────────
 function NK(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';}
 function NR(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));}
 function PC(v){return v==null?'–':(v*100).toFixed(1)+' %';}
@@ -543,7 +508,6 @@ function piChange(id,f,el){var v=parseI(el.value);if(f==='timer'||f==='tk'||f===
 function rb(r){return r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';}
 function fh(fs){return fs.map(function(f){return '<span class="flag '+f.c+'">'+f.t+'</span>';}).join('');}
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 function rDash(){
   var a=ACTIVE;
   var tv=a.reduce(function(s,r){return s+(r.via||0);},0);
