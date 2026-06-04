@@ -8,23 +8,23 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --red:#CC0000; --reddark:#A50000; --redlight:#FFEEEE; --redborder:#F5CCCC;
-  --navy:#1A2744; --navydark:#111C33; --navylight:#E8ECF4;
-  --dark:#1C1C1C; --mid:#444;
-  --grey:#F4F4F4; --border:#E0E0E0; --white:#FFFFFF;
-  --green:#1E7A34; --greenbg:#E8F5EC; --greenlt:#276221;
-  --amber:#B36800; --amberbg:#FFF8E1;
+  --red:#CC0000;--reddark:#A50000;--redlight:#FFEEEE;--redborder:#F5CCCC;
+  --navy:#1A2744;--navydark:#111C33;
+  --dark:#1C1C1C;--mid:#444;
+  --grey:#F4F4F4;--border:#E0E0E0;--white:#FFFFFF;
+  --green:#1E7A34;--greenbg:#E8F5EC;
+  --amber:#B36800;--amberbg:#FFF8E1;
   --font:'Segoe UI',Arial,sans-serif;
 }
 body{font-family:var(--font);background:#F0F0F0;color:var(--dark);min-height:100vh;}
-header{background:var(--navy);display:flex;align-items:center;gap:0;}
+header{background:var(--navy);display:flex;align-items:center;}
 .hd-red{background:var(--red);padding:14px 22px;display:flex;align-items:center;gap:10px;}
 .hd-red svg{width:32px;height:32px;fill:#fff;}
 .hd-red span{font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:.5px;}
 .hd-main{padding:14px 22px;flex:1;}
 .hd-main h1{font-size:1rem;font-weight:700;color:#fff;}
 .hd-main p{font-size:.78rem;color:#8fa4cc;margin-top:2px;}
-.hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;white-space:nowrap;}
+.hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;}
 #upload{max-width:600px;margin:56px auto;text-align:center;}
 #dz{border:2.5px dashed var(--red);border-radius:14px;background:#fff;padding:52px 28px;cursor:pointer;transition:background .15s;}
 #dz:hover,#dz.over{background:var(--redlight);}
@@ -32,7 +32,7 @@ header{background:var(--navy);display:flex;align-items:center;gap:0;}
 #dz h2{font-size:1.05rem;font-weight:700;color:var(--dark);margin:14px 0 6px;}
 #dz p{color:#666;font-size:.88rem;}
 #fi{display:none;}
-.btn{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:.87rem;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:.87rem;font-weight:600;cursor:pointer;font-family:var(--font);}
 .btn:hover{background:var(--reddark);}
 .btn:disabled{background:#bbb;cursor:not-allowed;}
 .btn-o{background:transparent;color:var(--red);border:2px solid var(--red);}
@@ -43,31 +43,31 @@ header{background:var(--navy);display:flex;align-items:center;gap:0;}
 .btn-grn:hover{background:#155a27;}
 #app{display:none;padding:18px 24px;max-width:1750px;margin:0 auto;}
 .appbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
-.apptitle{font-size:1rem;font-weight:700;color:var(--dark);}
+.apptitle{font-size:1rem;font-weight:700;}
 .pill{background:var(--dark);color:#fff;border-radius:20px;padding:3px 14px;font-size:.8rem;font-weight:600;}
 .tabs{display:flex;gap:3px;border-bottom:3px solid var(--red);margin-bottom:18px;}
-.tab{padding:9px 17px;font-size:.88rem;cursor:pointer;border-radius:8px 8px 0 0;border:2px solid transparent;border-bottom:none;color:var(--mid);font-weight:500;background:var(--grey);}
+.tab{padding:9px 17px;font-size:.88rem;cursor:pointer;border-radius:8px 8px 0 0;border:2px solid transparent;border-bottom:none;color:var(--mid);background:var(--grey);}
 .tab.active{background:#fff;border-color:var(--red);color:var(--red);font-weight:700;}
 .tab-panel{display:none;}.tab-panel.active{display:block;}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:18px;}
 .kpi{background:#fff;border-radius:8px;padding:15px 16px;border-left:4px solid var(--red);box-shadow:0 1px 3px rgba(0,0,0,.07);}
 .kpi .lb{font-size:.73rem;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
-.kpi .vl{font-size:1.35rem;font-weight:800;color:var(--dark);}
+.kpi .vl{font-size:1.35rem;font-weight:800;}
 .kpi.g{border-left-color:var(--green);}.kpi.g .vl{color:var(--green);}
 .kpi.r{border-left-color:var(--red);}.kpi.r .vl{color:var(--red);}
 .kpi.a{border-left-color:var(--amber);}.kpi.a .vl{color:var(--amber);}
 .riskcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
-.rc{border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.rc{border-radius:8px;padding:16px;text-align:center;}
 .rc .n{font-size:2rem;font-weight:900;}.rc .l{font-size:.82rem;font-weight:700;margin-top:3px;}
 .rc.h{background:#FFE8E8;color:var(--red);}
 .rc.m{background:var(--amberbg);color:var(--amber);}
 .rc.lo{background:var(--greenbg);color:var(--green);}
-.secttitle{font-size:.92rem;font-weight:700;color:var(--dark);margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--redborder);}
+.secttitle{font-size:.92rem;font-weight:700;margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--redborder);}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 @media(max-width:860px){.two-col{grid-template-columns:1fr;}}
 .tw{border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.08);background:#fff;overflow-y:auto;overflow-x:auto;max-height:520px;}
 table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:max-content;}
-thead th{background:var(--red);color:#fff;padding:9px 10px;text-align:left;white-space:nowrap;font-weight:700;position:sticky;top:0;z-index:10;box-shadow:0 1px 0 rgba(0,0,0,.15);}
+thead th{background:var(--red);color:#fff;padding:9px 10px;text-align:left;white-space:nowrap;font-weight:700;position:sticky;top:0;z-index:10;}
 td{padding:6px 10px;border-bottom:1px solid #F0F0F0;vertical-align:middle;}
 tr:nth-child(even) td{background:#FAFAFA;}
 tr:hover td{background:#FFF0F0!important;}
@@ -91,23 +91,19 @@ input.pi:disabled{background:#f0f0f0;color:#888;}
 input.ci{width:100%;border:1.5px solid var(--border);border-radius:5px;padding:4px 7px;font-size:.78rem;font-family:var(--font);}
 input.ci.req{border-color:var(--amber);background:var(--amberbg);}
 input.ci:disabled{background:#f0f0f0;color:#666;}
-.calc{color:var(--dark);font-weight:700;}
+.calc{font-weight:700;}
 .vpos{color:#003090;font-weight:800;}
 .vneg{color:var(--red);font-weight:800;}
 .rwarn td{background:#FFFAED!important;}
-[data-tip]{position:relative;cursor:help;border-bottom:1px dotted #aaa;}
-[data-tip]:hover::after{content:attr(data-tip);position:fixed;background:var(--navy);color:#fff;padding:6px 12px;border-radius:6px;font-size:.76rem;white-space:pre-wrap;max-width:320px;z-index:999;font-weight:400;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2);}
 .totbar{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;}
-.totbar span{background:#fff;border-radius:7px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.85rem;font-weight:600;color:var(--dark);}
+.totbar span{background:#fff;border-radius:7px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.85rem;font-weight:600;}
 .hist-empty{text-align:center;padding:52px;color:#888;font-size:.95rem;}
-.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
-@media(max-width:860px){.hist-grid{grid-template-columns:1fr;}}
 .chart-box{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 5px rgba(0,0,0,.08);}
-.chart-box h3{font-size:.88rem;font-weight:700;color:var(--dark);margin-bottom:12px;}
+.chart-box h3{font-size:.88rem;font-weight:700;margin-bottom:12px;}
 .mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
 .mbg.open{display:flex;}
 .modal{background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.2);}
-.modal h2{font-size:1.05rem;font-weight:700;color:var(--dark);margin-bottom:6px;}
+.modal h2{font-size:1.05rem;font-weight:700;margin-bottom:6px;}
 .modal p{font-size:.84rem;color:#666;margin-bottom:18px;}
 .modal label{display:block;font-size:.84rem;color:#444;margin-bottom:3px;}
 .modal input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-family:var(--font);font-size:.88rem;margin-bottom:12px;}
@@ -117,7 +113,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 </style>
 </head>
 <body>
-
 <header>
   <div class="hd-red">
     <svg viewBox="0 0 40 40"><path d="M20 4 L36 12 L36 28 L20 36 L4 28 L4 12 Z" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M20 12 L20 28 M14 20 L26 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
@@ -135,7 +130,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div style="background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;gap:10px;">
       <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
       <span style="font-weight:700;font-size:.95rem;">Hent direkte fra Ordrestyring</span>
-      <span style="margin-left:auto;font-size:.75rem;opacity:.7;font-weight:400;">Ingen Excel-eksport nødvendig</span>
+      <span style="margin-left:auto;font-size:.75rem;opacity:.7;">Ingen Excel-eksport nødvendig</span>
     </div>
     <div style="padding:18px 20px;">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
@@ -152,13 +147,11 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <div style="font-size:.76rem;color:#aaa;margin-top:4px;">API-nøkler er konfigurert i appen. Kontakt Øyvind for å legge til nøkkel for ditt selskap.</div>
     </div>
   </div>
-
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
     <div style="flex:1;height:1px;background:var(--border);"></div>
     <span style="white-space:nowrap;font-size:.8rem;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">eller importer fra Excel</span>
     <div style="flex:1;height:1px;background:var(--border);"></div>
   </div>
-
   <div id="dz" onclick="document.getElementById('fi').click()">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -180,7 +173,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <button class="btn btn-dark" onclick="resetApp()">↩ Last ny fil</button>
     </div>
   </div>
-
   <div class="tabs">
     <div class="tab active" onclick="ST('dash')">📊 Dashboard</div>
     <div class="tab" onclick="ST('qa')">🔍 QA – Alle</div>
@@ -188,7 +180,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div class="tab" onclick="ST('poc')">📐 POC + DG-vurdering</div>
     <div class="tab" onclick="ST('hist')">📈 Historikk</div>
   </div>
-
   <div class="tab-panel active" id="tab-dash">
     <div class="kpis" id="kpis"></div>
     <div class="two-col">
@@ -204,7 +195,6 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       </div>
     </div>
   </div>
-
   <div class="tab-panel" id="tab-qa">
     <div class="fb">
       <input type="text" id="qs" placeholder="🔍 Søk ordre, kunde, beskrivelse…" style="width:260px" oninput="rQA()">
@@ -216,19 +206,16 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div class="tw"><table id="qatbl"></table></div>
     <div id="qacnt" style="font-size:.79rem;color:#888;margin-top:6px;"></div>
   </div>
-
   <div class="tab-panel" id="tab-risk">
     <div class="fb">
       <select id="rsel" onchange="rRisk()"><option value="HØY,MIDDELS">HØY + MIDDELS</option><option value="HØY">Kun HØY</option><option value="MIDDELS">Kun MIDDELS</option></select>
     </div>
     <div class="tw"><table id="risktbl"></table></div>
   </div>
-
   <div class="tab-panel" id="tab-poc">
-    <div style="background:var(--redlight);border-left:4px solid var(--red);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px;font-size:.84rem;line-height:1.8;color:var(--dark);">
-      <strong>📋 To seksjoner:</strong><br>
-      <strong>1. POC (fastpriskontrakter):</strong> Prosjektleder anslår gjenstående timer og materialer. Periodisert inntekt = Kontraktssum × Ferdiggrad.<br>
-      <strong>2. DG-bekreftelses (uten fastpris):</strong> Prosjektleder skriver inn og begrunner DG%-estimat.
+    <div style="background:var(--redlight);border-left:4px solid var(--red);padding:12px 16px;margin-bottom:14px;font-size:.84rem;line-height:1.8;">
+      <strong>1. POC:</strong> Fastpriskontrakter — gjenstående timer og materialer. &nbsp;
+      <strong>2. DG-bekreftelse:</strong> Uten fastpris — DG% og begrunnelse.
       &nbsp;|&nbsp; 🔵 Blå felt = input &nbsp;|&nbsp; 🟡 Gul rad = kommentar påkrevet
     </div>
     <div class="fb">
@@ -236,18 +223,17 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <label>Std. timekost: <input type="number" id="stk" value="650" min="100" step="50" style="width:72px;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;" onchange="rPOC()"> kr/t</label>
       <button class="btn btn-dark" onclick="expPOC()">💾 Eksporter til Excel</button>
     </div>
-    <div class="sec-hdr">Seksjon 1 – Fastpriskontrakter (POC-metoden) <span id="poc-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
+    <div class="sec-hdr">Seksjon 1 – Fastpriskontrakter (POC) <span id="poc-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
     <div class="tw" style="border-radius:0 0 8px 8px;"><table id="poctbl"></table></div>
     <div class="totbar" id="poctot"></div>
-    <div class="sec-hdr" style="margin-top:24px;">Seksjon 2 – Uten kontraktssum (DG%-bekreftelses) <span id="dg-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
-    <div class="sec-note">Ingen fastpris — prosjektleder skriver inn DG% og begrunner estimatet konkret.</div>
+    <div class="sec-hdr" style="margin-top:24px;">Seksjon 2 – Uten kontraktssum (DG%-bekreftelse) <span id="dg-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
+    <div class="sec-note">Ingen fastpris — prosjektleder skriver inn DG% og begrunner estimatet.</div>
     <div class="tw" style="border-radius:0 0 8px 8px;"><table id="dgtbl"></table></div>
     <div class="totbar" id="dgtot"></div>
   </div>
-
   <div class="tab-panel" id="tab-hist">
     <div class="fb" style="margin-bottom:16px;">
-      <span style="font-size:.88rem;font-weight:600;color:var(--dark);">Historikk lagres automatisk ved låsing.</span>
+      <span style="font-size:.88rem;font-weight:600;">Historikk lagres automatisk ved låsing.</span>
       <button class="btn btn-dark" onclick="expHist()" style="margin-left:auto;">📥 Eksporter historikk</button>
       <button class="btn" style="background:#888;" onclick="clearHist()">🗑 Slett historikk</button>
     </div>
@@ -258,13 +244,10 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 <div class="mbg" id="lmodal">
   <div class="modal">
     <h2>🔒 Lås periode og generer rapport</h2>
-    <p>Etter låsing kan ikke verdier endres. Perioden lagres automatisk i historikk.</p>
-    <label>Ditt navn (ansvarlig for vurderingen)</label>
-    <input type="text" id="lname" placeholder="F.eks. Øyvind Sæthersmoen">
-    <label>Selskapsenhet</label>
-    <input type="text" id="lentity" value="Minel Elmontasje AS">
-    <label>Periode</label>
-    <input type="text" id="lperiod">
+    <p>Etter låsing kan ikke verdier endres. Perioden lagres i historikk.</p>
+    <label>Ditt navn</label><input type="text" id="lname" placeholder="F.eks. Øyvind Sæthersmoen">
+    <label>Selskapsenhet</label><input type="text" id="lentity" value="Minel Elmontasje AS">
+    <label>Periode</label><input type="text" id="lperiod">
     <div class="mbtns">
       <button class="btn btn-o" onclick="closeLock()">Avbryt</button>
       <button class="btn btn-grn" onclick="doLock()">🔒 Lås og generer rapport</button>
@@ -272,254 +255,179 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v5.0 · Alle data behandles lokalt i nettleseren · Historikk lagres i nettleseren (localStorage)</footer>
+<footer>Minel AS · VIA QA v5.0 · Data behandles lokalt · Historikk lagres i nettleseren</footer>
 
 <script>
-// ══════════════════════════════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════════════════════════════
-let ACTIVE = [], POC = {}, DGI = {}, LOCKED = false;
-const HIST_KEY = 'minel_via_history_v1';
-const ROUND = new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50,.55,.60,.65,.70]);
-const VSTATUS = new Set(['I arbeid','Klar for fakturering','Venter på elektriker','Åpen']);
+var ACTIVE=[], POC={}, DGI={}, LOCKED=false;
+var HIST_KEY='minel_via_history_v1';
+var ROUND=new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50,.55,.60,.65,.70]);
+var VSTATUS=new Set(['I arbeid','Klar for fakturering','Venter på elektriker','Åpen']);
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ORDRESTYRING API CONFIG
-// GraphQL API: https://graphql.ordrestyring.dk/graphql
-// Auth: Authorization: Bearer {apiKey}
-// Docs: https://system.ordrestyring.no/api
-// ══════════════════════════════════════════════════════════════════════════════
-const OS_GRAPHQL = 'https://graphql.ordrestyring.dk/graphql';
-
-const OS_COMPANIES = [
-  {name:'Minel Kreativ Elektro Ski AS',  avtalenr:'23013', key:'qYtkWAowUUo2PbaE'},
-  {name:'Minel Skogvang Installasjon AS',avtalenr:'23011', key:'TxE4TJAk6eeWUqQY'},
-  {name:'Minel Land Elektriske AS',      avtalenr:'23010', key:'yOVFmYixo35RnY6l'},
-  {name:'Minel Gjøvik AS',               avtalenr:'23006', key:'edewj6APD4wb8uD5'},
-  {name:'Minel Elmontasje AS',           avtalenr:'23005', key:'rPuAsfNqjpyoeBdV'},
-  {name:'Minel Elmontasje Elverum AS',   avtalenr:'23004', key:'CmJHRiMNdn68RWZM'},
-  {name:'Minel Ainstall AS',             avtalenr:'22487', key:'OHcNVeTrqWU7dOK7'},
-  {name:'Minel Drøbak Elektriske AS',    avtalenr:'22486', key:'FzmySlRzW72gOBaB'},
-  {name:'Minel Gudbrandsdal AS',         avtalenr:'22486', key:'yEEdLNDUCssPuhOl'},
+// ── Ordrestyring GraphQL API ──────────────────────────────────────────────────
+var OS_GRAPHQL='https://graphql.ordrestyring.dk/graphql';
+var OS_COMPANIES=[
+  {name:'Minel Kreativ Elektro Ski AS',  key:'qYtkWAowUUo2PbaE'},
+  {name:'Minel Skogvang Installasjon AS',key:'TxE4TJAk6eeWUqQY'},
+  {name:'Minel Land Elektriske AS',      key:'yOVFmYixo35RnY6l'},
+  {name:'Minel Gjøvik AS',               key:'edewj6APD4wb8uD5'},
+  {name:'Minel Elmontasje AS',           key:'rPuAsfNqjpyoeBdV'},
+  {name:'Minel Elmontasje Elverum AS',   key:'CmJHRiMNdn68RWZM'},
+  {name:'Minel Ainstall AS',             key:'OHcNVeTrqWU7dOK7'},
+  {name:'Minel Drøbak Elektriske AS',    key:'FzmySlRzW72gOBaB'},
+  {name:'Minel Gudbrandsdal AS',         key:'yEEdLNDUCssPuhOl'}
 ];
 
-// Introspection query — finner riktige feltnavn for nestede typer
-const OS_INTROSPECT = `{
-  caseStatus: __type(name: "CaseStatus") { fields { name } }
-  caseType:   __type(name: "CaseType")   { fields { name } }
-  customer:   __type(name: "Customer")   { fields { name } }
-  user:       __type(name: "User")       { fields { name } }
-}`;
-
-function pick(typeObj, ...candidates){
-  if(!typeObj || !typeObj.fields) return null;
-  const names = typeObj.fields.map(f=>f.name);
-  for(const c of candidates){ if(names.includes(c)) return c; }
-  return names.filter(n => !n.startsWith('_'))[0] || null;
-}
-
-async function gql(apiKey, query, variables){
-  const r = await Promise.race([
-    fetch(OS_GRAPHQL, {
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer ' + apiKey,
-        'Content-Type':'application/json',
-        'Accept':'application/json'
-      },
-      body: JSON.stringify({query, variables})
-    }),
-    new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),15000))
-  ]);
-  if(!r.ok){
-    const txt = await r.text().catch(()=>'');
-    throw new Error('HTTP ' + r.status + (txt ? ': ' + txt.substring(0,200) : ''));
-  }
-  const json = await r.json();
-  if(json.errors && json.errors.length){
-    throw new Error(json.errors.map(e=>e.message).join('; '));
-  }
-  return json.data;
-}
-
-// Populate company selector
-(()=>{
-  const sel = document.getElementById('co-sel');
-  OS_COMPANIES.forEach((co,i)=>{
-    const o = document.createElement('option');
-    o.value = i; o.textContent = co.name;
-    sel.appendChild(o);
+(function(){
+  var sel=document.getElementById('co-sel');
+  OS_COMPANIES.forEach(function(co,i){
+    var o=document.createElement('option');
+    o.value=i; o.textContent=co.name; sel.appendChild(o);
   });
 })();
 
-async function fetchFromOS(){
-  const sel = document.getElementById('co-sel');
-  const idx = parseInt(sel.value);
+function gqlPost(apiKey,query,variables){
+  return fetch(OS_GRAPHQL,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({query:query,variables:variables||{}})
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t.substring(0,200));});
+    return r.json();
+  }).then(function(json){
+    if(json.errors&&json.errors.length) throw new Error(json.errors.map(function(e){return e.message;}).join('; '));
+    return json.data;
+  });
+}
+
+function pickField(typeObj){
+  var candidates=['name','label','value','title','fullName','companyName','displayName','firstName'];
+  if(!typeObj||!typeObj.fields) return 'id';
+  var names=typeObj.fields.map(function(f){return f.name;});
+  for(var i=0;i<candidates.length;i++){if(names.indexOf(candidates[i])>=0) return candidates[i];}
+  var nonPrivate=names.filter(function(n){return n[0]!=='_';});
+  return nonPrivate[0]||'id';
+}
+
+function fetchFromOS(){
+  var sel=document.getElementById('co-sel');
+  var idx=parseInt(sel.value);
   if(isNaN(idx)){alert('Velg et selskap først.');return;}
-  const co = OS_COMPANIES[idx];
-  const btn = document.getElementById('api-btn');
-  const stat = document.getElementById('api-status');
-  const errDiv = document.getElementById('api-err');
+  var co=OS_COMPANIES[idx];
+  var btn=document.getElementById('api-btn');
+  var stat=document.getElementById('api-status');
+  var errDiv=document.getElementById('api-err');
+  btn.disabled=true;
+  errDiv.style.display='none';
+  stat.innerHTML='⏳ Kobler til Ordrestyring…';
 
-  btn.disabled = true;
-  errDiv.style.display = 'none';
-  stat.innerHTML = '⏳ Kobler til Ordrestyring GraphQL…';
+  var introspect='{ caseStatus:__type(name:"CaseStatus"){fields{name}} caseType:__type(name:"CaseType"){fields{name}} customer:__type(name:"Customer"){fields{name}} user:__type(name:"User"){fields{name}} }';
 
-  try {
-    // Steg 1: Introspection — finn riktige feltnavn
-    stat.innerHTML = '⏳ Henter skjemainformasjon…';
-    const schema = await gql(co.key, OS_INTROSPECT, {});
+  gqlPost(co.key,introspect).then(function(schema){
+    var sF=pickField(schema.caseStatus);
+    var tF=pickField(schema.caseType);
+    var cF=pickField(schema.customer);
+    var uF=pickField(schema.user);
+    console.log('OS feltnavn:',sF,tF,cF,uF);
 
-    const statusF = pick(schema.caseStatus, 'name','label','value','title','status') || 'id';
-    const typeF   = pick(schema.caseType,   'name','label','value','title','type')   || 'id';
-    const custF   = pick(schema.customer,   'name','companyName','title','label')    || 'id';
-    const techF   = pick(schema.user,       'name','fullName','displayName','firstName') || 'id';
+    var query='query($cursor:String){cases(pagination:{cursor:$cursor,limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{id caseNumber description status{'+sF+'} caseType{'+tF+'} customer{'+cF+'} mainTechnician{'+uF+'} offerTotal totalCost invoicedTotal expectedSalesValue expectedMargin} nextCursor}}';
 
-    console.log('OS feltnavn:', {statusF, typeF, custF, techF});
-
-    const OS_QUERY = `
-query($cursor: String) {
-  cases(
-    pagination: { cursor: $cursor, limit: 200 }
-    orderBy: { field: "updatedAt", direction: DESC }
-  ) {
-    items {
-      id
-      caseNumber
-      description
-      status { ${statusF} }
-      caseType { ${typeF} }
-      customer { ${custF} }
-      mainTechnician { ${techF} }
-      offerTotal
-      totalCost
-      invoicedTotal
-      expectedSalesValue
-      expectedMargin
+    var allCases=[], cursor=null, page=1;
+    function nextPage(){
+      stat.innerHTML='⏳ Henter side '+page+'…';
+      gqlPost(co.key,query,{cursor:cursor}).then(function(data){
+        var result=data&&data.cases;
+        if(!result) throw new Error('Uventet API-respons');
+        allCases=allCases.concat(result.items||[]);
+        if(result.nextCursor){cursor=result.nextCursor;page++;nextPage();}
+        else{
+          stat.innerHTML='✅ Hentet '+allCases.length+' ordrer. Behandler…';
+          var gn=function(v){var n=parseFloat(v);return isNaN(n)?null:n;};
+          var rows=allCases.map(function(c){
+            var dg=gn(c.expectedMargin);
+            if(dg!=null&&dg>1) dg=dg/100;
+            return{
+              ordreNr:String(c.caseNumber||c.id||'').trim(),
+              status:(c.status&&c.status[sF])||'I arbeid',
+              type:(c.caseType&&c.caseType[tF])||'',
+              beskr:String(c.description||'').replace(/[\n\r\xa0]+/g,' ').trim(),
+              kunde:(c.customer&&c.customer[cF])||'',
+              pl:(c.mainTechnician&&c.mainTechnician[uF])||'',
+              totOmk:gn(c.totalCost),dg:dg,
+              tilbud:gn(c.offerTotal),fakt:gn(c.invoicedTotal),via:gn(c.expectedSalesValue)
+            };
+          }).filter(function(r){return r.ordreNr;});
+          var active=rows.filter(function(r){return VSTATUS.has(r.status);});
+          var finalRows=active.length>0?active:rows;
+          if(!finalRows.length){stat.innerHTML='⚠️ Ingen ordrer funnet.';btn.disabled=false;return;}
+          document.getElementById('lentity').value=co.name;
+          parseRows(finalRows,co.name+' (Ordrestyring API)',new Date().toLocaleDateString('no',{month:'long',year:'numeric'}));
+        }
+      }).catch(handleErr);
     }
-    nextCursor
-  }
-}`;
+    nextPage();
+  }).catch(handleErr);
 
-    // Steg 2: Hent alle ordrer med paginering
-    let allCases = [], cursor = null, page = 1;
-    while(true){
-      stat.innerHTML = '⏳ Henter side ' + page + '…';
-      const data = await gql(co.key, OS_QUERY, {cursor});
-      const result = data && data.cases;
-      if(!result) throw new Error('Uventet API-respons');
-      allCases = allCases.concat(result.items || []);
-      cursor = result.nextCursor;
-      if(!cursor) break;
-      page++;
-    }
-
-    stat.innerHTML = '✅ Hentet ' + allCases.length + ' ordrer. Behandler…';
-
-    // Map GraphQL-felter til intern struktur
-    const gn = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
-    const rows = allCases.map(c => {
-      let dg = gn(c.expectedMargin);
-      if(dg != null && dg > 1) dg = dg / 100;
-      return {
-        ordreNr: String(c.caseNumber || c.id || '').trim(),
-        status:  (c.status && (c.status[statusF] || c.status.name || c.status.label || '')) || 'I arbeid',
-        type:    (c.caseType && (c.caseType[typeF] || '')) || '',
-        beskr:   String(c.description || '').replace(/[\n\r\xa0]+/g,' ').trim(),
-        kunde:   (c.customer && (c.customer[custF] || '')) || '',
-        pl:      (c.mainTechnician && (c.mainTechnician[techF] || '')) || '',
-        totOmk:  gn(c.totalCost),
-        dg,
-        tilbud:  gn(c.offerTotal),
-        fakt:    gn(c.invoicedTotal),
-        via:     gn(c.expectedSalesValue),
-      };
-    }).filter(r => r.ordreNr);
-
-    const active = rows.filter(r => VSTATUS.has(r.status));
-    const finalRows = active.length > 0 ? active : rows;
-
-    if(!finalRows.length){
-      stat.innerHTML = '⚠️ Ingen ordrer funnet.';
-      btn.disabled = false;
-      console.log('Statuser mottatt:', [...new Set(rows.map(r=>r.status))]);
-      return;
-    }
-
-    const period = new Date().toLocaleDateString('no',{month:'long',year:'numeric'});
-    parseRows(finalRows, co.name + ' (Ordrestyring API)', period);
-
-    // Pre-fill lock modal
-    document.getElementById('lentity').value = co.name;
-
-  } catch(e) {
-    btn.disabled = false;
-    stat.innerHTML = '';
-    const isCORS = e.message === 'Failed to fetch' || e.name === 'TypeError';
-    errDiv.innerHTML = isCORS
-      ? '<strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer kall til Ordrestyring.<br>Bruk <strong>Excel-import</strong> (nederst) inntil dette er løst.'
-      : '<strong>❌ API-feil:</strong> ' + e.message + '<br>Sjekk at API-nøkkelen er gyldig for dette selskapet.';
-    errDiv.style.display = 'block';
-    console.error('OS GraphQL error:', e);
+  function handleErr(e){
+    btn.disabled=false;stat.innerHTML='';
+    var isCORS=(e.message==='Failed to fetch'||e.name==='TypeError');
+    errDiv.innerHTML=isCORS
+      ?'<strong>🔒 CORS-sperre</strong> — Nettleseren blokkerer kall til Ordrestyring.<br>Bruk <strong>Excel-import</strong> (nederst) inntil dette er løst.'
+      :'<strong>❌ API-feil:</strong> '+e.message+'<br>Sjekk at API-nøkkelen er gyldig.';
+    errDiv.style.display='block';
+    console.error('OS error:',e);
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// FILE LOADING (Excel)
-// ══════════════════════════════════════════════════════════════════════════════
-const dz = document.getElementById('dz');
-dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over');});
-dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
-dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');go(e.dataTransfer.files[0]);});
-document.getElementById('fi').addEventListener('change', e=>go(e.target.files[0]));
+// ── Excel-import ──────────────────────────────────────────────────────────────
+var dz=document.getElementById('dz');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');go(e.dataTransfer.files[0]);});
+document.getElementById('fi').addEventListener('change',function(e){go(e.target.files[0]);});
 
 function go(f){
   if(!f) return;
-  const r=new FileReader();
-  r.onload=e=>{
-    const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
-    parse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null}), f.name);
+  var r=new FileReader();
+  r.onload=function(e){
+    var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+    parse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null}),f.name);
   };
   r.readAsArrayBuffer(f);
 }
-
-function parse(raw, fname){
-  const H={};
-  raw[0].forEach((h,i)=>{if(h) H[h.toString().trim()]=i;});
-  const n=v=>{const x=parseFloat(v);return isNaN(x)?null:x;};
-  const rows = raw.slice(1)
-    .filter(r=>r[H['Ordre nr.']]!=null)
-    .filter(r=>VSTATUS.has(String(r[H['Status']]||'').trim()))
-    .map(r=>({
-      ordreNr: String(r[H['Ordre nr.']]||'').replace('▸','').trim(),
-      status:  String(r[H['Status']]||'').trim(),
-      type:    String(r[H['Type']]||'').trim(),
-      beskr:   String(r[H['Beskrivelse']]||'').replace(/[\n\r\xa0]+/g,' ').trim(),
-      kunde:   String(r[H['Kunde']]||'').trim(),
-      pl:      String(r[H['Prosjektleder']]||'').trim(),
-      totOmk:  n(r[H['Totale omk. (NOK)']]),
-      dg:      n(r[H['Forv. dekningsgrad (%)']]),
-      tilbud:  n(r[H['Tilbudspris (NOK)']]),
-      fakt:    n(r[H['Fakturert (NOK)']]),
-      via:     n(r[H['Periodisert inntekt (NOK)']]),
-    }));
-  parseRows(rows, fname);
+function parse(raw,fname){
+  var H={};
+  raw[0].forEach(function(h,i){if(h) H[h.toString().trim()]=i;});
+  var n=function(v){var x=parseFloat(v);return isNaN(x)?null:x;};
+  var rows=raw.slice(1)
+    .filter(function(r){return r[H['Ordre nr.']]!=null;})
+    .filter(function(r){return VSTATUS.has(String(r[H['Status']]||'').trim());})
+    .map(function(r){return{
+      ordreNr:String(r[H['Ordre nr.']]||'').replace('▸','').trim(),
+      status:String(r[H['Status']]||'').trim(),
+      type:String(r[H['Type']]||'').trim(),
+      beskr:String(r[H['Beskrivelse']]||'').replace(/[\n\r\xa0]+/g,' ').trim(),
+      kunde:String(r[H['Kunde']]||'').trim(),
+      pl:String(r[H['Prosjektleder']]||'').trim(),
+      totOmk:n(r[H['Totale omk. (NOK)']]),
+      dg:n(r[H['Forv. dekningsgrad (%)']]),
+      tilbud:n(r[H['Tilbudspris (NOK)']]),
+      fakt:n(r[H['Fakturert (NOK)']]),
+      via:n(r[H['Periodisert inntekt (NOK)']])
+    };});
+  parseRows(rows,fname);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CORE PIPELINE
-// ══════════════════════════════════════════════════════════════════════════════
-function parseRows(rows, sourceName, periodOverride){
-  ACTIVE = rows;
-  const ts={},tc={};
-  ACTIVE.forEach(r=>{if(r.dg!=null){ts[r.type]=(ts[r.type]||0)+r.dg;tc[r.type]=(tc[r.type]||0)+1;}});
-  const tn={};Object.keys(ts).forEach(t=>tn[t]=ts[t]/tc[t]);
-
-  ACTIVE.forEach(r=>{
-    r.normDG=(tn[r.type]??null);
+// ── Core pipeline ─────────────────────────────────────────────────────────────
+function parseRows(rows,sourceName,periodOverride){
+  ACTIVE=rows;
+  var ts={},tc={};
+  ACTIVE.forEach(function(r){if(r.dg!=null){ts[r.type]=(ts[r.type]||0)+r.dg;tc[r.type]=(tc[r.type]||0)+1;}});
+  var tn={};Object.keys(ts).forEach(function(t){tn[t]=ts[t]/tc[t];});
+  ACTIVE.forEach(function(r){
+    r.normDG=tn[r.type]!=null?tn[r.type]:null;
     r.dgAvvik=(r.dg!=null&&r.normDG!=null)?r.dg-r.normDG:null;
     r.hasTilbud=r.tilbud!=null&&r.tilbud>0;
-    let s=0;
+    var s=0;
     if(r.dg===0)s+=3;
     if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))s+=1;
     if(r.via!=null&&r.via<-20000)s+=3;else if(r.via!=null&&r.via<-5000)s+=1;
@@ -527,393 +435,315 @@ function parseRows(rows, sourceName, periodOverride){
     if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)s+=2;
     if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)s+=2;
     r.sc=s;r.risk=s>=4?'HØY':s>=2?'MIDDELS':'LAV';
-    const f=[];
-    if(r.dg===0)f.push({t:'DG% = 0 (ikke oppdatert?)',c:'er'});
-    if(r.dg!=null&&r.dg!==0&&ROUND.has(+r.dg.toFixed(3)))f.push({t:'Rund DG% – sjekk grunnlag',c:''});
-    if(r.via!=null&&r.via<-20000)f.push({t:'Stor negativ VIA – overfakturert?',c:'er'});
+    var f=[];
+    if(r.dg===0)f.push({t:'DG% = 0',c:'er'});
+    if(r.dg!=null&&r.dg!==0&&ROUND.has(+r.dg.toFixed(3)))f.push({t:'Rund DG%',c:''});
+    if(r.via!=null&&r.via<-20000)f.push({t:'Stor negativ VIA',c:'er'});
     else if(r.via!=null&&r.via<-5000)f.push({t:'Negativ VIA',c:''});
-    if(r.via!=null&&r.via>100000)f.push({t:'Svært stor VIA – høy usikkerhet',c:'er'});
+    if(r.via!=null&&r.via>100000)f.push({t:'Svært stor VIA',c:'er'});
     else if(r.via!=null&&r.via>50000)f.push({t:'Stor VIA (>50k)',c:''});
-    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)f.push({t:'DG avviker '+(r.dgAvvik*100).toFixed(0)+'% fra type-norm',c:''});
-    if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)f.push({t:'Mangler kontraktssum (stor ordre)',c:''});
+    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)f.push({t:'DG avviker '+(r.dgAvvik*100).toFixed(0)+'% fra norm',c:''});
+    if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)f.push({t:'Mangler kontraktssum',c:''});
     r.flags=f.length?f:[{t:'OK',c:'ok'}];
-    if(r.hasTilbud){
-      if(!POC[r.ordreNr]){const dg=r.dg??0.35;const gjenst=Math.max(0,r.tilbud*(1-dg)-(r.totOmk||0));POC[r.ordreNr]={timer:Math.round(gjenst/650),tk:650,mat:0,k:''};}
-    } else {
-      if(!DGI[r.ordreNr]) DGI[r.ordreNr]={dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
-    }
+    if(r.hasTilbud){if(!POC[r.ordreNr]){var dg=r.dg!=null?r.dg:0.35;var gj=Math.max(0,r.tilbud*(1-dg)-(r.totOmk||0));POC[r.ordreNr]={timer:Math.round(gj/650),tk:650,mat:0,k:''};}}
+    else{if(!DGI[r.ordreNr])DGI[r.ordreNr]={dg:r.dg!=null?Math.round(r.dg*100):35,k:''};}
   });
-
-  const pls=[...new Set(ACTIVE.map(r=>r.pl))].filter(x=>x&&x!=='Not specified').sort();
-  const types=[...new Set(ACTIVE.map(r=>r.type))].filter(x=>x&&x!=='Not specified').sort();
-  ['qp','pp'].forEach(id=>{const s=document.getElementById(id);pls.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;s.appendChild(o);});});
-  ['qt'].forEach(id=>{const s=document.getElementById(id);types.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;s.appendChild(o);});});
-
-  const now=new Date();
+  var pls=[...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(function(x){return x&&x!=='Not specified';}).sort();
+  var types=[...new Set(ACTIVE.map(function(r){return r.type;}))].filter(function(x){return x;}).sort();
+  ['qp','pp'].forEach(function(id){var s=document.getElementById(id);pls.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;s.appendChild(o);});});
+  document.getElementById('qt').querySelectorAll('option:not(:first-child)').forEach(function(o){o.remove();});
+  types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;document.getElementById('qt').appendChild(o);});
+  var now=new Date();
   document.getElementById('atitle').textContent=sourceName;
-  const prd=periodOverride||now.toLocaleDateString('no',{month:'long',year:'numeric'});
+  var prd=periodOverride||now.toLocaleDateString('no',{month:'long',year:'numeric'});
   document.getElementById('aperiod').textContent=prd;
   document.getElementById('lperiod').value=prd;
-
   document.getElementById('upload').style.display='none';
   document.getElementById('app').style.display='block';
   rDash();rQA();rRisk();rPOC();rHist();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// FORMAT
-// ══════════════════════════════════════════════════════════════════════════════
-const NK=v=>v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';
-const NR=v=>v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));
-const PC=v=>v==null?'–':(v*100).toFixed(1)+' %';
-function fmtInput(v){const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));if(isNaN(n))return'0';return new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(n));}
-function parseInput(v){const s=String(v).replace(/\s/g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:n;}
-function piFocus(el){el.value=parseInput(el.value);}
-function piBlur(el){el.value=fmtInput(el.value);}
-function piChange(ordreNr,field,el){const v=parseInput(el.value);if(field==='timer'||field==='tk'||field==='mat')sP(ordreNr,field,v);else if(field==='dg')sD(ordreNr,'dg',v);}
-const rb=r=>r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';
-const fh=fs=>fs.map(f=>'<span class="flag '+f.c+'">'+f.t+'</span>').join('');
+// ── Format ────────────────────────────────────────────────────────────────────
+function NK(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';}
+function NR(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));}
+function PC(v){return v==null?'–':(v*100).toFixed(1)+' %';}
+function fmtI(v){var n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?'0':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(n));}
+function parseI(v){var s=String(v).replace(/\s/g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?0:n;}
+function piFocus(el){el.value=parseI(el.value);}
+function piBlur(el){el.value=fmtI(el.value);}
+function piChange(id,f,el){var v=parseI(el.value);if(f==='timer'||f==='tk'||f==='mat')sP(id,f,v);else if(f==='dg')sD(id,'dg',v);}
+function rb(r){return r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';}
+function fh(fs){return fs.map(function(f){return '<span class="flag '+f.c+'">'+f.t+'</span>';}).join('');}
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DASHBOARD
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 function rDash(){
-  const a=ACTIVE;
-  const tv=a.reduce((s,r)=>s+(r.via||0),0);
-  const pv=a.filter(r=>(r.via||0)>0).reduce((s,r)=>s+r.via,0);
-  const nv=a.filter(r=>(r.via||0)<0).reduce((s,r)=>s+r.via,0);
-  const avgDG=a.filter(r=>r.dg!=null).reduce((s,r)=>s+r.dg,0)/a.filter(r=>r.dg!=null).length;
-  const rnd=a.filter(r=>r.dg!=null&&ROUND.has(+r.dg.toFixed(3))).length;
-  const noT=a.filter(r=>!r.hasTilbud).length;
+  var a=ACTIVE;
+  var tv=a.reduce(function(s,r){return s+(r.via||0);},0);
+  var pv=a.filter(function(r){return(r.via||0)>0;}).reduce(function(s,r){return s+r.via;},0);
+  var nv=a.filter(function(r){return(r.via||0)<0;}).reduce(function(s,r){return s+r.via;},0);
+  var dgA=a.filter(function(r){return r.dg!=null;});
+  var avgDG=dgA.length?dgA.reduce(function(s,r){return s+r.dg;},0)/dgA.length:null;
+  var rnd=a.filter(function(r){return r.dg!=null&&ROUND.has(+r.dg.toFixed(3));}).length;
+  var noT=a.filter(function(r){return!r.hasTilbud;}).length;
   document.getElementById('kpis').innerHTML=
     '<div class="kpi"><div class="lb">Aktive prosjekter</div><div class="vl">'+a.length+'</div></div>'+
     '<div class="kpi"><div class="lb">Total VIA</div><div class="vl">'+NK(tv)+'</div></div>'+
-    '<div class="kpi g"><div class="lb">Positiv VIA (ubetalt inntekt)</div><div class="vl">'+NK(pv)+'</div></div>'+
-    '<div class="kpi r"><div class="lb">Negativ VIA (overfakturert)</div><div class="vl">'+NK(nv)+'</div></div>'+
+    '<div class="kpi g"><div class="lb">Positiv VIA</div><div class="vl">'+NK(pv)+'</div></div>'+
+    '<div class="kpi r"><div class="lb">Negativ VIA</div><div class="vl">'+NK(nv)+'</div></div>'+
     '<div class="kpi"><div class="lb">Gjennomsnittlig DG%</div><div class="vl">'+PC(avgDG)+'</div></div>'+
     '<div class="kpi a"><div class="lb">Runde DG%-estimater</div><div class="vl">'+rnd+' av '+a.length+'</div></div>'+
     '<div class="kpi a"><div class="lb">Uten kontraktssum</div><div class="vl">'+noT+'</div></div>';
-  const h=a.filter(r=>r.risk==='HØY').length,m=a.filter(r=>r.risk==='MIDDELS').length,l=a.filter(r=>r.risk==='LAV').length;
+  var h=a.filter(function(r){return r.risk==='HØY';}).length;
+  var m=a.filter(function(r){return r.risk==='MIDDELS';}).length;
+  var l=a.filter(function(r){return r.risk==='LAV';}).length;
   document.getElementById('rcards').innerHTML=
     '<div class="rc h"><div class="n">'+h+'</div><div class="l">🔴 HØY RISIKO</div></div>'+
     '<div class="rc m"><div class="n">'+m+'</div><div class="l">🟡 MIDDELS RISIKO</div></div>'+
     '<div class="rc lo"><div class="n">'+l+'</div><div class="l">🟢 LAV RISIKO</div></div>';
-  const fs=[];
-  if(rnd>a.length*.6)fs.push('⚠️ '+rnd+' av '+a.length+' prosjekter har rund DG% — mange estimater virker å være tommelfingerregel.');
-  const dg0=a.filter(r=>r.dg===0);if(dg0.length)fs.push('🔴 '+dg0.length+' prosjekt(er) med DG% = 0 — sannsynligvis ikke oppdatert.');
-  const bn=a.filter(r=>(r.via||0)<-20000);if(bn.length)fs.push('🔴 '+bn.length+' prosjekt(er) med stor negativ VIA — overfakturert, risiko for nedskriving.');
-  const bp=a.filter(r=>(r.via||0)>100000);if(bp.length)fs.push('🟡 '+bp.length+' prosjekt(er) med VIA over 100 000 kr — høy eksponering.');
-  if(noT>a.length*.3)fs.push('ℹ️ '+noT+' prosjekter uten kontraktssum — kun DG%-bekreftelse mulig.');
-  if(!fs.length)fs.push('✅ Ingen kritiske funn. Gjennomfør stikkprøvekontroll av store VIA-prosjekter.');
-  document.getElementById('findings').innerHTML=fs.map(f=>'<div style="margin-bottom:5px">'+f+'</div>').join('');
-  const pm={};
-  a.forEach(r=>{const p=r.pl||'(ukjent)';if(!pm[p])pm[p]={c:0,ds:0,dc:0,dmn:1,dmx:0,v:0,h:0,rn:0};
+  var fs=[];
+  if(rnd>a.length*.6)fs.push('⚠️ '+rnd+' av '+a.length+' prosjekter har rund DG%.');
+  var dg0=a.filter(function(r){return r.dg===0;});if(dg0.length)fs.push('🔴 '+dg0.length+' prosjekt(er) med DG% = 0.');
+  var bn=a.filter(function(r){return(r.via||0)<-20000;});if(bn.length)fs.push('🔴 '+bn.length+' prosjekt(er) med stor negativ VIA.');
+  var bp=a.filter(function(r){return(r.via||0)>100000;});if(bp.length)fs.push('🟡 '+bp.length+' prosjekt(er) med VIA over 100 000 kr.');
+  if(!fs.length)fs.push('✅ Ingen kritiske funn.');
+  document.getElementById('findings').innerHTML=fs.map(function(f){return '<div style="margin-bottom:5px">'+f+'</div>';}).join('');
+  var pm={};
+  a.forEach(function(r){
+    var p=r.pl||'(ukjent)';
+    if(!pm[p])pm[p]={c:0,ds:0,dc:0,dmn:1,dmx:0,v:0,h:0,rn:0};
     pm[p].c++;pm[p].v+=(r.via||0);if(r.risk==='HØY')pm[p].h++;
     if(r.dg!=null){pm[p].ds+=r.dg;pm[p].dc++;pm[p].dmn=Math.min(pm[p].dmn,r.dg);pm[p].dmx=Math.max(pm[p].dmx,r.dg);}
     if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))pm[p].rn++;
   });
-  const pr=Object.entries(pm).sort((a,b)=>Math.abs(b[1].v)-Math.abs(a[1].v));
+  var pr=Object.entries(pm).sort(function(a,b){return Math.abs(b[1].v)-Math.abs(a[1].v);});
   document.getElementById('pltbl').innerHTML=
-    '<thead><tr><th>Prosjektleder</th><th>Proj.</th><th>Avg DG%</th><th>Min/Max</th><th style="text-align:right">Total VIA</th><th>HØY</th><th>Runde</th></tr></thead>'+
-    '<tbody>'+pr.map(([pl,p])=>'<tr><td>'+pl+'</td><td class="c">'+p.c+'</td>'+
+    '<thead><tr><th>Prosjektleder</th><th>Proj.</th><th>Avg DG%</th><th style="text-align:right">Total VIA</th><th>HØY</th><th>Runde</th></tr></thead>'+
+    '<tbody>'+pr.map(function(e){var p=e[1];return '<tr><td>'+e[0]+'</td><td class="c">'+p.c+'</td>'+
       '<td class="r">'+(p.dc?PC(p.ds/p.dc):'–')+'</td>'+
-      '<td class="r">'+(p.dc?PC(p.dmn)+'/'+PC(p.dmx):'–')+'</td>'+
       '<td class="r" style="font-weight:700;color:'+(p.v<0?'var(--red)':'var(--dark)')+'">'+NK(p.v)+'</td>'+
       '<td class="c">'+(p.h>0?'<span style="color:var(--red);font-weight:800">'+p.h+'</span>':'–')+'</td>'+
-      '<td class="c">'+p.rn+'/'+p.c+'</td></tr>').join('')+'</tbody>';
+      '<td class="c">'+p.rn+'/'+p.c+'</td></tr>';}).join('')+'</tbody>';
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// QA TABLE
-// ══════════════════════════════════════════════════════════════════════════════
+// ── QA ────────────────────────────────────────────────────────────────────────
 function rQA(){
-  const s=document.getElementById('qs').value.toLowerCase();
-  const rf=document.getElementById('qr').value,pl=document.getElementById('qp').value;
-  const tp=document.getElementById('qt').value,nz=document.getElementById('qnz').checked;
-  let rows=ACTIVE.filter(r=>
-    (!s||[r.ordreNr,r.kunde,r.beskr,r.pl].some(x=>x.toLowerCase().includes(s)))&&
+  var s=document.getElementById('qs').value.toLowerCase();
+  var rf=document.getElementById('qr').value,pl=document.getElementById('qp').value;
+  var tp=document.getElementById('qt').value,nz=document.getElementById('qnz').checked;
+  var rows=ACTIVE.filter(function(r){
+    return(!s||[r.ordreNr,r.kunde,r.beskr,r.pl].some(function(x){return x.toLowerCase().includes(s);}))&&
     (!rf||r.risk===rf)&&(!pl||r.pl===pl)&&(!tp||r.type===tp)&&
-    (!nz||(r.via!=null&&Math.abs(r.via)>10))
-  );
+    (!nz||(r.via!=null&&Math.abs(r.via)>10));
+  });
   document.getElementById('qacnt').textContent='Viser '+rows.length+' av '+ACTIVE.length+' prosjekter';
   document.getElementById('qatbl').innerHTML=
     '<thead><tr><th>Ordre</th><th>Status</th><th>Type</th><th>Prosjektleder</th><th>Beskrivelse</th><th>Kunde</th>'+
-    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">Forv. DG%</th><th style="text-align:right">Norm DG%</th>'+
+    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>'+
     '<th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th><th style="text-align:right">VIA</th>'+
     '<th style="text-align:center">Risiko</th><th>QA Flagg</th></tr></thead>'+
-    '<tbody>'+rows.map(r=>{
-      const vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
+    '<tbody>'+rows.map(function(r){
+      var vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
       return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td>'+
         '<td style="white-space:nowrap">'+r.pl+'</td>'+
         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td>'+
-        '<td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.kunde+'</td>'+
-        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td><td class="r">'+PC(r.normDG)+'</td>'+
+        '<td>'+r.kunde+'</td>'+
+        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td>'+
         '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
         '<td class="r" style="'+vc+'">'+NK(r.via)+'</td>'+
         '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
     }).join('')+'</tbody>';
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// RISK REGISTER
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Risk ──────────────────────────────────────────────────────────────────────
 function rRisk(){
-  const f=document.getElementById('rsel').value.split(',');
-  const rows=ACTIVE.filter(r=>f.includes(r.risk)).sort((a,b)=>b.sc-a.sc);
+  var f=document.getElementById('rsel').value.split(',');
+  var rows=ACTIVE.filter(function(r){return f.indexOf(r.risk)>=0;}).sort(function(a,b){return b.sc-a.sc;});
   document.getElementById('risktbl').innerHTML=
     '<thead><tr><th>Ordre</th><th>Type</th><th>Prosjektleder</th><th>Kunde</th>'+
     '<th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>'+
     '<th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th>'+
-    '<th style="text-align:right">VIA</th><th style="text-align:center">Risiko</th><th>Identifiserte risikoer</th></tr></thead>'+
-    '<tbody>'+rows.map(r=>'<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td>'+
+    '<th style="text-align:right">VIA</th><th style="text-align:center">Risiko</th><th>Risikoer</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td>'+
       '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td>'+
       '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
       '<td class="r" style="'+((r.via||0)<0?'color:var(--red);font-weight:700':'')+'">'+NK(r.via)+'</td>'+
-      '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>').join('')+'</tbody>';
+      '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';}).join('')+'</tbody>';
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// POC + DG
-// ══════════════════════════════════════════════════════════════════════════════
+// ── POC + DG ──────────────────────────────────────────────────────────────────
 function calcPOC(r){
-  const inp=POC[r.ordreNr]||{timer:0,tk:650,mat:0,k:''};
-  const gk=(inp.timer||0)*inp.tk+(inp.mat||0);
-  const esk=(r.totOmk||0)+gk;
-  const fg=esk>0?Math.min((r.totOmk||0)/esk,1):null;
-  const innt=fg!=null?r.tilbud*fg:null;
-  const estDG=esk>0?(r.tilbud-esk)/r.tilbud:null;
-  const via=innt!=null&&r.fakt!=null?innt-r.fakt:null;
-  return{gk,esk,fg,innt,estDG,via};
+  var inp=POC[r.ordreNr]||{timer:0,tk:650,mat:0,k:''};
+  var gk=(inp.timer||0)*inp.tk+(inp.mat||0);
+  var esk=(r.totOmk||0)+gk;
+  var fg=esk>0?Math.min((r.totOmk||0)/esk,1):null;
+  var innt=fg!=null?r.tilbud*fg:null;
+  var estDG=esk>0?(r.tilbud-esk)/r.tilbud:null;
+  var via=innt!=null&&r.fakt!=null?innt-r.fakt:null;
+  return{gk:gk,esk:esk,fg:fg,innt:innt,estDG:estDG,via:via};
 }
 function calcDG(r){
-  const inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
-  const dg=(inp.dg||0)/100;
-  const fs=r.totOmk!=null&&dg<1?r.totOmk/(1-dg):null;
-  const via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
-  return{dg,fs,via};
+  var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
+  var dg=(inp.dg||0)/100;
+  var fs=r.totOmk!=null&&dg<1?r.totOmk/(1-dg):null;
+  var via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
+  return{dg:dg,fs:fs,via:via};
 }
-
 function rPOC(){
-  const pl=document.getElementById('pp').value;
-  const stk=parseFloat(document.getElementById('stk').value)||650;
-  const dis=LOCKED?'disabled':'';
-  const pocR=ACTIVE.filter(r=>r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl));
-  const dgR=ACTIVE.filter(r=>!r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl));
+  var pl=document.getElementById('pp').value;
+  var stk=parseFloat(document.getElementById('stk').value)||650;
+  var dis=LOCKED?'disabled':'';
+  var pocR=ACTIVE.filter(function(r){return r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl);});
+  var dgR=ACTIVE.filter(function(r){return!r.hasTilbud&&r.status==='I arbeid'&&(!pl||r.pl===pl);});
   document.getElementById('poc-cnt').textContent='('+pocR.length+' prosjekter)';
   document.getElementById('dg-cnt').textContent='('+dgR.length+' prosjekter)';
-
-  let pv=0;
+  var pv=0;
   document.getElementById('poctbl').innerHTML=
-    '<thead><tr><th>Ordre</th><th>Prosjektleder</th><th>Type</th>'+
-    '<th style="text-align:right">Kontrakts-<br>sum</th>'+
-    '<th style="text-align:right">Påløpte<br>kostnader</th>'+
-    '<th style="text-align:right;color:#9EC8FF">Gjenst.<br>timer</th>'+
-    '<th style="text-align:right;color:#9EC8FF">Timekost<br>kr/t</th>'+
-    '<th style="text-align:right;color:#9EC8FF">Gjenst.<br>materialer</th>'+
-    '<th style="text-align:right">Gjenst.<br>kost</th>'+
-    '<th style="text-align:right">Est.<br>sluttkostnad</th>'+
-    '<th style="text-align:right">Ferdig-<br>grad</th>'+
-    '<th style="text-align:right">Periodisert<br>inntekt</th>'+
-    '<th style="text-align:right">Est. DG%<br>ved ferdig</th>'+
-    '<th style="text-align:right">Fakturert</th>'+
-    '<th style="text-align:right">VIA</th>'+
-    '<th style="color:#9EC8FF">Kommentar</th></tr></thead>'+
-    '<tbody>'+pocR.map(r=>{
-      const inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
+    '<thead><tr><th>Ordre</th><th>PL</th><th>Type</th>'+
+    '<th style="text-align:right">Kontrakt</th><th style="text-align:right">Påløpt kost</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst. timer</th><th style="text-align:right;color:#9EC8FF">kr/t</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst. mat.</th>'+
+    '<th style="text-align:right">Gjenst. kost</th><th style="text-align:right">Est. sluttkost</th>'+
+    '<th style="text-align:right">Ferdiggrad</th><th style="text-align:right">Periodisert</th>'+
+    '<th style="text-align:right">Est. DG%</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">VIA</th><th style="color:#9EC8FF">Kommentar</th></tr></thead>'+
+    '<tbody>'+pocR.map(function(r){
+      var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
       inp.tk=inp.tk||stk;
-      const{gk,esk,fg,innt,estDG,via}=calcPOC(r);
-      if(via!=null)pv+=via;
-      const warn=via!=null&&Math.abs(via)>50000&&!inp.k;
+      var c=calcPOC(r);if(c.via!=null)pv+=c.via;
+      var warn=c.via!=null&&Math.abs(c.via)>50000&&!inp.k;
       return '<tr class="'+(warn?'rwarn':'')+'">'+
-        '<td><strong>'+r.ordreNr+'</strong></td><td style="white-space:nowrap">'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td>'+r.pl+'</td><td>'+r.type+'</td>'+
         '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.totOmk)+'</td>'+
-        '<td><input class="pi" type="text" value="'+fmtInput(inp.timer||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'timer\',this)" style="width:74px"></td>'+
-        '<td><input class="pi" type="text" value="'+fmtInput(inp.tk)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'tk\',this)" style="width:74px"></td>'+
-        '<td><input class="pi" type="text" value="'+fmtInput(inp.mat||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'mat\',this)" style="width:96px"></td>'+
-        '<td class="r calc">'+NR(gk)+'</td>'+
-        '<td class="r calc">'+NR(esk)+'</td>'+
-        '<td class="r calc">'+(fg!=null?PC(fg):'–')+'</td>'+
-        '<td class="r calc">'+NK(innt)+'</td>'+
-        '<td class="r calc">'+(estDG!=null?PC(estDG):'–')+'</td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.timer||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'timer\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.tk)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'tk\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.mat||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'mat\',this)" style="width:96px"></td>'+
+        '<td class="r calc">'+NR(c.gk)+'</td><td class="r calc">'+NR(c.esk)+'</td>'+
+        '<td class="r calc">'+(c.fg!=null?PC(c.fg):'–')+'</td>'+
+        '<td class="r calc">'+NK(c.innt)+'</td>'+
+        '<td class="r calc">'+(c.estDG!=null?PC(c.estDG):'–')+'</td>'+
         '<td class="r">'+NK(r.fakt)+'</td>'+
-        '<td class="r '+(via==null?'':(via<0?'vneg':'vpos'))+'">'+NK(via)+'</td>'+
+        '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
         '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
         '</tr>';
     }).join('')+'</tbody>';
   document.getElementById('poctot').innerHTML=
     '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
     '<span>Total VIA (POC): <strong style="color:'+(pv<0?'var(--red)':'var(--dark)')+'">'+NK(pv)+'</strong></span>';
-
-  let dv=0;
+  var dv=0;
   document.getElementById('dgtbl').innerHTML=
-    '<thead><tr><th>Ordre</th><th>Prosjektleder</th><th>Type</th><th>Beskrivelse</th><th>Kunde</th>'+
-    '<th style="text-align:right">Påløpte<br>kostnader</th>'+
-    '<th style="text-align:right">Fakturert</th>'+
-    '<th style="text-align:right">DG%<br>(system)</th>'+
-    '<th style="text-align:right;color:#9EC8FF">DG%<br>(bekreftet)</th>'+
-    '<th style="text-align:right">Forv.<br>salgsverdi</th>'+
-    '<th style="text-align:right">VIA</th>'+
-    '<th style="text-align:center">Risiko</th>'+
-    '<th style="color:#9EC8FF">Begrunnelse (obligatorisk)</th></tr></thead>'+
-    '<tbody>'+dgR.map(r=>{
-      const inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
-      const{dg,fs,via}=calcDG(r);
-      if(via!=null)dv+=via;
-      const warn=!inp.k;
+    '<thead><tr><th>Ordre</th><th>PL</th><th>Type</th><th>Beskrivelse</th><th>Kunde</th>'+
+    '<th style="text-align:right">Påløpt</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">DG% (sys)</th><th style="text-align:right;color:#9EC8FF">DG% (bekreftet)</th>'+
+    '<th style="text-align:right">Salgsverdi</th><th style="text-align:right">VIA</th>'+
+    '<th style="text-align:center">Risiko</th><th style="color:#9EC8FF">Begrunnelse</th></tr></thead>'+
+    '<tbody>'+dgR.map(function(r){
+      var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
+      var c=calcDG(r);if(c.via!=null)dv+=c.via;
+      var warn=!inp.k;
       return '<tr>'+
-        '<td><strong>'+r.ordreNr+'</strong></td><td style="white-space:nowrap">'+r.pl+'</td><td>'+r.type+'</td>'+
-        '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,38)+'…</td>'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td>'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,36)+'…</td>'+
         '<td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.kunde+'</td>'+
         '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
         '<td class="r">'+PC(r.dg)+'</td>'+
         '<td><div style="display:flex;align-items:center;gap:4px;">'+
           '<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg||35)+'" '+dis+
-          ' onfocus="piFocus(this)" onblur="piBlur(this)"'+
-          ' onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px">'+
+          ' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px">'+
           '<span style="font-size:.8rem;color:#666">%</span></div></td>'+
-        '<td class="r calc">'+NK(fs)+'</td>'+
-        '<td class="r '+(via==null?'':(via<0?'vneg':'vpos'))+'">'+NK(via)+'</td>'+
+        '<td class="r calc">'+NK(c.fs)+'</td>'+
+        '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
         '<td class="c">'+rb(r.risk)+'</td>'+
-        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse for DG%-estimat':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
         '</tr>';
     }).join('')+'</tbody>';
   document.getElementById('dgtot').innerHTML=
     '<span>Prosjekter: <strong>'+dgR.length+'</strong></span>'+
-    '<span>VIA DG-bekreftet: <strong style="color:'+(dv<0?'var(--red)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
+    '<span>DG-VIA: <strong style="color:'+(dv<0?'var(--red)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
     '<span>Kombinert VIA: <strong style="color:'+((pv+dv)<0?'var(--red)':'var(--dark)')+'">'+NK(pv+dv)+'</strong></span>';
 }
 function sP(id,f,v){if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''};POC[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
 function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
 
-// ══════════════════════════════════════════════════════════════════════════════
-// HISTORY
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Historikk ─────────────────────────────────────────────────────────────────
 function getHist(){return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}
 function saveSnap(name,entity,period){
-  const hist=getHist();
-  let pv=0,dv=0;
-  const projects=ACTIVE.filter(r=>r.status==='I arbeid').map(r=>{
-    let via=null,dg=null;
-    if(r.hasTilbud){const c=calcPOC(r);via=c.via;dg=c.estDG;if(c.via!=null)pv+=c.via;}
-    else{const c=calcDG(r);via=c.via;dg=c.dg;if(c.via!=null)dv+=c.via;}
+  var hist=getHist(),pv=0,dv=0;
+  var projects=ACTIVE.filter(function(r){return r.status==='I arbeid';}).map(function(r){
+    var via=null,dg=null;
+    if(r.hasTilbud){var c=calcPOC(r);via=c.via;dg=c.estDG;if(c.via!=null)pv+=c.via;}
+    else{var c=calcDG(r);via=c.via;dg=c.dg;if(c.via!=null)dv+=c.via;}
     return{ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,beskr:r.beskr.substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,via:via!=null?Math.round(via):null,dg:dg!=null?Math.round(dg*1000)/1000:null,hasTilbud:r.hasTilbud,risk:r.risk};
   });
-  const snap={id:Date.now(),period,entity,lockedBy:name,lockedAt:new Date().toISOString(),
-    summary:{totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),projectCount:ACTIVE.length,highRisk:ACTIVE.filter(r=>r.risk==='HØY').length},projects};
-  const filtered=hist.filter(e=>e.period!==period);
-  filtered.push(snap);
-  filtered.sort((a,b)=>a.id-b.id);
+  var snap={id:Date.now(),period:period,entity:entity,lockedBy:name,lockedAt:new Date().toISOString(),
+    summary:{totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),projectCount:ACTIVE.length,highRisk:ACTIVE.filter(function(r){return r.risk==='HØY';}).length},
+    projects:projects};
+  var filtered=hist.filter(function(e){return e.period!==period;});
+  filtered.push(snap);filtered.sort(function(a,b){return a.id-b.id;});
   localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
 }
-
 function rHist(){
-  const hist=getHist();
-  const el=document.getElementById('histcontent');
+  var hist=getHist(),el=document.getElementById('histcontent');
   if(!hist.length){el.innerHTML='<div class="hist-empty">📭 Ingen historikk enda.<br>Lås en periode for å starte historikksporing.</div>';return;}
-  const W=560,H=200,PAD=60,RPAD=20,TOP=20,BOT=50;
-  const vias=hist.map(h=>h.summary.totalVIA);
-  const maxV=Math.max(...vias.map(Math.abs),1);
-  const xStep=(W-PAD-RPAD)/(hist.length-1||1);
-  const yCtr=TOP+(H-TOP-BOT)/2;
-  const yScale=(H-TOP-BOT)/(2*maxV||1);
-  const pts=hist.map((h,i)=>[PAD+i*xStep,yCtr-h.summary.totalVIA*yScale]);
-  const polyline=pts.map(p=>p.join(',')).join(' ');
-  const dots=pts.map((p,i)=>{const v=hist[i].summary.totalVIA;const col=v<0?'var(--red)':v>0?'var(--green)':'#888';return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="6" fill="'+col+'" stroke="#fff" stroke-width="2"><title>'+hist[i].period+': '+NK(v)+'</title></circle>';}).join('');
-  const xLabels=hist.map((h,i)=>'<text x="'+(PAD+i*xStep)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="#666">'+h.period.split(' ')[0].substring(0,3)+' '+h.period.split(' ').pop()+'</text>').join('');
-  const trendSVG='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;overflow:visible;">'+
-    '<line x1="'+PAD+'" y1="'+TOP+'" x2="'+PAD+'" y2="'+(H-BOT)+'" stroke="#ddd" stroke-width="1"/>'+
-    '<line x1="'+PAD+'" y1="'+yCtr+'" x2="'+(W-RPAD)+'" y2="'+yCtr+'" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>'+
-    '<text x="'+(PAD-5)+'" y="'+(yCtr+4)+'" text-anchor="end" font-size="10" fill="#aaa">0</text>'+
-    (hist.length>1?'<polyline points="'+polyline+'" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linejoin="round"/>';'')+
-    dots+xLabels+'</svg>';
-  const periodTable='<div class="tw" style="margin-bottom:18px;"><table>'+
+  var periodTable='<div class="tw" style="margin-bottom:18px;"><table>'+
     '<thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th>'+
     '<th style="text-align:right">Total VIA</th><th style="text-align:right">POC-VIA</th><th style="text-align:right">DG-VIA</th>'+
-    '<th style="text-align:center">Prosjekter</th><th style="text-align:center">HØY risiko</th></tr></thead>'+
-    '<tbody>'+hist.slice().reverse().map(h=>'<tr>'+
+    '<th style="text-align:center">Prosjekter</th><th style="text-align:center">HØY</th></tr></thead>'+
+    '<tbody>'+hist.slice().reverse().map(function(h){return '<tr>'+
       '<td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td>'+
       '<td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td>'+
       '<td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td>'+
       '<td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td>'+
       '<td class="c">'+h.summary.projectCount+'</td>'+
       '<td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td>'+
-      '</tr>').join('')+'</tbody></table></div>';
-  el.innerHTML='<div class="hist-grid">'+
-    '<div class="chart-box"><h3>📈 VIA-trend over perioder</h3>'+trendSVG+'</div>'+
-    '<div><div class="secttitle">Periodeoversikt</div>'+periodTable+'</div></div>';
+      '</tr>';}).join('')+'</tbody></table></div>';
+  el.innerHTML='<div style="margin-bottom:18px;"><div class="secttitle">Periodeoversikt</div>'+periodTable+'</div>';
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// LOCK
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Lås ───────────────────────────────────────────────────────────────────────
 function openLock(){document.getElementById('lmodal').classList.add('open');}
 function closeLock(){document.getElementById('lmodal').classList.remove('open');}
 function doLock(){
-  const name=document.getElementById('lname').value.trim();
-  const entity=document.getElementById('lentity').value.trim();
-  const period=document.getElementById('lperiod').value.trim();
+  var name=document.getElementById('lname').value.trim();
+  var entity=document.getElementById('lentity').value.trim();
+  var period=document.getElementById('lperiod').value.trim();
   if(!name){alert('Skriv inn ditt navn.');return;}
   saveSnap(name,entity,period);
-  LOCKED=true;
-  closeLock();
+  LOCKED=true;closeLock();
   document.getElementById('btnlock').textContent='✅ Låst: '+period;
   document.getElementById('btnlock').disabled=true;
-  rPOC();rHist();
-  ST('hist');
+  rPOC();rHist();ST('hist');
   alert('Periode låst og lagret i historikk!');
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// EXPORT
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Eksport ───────────────────────────────────────────────────────────────────
 function expPOC(){
-  const rows=[];
-  ACTIVE.filter(r=>r.status==='I arbeid').forEach(r=>{
-    if(r.hasTilbud){
-      const{gk,esk,fg,innt,estDG,via}=calcPOC(r);
-      const inp=POC[r.ordreNr]||{};
-      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,Kontraktssum:r.tilbud,PåløpteKostnader:r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(gk),EstSluttkostnad:Math.round(esk),Ferdiggrad:fg!=null?Math.round(fg*1000)/10:null,PeriodisertInntekt:Math.round(innt||0),EstDG:estDG!=null?Math.round(estDG*1000)/10:null,Fakturert:r.fakt,VIA:Math.round(via||0),Kommentar:(inp.k||'')});
-    } else {
-      const{dg,fs,via}=calcDG(r);
-      const inp=DGI[r.ordreNr]||{};
-      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,PåløpteKostnader:r.totOmk,Fakturert:r.fakt,DGSystem:r.dg!=null?Math.round(r.dg*1000)/10:null,DGBekreftet:Math.round(dg*1000)/10,ForventetSalgsverdi:Math.round(fs||0),VIA:Math.round(via||0),Begrunnelse:(inp.k||'')});
-    }
+  var rows=[];
+  ACTIVE.filter(function(r){return r.status==='I arbeid';}).forEach(function(r){
+    if(r.hasTilbud){var c=calcPOC(r);var inp=POC[r.ordreNr]||{};rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,Kontraktssum:r.tilbud,PåløpteKostnader:r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),EstDG:c.estDG!=null?Math.round(c.estDG*1000)/10:null,Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});}
+    else{var c=calcDG(r);var inp=DGI[r.ordreNr]||{};rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,PåløpteKostnader:r.totOmk,Fakturert:r.fakt,DGSystem:r.dg!=null?Math.round(r.dg*1000)/10:null,DGBekreftet:Math.round(c.dg*1000)/10,ForventetSalgsverdi:Math.round(c.fs||0),VIA:Math.round(c.via||0),Begrunnelse:inp.k||''});}
   });
-  const ws=XLSX.utils.json_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
   XLSX.writeFile(wb,'POC_DG_'+new Date().toISOString().substring(0,10)+'.xlsx');
 }
-
 function expHist(){
-  const hist=getHist();
-  if(!hist.length){alert('Ingen historikk å eksportere.');return;}
-  const rows=[];
-  hist.forEach(h=>h.projects.forEach(p=>rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,Tilbud:p.tilbud,Kostnader:p.totOmk,Fakturert:p.fakt,VIA:p.via,DG:p.dg,Risiko:p.risk})));
-  const ws=XLSX.utils.json_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
+  var hist=getHist();if(!hist.length){alert('Ingen historikk.');return;}
+  var rows=[];
+  hist.forEach(function(h){h.projects.forEach(function(p){rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,VIA:p.via,DG:p.dg,Risiko:p.risk});});});
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,'Historikk',ws);
   XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
 }
+function clearHist(){if(confirm('Slette all historikk?')){localStorage.removeItem(HIST_KEY);rHist();}}
 
-function clearHist(){
-  if(confirm('Slette all historikk? Dette kan ikke angres.')){
-    localStorage.removeItem(HIST_KEY);
-    rHist();
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TABS + RESET
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Tabs + Reset ──────────────────────────────────────────────────────────────
 function ST(name){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('tab-'+name).classList.add('active');
-  const tabs={'dash':0,'qa':1,'risk':2,'poc':3,'hist':4};
-  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
+  var idx={dash:0,qa:1,risk:2,poc:3,hist:4}[name];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
 }
-
 function resetApp(){
   ACTIVE=[];POC={};DGI={};LOCKED=false;
   document.getElementById('upload').style.display='block';
@@ -923,7 +753,7 @@ function resetApp(){
   document.getElementById('api-btn').disabled=false;
   document.getElementById('btnlock').textContent='🔒 Lås og generer rapport';
   document.getElementById('btnlock').disabled=false;
-  ['qp','pp','qt'].forEach(id=>{const s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
+  ['qp','pp','qt'].forEach(function(id){var s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
   document.getElementById('co-sel').value='';
   ST('dash');
 }
