@@ -290,24 +290,9 @@ const CONFIG = {
 const GRAPH='https://graph.microsoft.com/v1.0';
 const SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
 let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected'];
-try{
-  msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});
-  console.log('[MSAL] OK');
-}catch(e){console.warn('[MSAL] feil:',e.message);}
-async function getToken(){
-  if(!msalApp)throw new Error('MSAL N/A');
-  const accs=msalApp.getAllAccounts();
-  if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}
-  try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}
-  catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}
-}
-async function gFetch(url,opts={}){
-  const tok=await getToken();
-  if(!tok)return new Response(null,{status:0});
-  const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};
-  if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';
-  return fetch(url,{...opts,headers:h});
-}
+try{msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});console.log('[MSAL] OK');}catch(e){console.warn('[MSAL] feil:',e.message);}
+async function getToken(){if(!msalApp)throw new Error('MSAL N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
+async function gFetch(url,opts={}){const tok=await getToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
 </script>
 <!-- ══════════════════════════════════════════ -->
 
@@ -1585,7 +1570,7 @@ async function loadProjects(){
     const r=await gFetch(url);
     if(r&&r.status===404){console.log('[Graph] ingen data');}
     else if(r&&r.ok){const j=await r.json();if(Array.isArray(j))allProjects=j;}
-    else throw new Error('HTTP '+(r?.status||'?'));
+    else if(r&&r.status!==0)throw new Error('HTTP '+r.status);
   } catch(e){
     try{const ls=localStorage.getItem('minel_projects');if(ls)allProjects=JSON.parse(ls);}catch(_){}
   }
@@ -1602,22 +1587,10 @@ async function saveToSharePoint(){
   const payload=JSON.stringify(allProjects);
   try{localStorage.setItem('minel_projects',payload);}catch(_){}
   try{
-    const gr=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
-    if(gr&&!gr.ok)console.warn('[Graph] save HTTP',gr.status);
-  }catch(e){console.warn('[Graph] save:',e.message);}
-  try{
-    const ctx=await fetch(`${location.origin}/_api/contextinfo`,{
-      method:'POST',headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
-    });
-    if(!ctx.ok) return;
-    const digest=(await ctx.json()).FormDigestValue;
-    await fetch(`${location.origin}${CONFIG.sharepointFil}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-RequestDigest':digest,
-               'IF-MATCH':'*','X-HTTP-Method':'PUT','Accept':'application/json;odata=nometadata'},
-      body:payload
-    });
-  } catch(e){ /* localStorage er backup */ }
+    const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`;
+    const r=await gFetch(url,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
+    if(r&&!r.ok)console.warn('[Graph] save HTTP',r.status);
+  }catch(e){console.warn('[Graph] saveToSharePoint:',e.message);}
 }
 
 function showToast(msg,ok=true){
