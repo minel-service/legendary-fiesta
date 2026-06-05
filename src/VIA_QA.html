@@ -120,7 +120,18 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div class="api-card-header"><svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>Hent perioderegnskap fra Ordrestyring<span style="margin-left:auto;font-size:.74rem;opacity:.65;font-weight:400;">Datobegrenset direkte fra API</span></div>
     <div class="api-card-body">
       <div class="api-row">
-        <div class="api-field" style="flex:2;"><label>Selskap</label><select id="co-sel"><option value="">— Velg selskap —</option></select></div>
+        <div class="api-field" style="flex:2;"><label>Selskap</label><select id="co-sel">
+          <option value="">— Velg selskap —</option>
+          <option value="0">Minel Kreativ Elektro Ski AS</option>
+          <option value="1">Minel Skogvang Installasjon AS</option>
+          <option value="2">Minel Land Elektriske AS</option>
+          <option value="3">Minel Gjøvik AS</option>
+          <option value="4">Minel Elmontasje AS</option>
+          <option value="5">Minel Elmontasje Elverum AS</option>
+          <option value="6">Minel Ainstall AS</option>
+          <option value="7">Minel Drøbak Elektriske AS</option>
+          <option value="8">Minel Gudbrandsdal AS</option>
+        </select></div>
         <div class="api-field" style="flex:1;"><label>Periodeslutt</label><input type="date" id="period-date"></div>
         <button class="btn" id="api-btn" onclick="startApiLoad()" style="align-self:flex-end;white-space:nowrap;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Last data</button>
       </div>
@@ -160,7 +171,7 @@ var VSTATUS=new Set(['I arbeid','Klar for fakturering','Venter på elektriker','
 var OS_GQL='https://graphql.ordrestyring.dk/graphql';
 var OS_COMPANIES=[{name:'Minel Kreativ Elektro Ski AS',key:'qYtkWAowUUo2PbaE'},{name:'Minel Skogvang Installasjon AS',key:'TxE4TJAk6eeWUqQY'},{name:'Minel Land Elektriske AS',key:'yOVFmYixo35RnY6l'},{name:'Minel Gjøvik AS',key:'edewj6APD4wb8uD5'},{name:'Minel Elmontasje AS',key:'rPuAsfNqjpyoeBdV'},{name:'Minel Elmontasje Elverum AS',key:'CmJHRiMNdn68RWZM'},{name:'Minel Ainstall AS',key:'OHcNVeTrqWU7dOK7'},{name:'Minel Drøbak Elektriske AS',key:'FzmySlRzW72gOBaB'},{name:'Minel Gudbrandsdal AS',key:'yEEdLNDUCssPuhOl'}];
 var QS={col:6,asc:false},RS={col:8,asc:false};
-(function(){var sel=document.getElementById('co-sel');OS_COMPANIES.forEach(function(co,i){var o=document.createElement('option');o.value=i;o.textContent=co.name;sel.appendChild(o);});var d=new Date();d.setDate(0);document.getElementById('period-date').value=d.toISOString().substring(0,10);var dz=document.getElementById('dz');dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});dz.addEventListener('dragleave',function(){dz.classList.remove('over');});dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');goExcel(e.dataTransfer.files[0]);});document.getElementById('fi').addEventListener('change',function(e){goExcel(e.target.files[0]);});})();
+(function(){var d=new Date();d.setDate(0);document.getElementById('period-date').value=d.toISOString().substring(0,10);var dz=document.getElementById('dz');dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});dz.addEventListener('dragleave',function(){dz.classList.remove('over');});dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');goExcel(e.dataTransfer.files[0]);});document.getElementById('fi').addEventListener('change',function(e){goExcel(e.target.files[0]);});})();
 function toUnix(s){var p=s.split('-');return Math.floor(new Date(+p[0],+p[1]-1,+p[2],23,59,59).getTime()/1000);}
 function gqlQ(key,q){return fetch(OS_GQL,{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();}).then(function(j){if(j.errors&&j.errors.length)throw new Error(j.errors[0].message);return j.data;});}
 function paginate(key,bq,fn){var all=[],c=null;function nx(){return gqlQ(key,bq(c)).then(function(d){var p=fn(d);all=all.concat(p.items||[]);if(p.nextCursor){c=p.nextCursor;return nx();}return all;});}return nx();}
