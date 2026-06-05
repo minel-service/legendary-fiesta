@@ -1615,7 +1615,7 @@ async function saveToSharePoint(){
   try{
     const r=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
     if(r&&!r.ok)console.warn('[Graph] save HTTP',r.status);
-  }catch(e){console.warn('[Graph] save:',e.message);} catch(e){ /* localStorage er backup */ }
+  }catch(e){console.warn('[Graph] save:',e.message);}
 }
 
 function showToast(msg,ok=true){
