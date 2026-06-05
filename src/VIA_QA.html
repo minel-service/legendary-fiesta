@@ -2,1489 +2,865 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VIA QA – Minel AS v7.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --red: #CC0000;
-    --navy: #1A2744;
-    --navy-light: #253560;
-    --bg: #f4f6f9;
-    --card: #fff;
-    --border: #dde1ea;
-    --text: #1a1a2e;
-    --muted: #6b7280;
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
-    --info: #2563eb;
-    --hoy-bg: #fef2f2;
-    --hoy-border: #fca5a5;
-    --middels-bg: #fffbeb;
-    --middels-border: #fcd34d;
-    --lav-bg: #f0fdf4;
-    --lav-border: #86efac;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#CC0000;--reddark:#A50000;--redlight:#FFEEEE;
+  --navy:#1A2744;--navydark:#111C33;
+  --dark:#1C1C1C;--mid:#444;
+  --grey:#F4F4F4;--border:#E0E0E0;
+  --green:#1E7A34;--greenbg:#E8F5EC;
+  --amber:#B36800;--amberbg:#FFF8E1;
+  --font:'Segoe UI',Arial,sans-serif;
+}
+body{font-family:var(--font);background:#F0F0F0;color:var(--dark);min-height:100vh;}
+header{background:var(--navy);display:flex;align-items:center;}
+.hd-red{background:var(--red);padding:14px 22px;display:flex;align-items:center;gap:10px;}
+.hd-red svg{width:32px;height:32px;fill:#fff;}
+.hd-red span{font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:.5px;}
+.hd-main{padding:14px 22px;flex:1;}
+.hd-main h1{font-size:1rem;font-weight:700;color:#fff;}
+.hd-main p{font-size:.78rem;color:#8fa4cc;margin-top:2px;}
+.hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;}
 
-  /* HEADER */
-  header {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-    color: #fff;
-    padding: 0 24px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 56px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .logo-bar { width: 4px; height: 32px; background: var(--red); border-radius: 2px; }
-  .header-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
-  .header-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; }
-  .badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: .5px; }
+/* ── UPLOAD / START PANEL ── */
+#startPanel{max-width:640px;margin:60px auto;text-align:center;}
+.api-card{background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);overflow:hidden;margin-bottom:20px;}
+.api-card-header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;font-weight:700;font-size:.95rem;}
+.api-card-header svg{opacity:.8;}
+.api-card-body{padding:24px;}
+.api-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;}
+.api-field{display:flex;flex-direction:column;gap:5px;flex:1;}
+.api-field label{font-size:.76rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;}
+.api-field select,.api-field input[type=date]{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:.88rem;background:#fff;width:100%;}
+.api-field select:focus,.api-field input:focus{outline:none;border-color:var(--navy);}
+.err-box{background:var(--amberbg);border-left:4px solid var(--amber);border-radius:6px;padding:12px 16px;font-size:.82rem;color:var(--amber);line-height:1.7;display:none;margin-top:10px;}
+.info-text{font-size:.76rem;color:#aaa;margin-top:8px;}
 
-  /* CONTROLS */
-  .controls {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
-    display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;
-  }
-  .ctrl-group { display: flex; flex-direction: column; gap: 3px; }
-  .ctrl-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-  select, input[type=date], input[type=text], input[type=number], textarea {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 13px;
-    font-family: inherit;
-    background: #fff;
-    color: var(--text);
-    outline: none;
-    transition: border-color .15s;
-  }
-  select:focus, input:focus, textarea:focus { border-color: var(--navy); }
-  select { min-width: 260px; cursor: pointer; }
-  button {
-    padding: 7px 18px;
-    border-radius: 6px;
-    border: none;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .15s, transform .1s;
-  }
-  button:active { transform: scale(.98); }
-  .btn-primary { background: var(--red); color: #fff; }
-  .btn-primary:hover { opacity: .9; }
-  .btn-secondary { background: var(--navy); color: #fff; }
-  .btn-secondary:hover { opacity: .9; }
-  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
-  .btn-outline:hover { border-color: var(--navy); }
-  .btn-success { background: var(--success); color: #fff; }
-  .btn-sm { padding: 4px 12px; font-size: 12px; }
+.divider{display:flex;align-items:center;gap:14px;margin:20px 0;}
+.divider div{flex:1;height:1px;background:var(--border);}
+.divider span{font-size:.78rem;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
 
-  /* PROGRESS */
-  #progressSection {
-    padding: 16px 24px;
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    display: none;
-  }
-  .progress-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
-  .progress-bar-outer { background: #e5e7eb; border-radius: 99px; height: 8px; overflow: hidden; }
-  .progress-bar-inner { background: linear-gradient(90deg, var(--red), #ff4444); height: 100%; border-radius: 99px; transition: width .3s; }
+#dz{border:2.5px dashed var(--border);border-radius:14px;background:#fff;padding:48px 28px;cursor:pointer;transition:background .15s;}
+#dz:hover,#dz.over{background:var(--redlight);}
+#dz svg{width:48px;height:48px;stroke:var(--red);}
+#dz h2{font-size:1rem;font-weight:700;color:var(--dark);margin:12px 0 6px;}
+#dz p{color:#666;font-size:.86rem;}
+#fi{display:none;}
 
-  /* TABS */
-  .tabs {
-    display: flex;
-    border-bottom: 2px solid var(--border);
-    background: var(--card);
-    padding: 0 24px;
-    gap: 0;
-    overflow-x: auto;
-  }
-  .tab-btn {
-    padding: 12px 20px;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    white-space: nowrap;
-    transition: color .15s, border-color .15s;
-  }
-  .tab-btn.active { color: var(--navy); border-bottom-color: var(--red); }
-  .tab-btn:hover:not(.active) { color: var(--text); }
+/* ── PROGRESS ── */
+#progressWrap{max-width:640px;margin:40px auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08);display:none;}
+.prog-label{font-size:.88rem;color:var(--mid);margin-bottom:10px;font-weight:600;}
+.prog-bar{height:8px;background:#E0E0E0;border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--red);border-radius:99px;transition:width .3s;width:0%;}
+.prog-sub{font-size:.78rem;color:#888;margin-top:6px;}
 
-  /* MAIN CONTENT */
-  #mainContent { padding: 24px; display: none; }
-
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* KPI GRID */
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
-  .kpi-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-  .kpi-value { font-size: 22px; font-weight: 700; color: var(--navy); }
-  .kpi-value.positive { color: var(--success); }
-  .kpi-value.negative { color: var(--danger); }
-  .kpi-sub { font-size: 11px; color: var(--muted); }
-
-  /* RISK CARDS */
-  .risk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
-  .risk-card { border-radius: 10px; padding: 16px; border: 1px solid; }
-  .risk-card.hoy { background: var(--hoy-bg); border-color: var(--hoy-border); }
-  .risk-card.middels { background: var(--middels-bg); border-color: var(--middels-border); }
-  .risk-card.lav { background: var(--lav-bg); border-color: var(--lav-border); }
-  .risk-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-  .risk-card.hoy .risk-card-title { color: var(--danger); }
-  .risk-card.middels .risk-card-title { color: var(--warning); }
-  .risk-card.lav .risk-card-title { color: var(--success); }
-  .risk-count { font-size: 28px; font-weight: 800; }
-  .risk-amount { font-size: 12px; color: var(--muted); }
-
-  /* SECTION */
-  .section-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  .section-title::before { content: ''; display: inline-block; width: 3px; height: 16px; background: var(--red); border-radius: 2px; }
-
-  /* FINDINGS */
-  .findings-list { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px; }
-  .finding-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .finding-item:last-child { border-bottom: none; }
-  .finding-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-  .finding-dot.hoy { background: var(--danger); }
-  .finding-dot.middels { background: var(--warning); }
-  .finding-dot.info { background: var(--info); }
-  .finding-text { font-size: 13px; color: var(--text); }
-
-  /* TABLE */
-  .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  thead th {
-    background: var(--navy);
-    color: #fff;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .3px;
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-  }
-  thead th:hover { background: var(--navy-light); }
-  thead th.sorted-asc::after { content: ' \2191'; }
-  thead th.sorted-desc::after { content: ' \2193'; }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
-  tbody tr:hover { background: #f8f9fc; }
-  tbody td { padding: 9px 12px; vertical-align: middle; }
-  .risk-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-  .risk-badge.HOY { background: #fee2e2; color: #b91c1c; }
-  .risk-badge.MIDDELS { background: #fef3c7; color: #92400e; }
-  .risk-badge.LAV { background: #dcfce7; color: #15803d; }
-
-  .val-neg { color: var(--danger); font-weight: 600; }
-  .val-pos { color: var(--success); font-weight: 600; }
-
-  /* FILTER BAR */
-  .filter-bar {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
-  }
-  .filter-bar input[type=text] { min-width: 220px; }
-  .filter-bar select { min-width: 140px; }
-  .filter-bar label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; padding-bottom: 2px; }
-
-  /* POC SECTION */
-  .poc-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-  .poc-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  .poc-table th { background: #f1f3f8; padding: 8px 10px; font-size: 11px; font-weight: 700; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
-  .poc-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  .poc-table input[type=number] { width: 90px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; }
-  .poc-table input[type=number]:focus { border-color: var(--navy); outline: none; }
-  .poc-calc { background: #f8f9fc; font-weight: 600; }
-
-  /* HISTORIKK */
-  .hist-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
-  .hist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .hist-title { font-weight: 700; font-size: 14px; }
-  .hist-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-  /* DRAG DROP */
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 40px;
-    text-align: center;
-    color: var(--muted);
-    transition: border-color .2s, background .2s;
-    cursor: pointer;
-    margin-bottom: 0;
-  }
-  .drop-zone.drag-over { border-color: var(--navy); background: #f0f4ff; }
-  .drop-zone-icon { font-size: 36px; margin-bottom: 8px; }
-  .drop-zone-text { font-size: 14px; font-weight: 500; }
-
-  /* MISC */
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
-  .mt-4 { margin-top: 16px; }
-  .mb-4 { margin-bottom: 16px; }
-  .flex { display: flex; }
-  .gap-2 { gap: 8px; }
-  .items-center { align-items: center; }
-  .justify-between { justify-content: space-between; }
-  .text-right { text-align: right; }
-  .text-muted { color: var(--muted); }
-  .font-bold { font-weight: 700; }
-  .small { font-size: 11px; }
-  .pl-overview { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-top: 0; overflow: hidden; }
-  .pl-overview table { font-size: 13px; }
-
-  @media (max-width: 768px) {
-    .risk-grid { grid-template-columns: 1fr; }
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    header { padding: 0 12px; }
-    #mainContent { padding: 12px; }
-    .controls { padding: 10px 12px; }
-  }
+/* ── APP ── */
+#app{display:none;padding:18px 24px;max-width:1750px;margin:0 auto;}
+.appbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.apptitle{font-size:1rem;font-weight:700;}
+.pill{background:var(--dark);color:#fff;border-radius:20px;padding:3px 14px;font-size:.8rem;font-weight:600;}
+.tabs{display:flex;gap:3px;border-bottom:3px solid var(--red);margin-bottom:18px;}
+.tab{padding:9px 17px;font-size:.88rem;cursor:pointer;border-radius:8px 8px 0 0;border:2px solid transparent;border-bottom:none;color:var(--mid);background:var(--grey);}
+.tab.active{background:#fff;border-color:var(--red);color:var(--red);font-weight:700;}
+.tab-panel{display:none;}.tab-panel.active{display:block;}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:18px;}
+.kpi{background:#fff;border-radius:8px;padding:15px 16px;border-left:4px solid var(--red);box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.kpi .lb{font-size:.73rem;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.kpi .vl{font-size:1.35rem;font-weight:800;}
+.kpi.g{border-left-color:var(--green);}.kpi.g .vl{color:var(--green);}
+.kpi.r{border-left-color:var(--red);}.kpi.r .vl{color:var(--red);}
+.kpi.a{border-left-color:var(--amber);}.kpi.a .vl{color:var(--amber);}
+.riskcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.rc{border-radius:8px;padding:16px;text-align:center;}
+.rc .n{font-size:2rem;font-weight:900;}.rc .l{font-size:.82rem;font-weight:700;margin-top:3px;}
+.rc.h{background:#FFE8E8;color:var(--red);}
+.rc.m{background:var(--amberbg);color:var(--amber);}
+.rc.lo{background:var(--greenbg);color:var(--green);}
+.secttitle{font-size:.92rem;font-weight:700;margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid #F5CCCC;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+@media(max-width:860px){.two-col{grid-template-columns:1fr;}}
+.tw{border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.08);background:#fff;overflow-y:auto;overflow-x:auto;max-height:520px;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:max-content;}
+thead th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;white-space:nowrap;font-weight:700;position:sticky;top:0;z-index:10;cursor:pointer;}
+thead th:hover{background:var(--navydark);}
+td{padding:6px 10px;border-bottom:1px solid #F0F0F0;vertical-align:middle;}
+tr:nth-child(even) td{background:#FAFAFA;}
+tr:hover td{background:#FFF0F0!important;}
+td.r{text-align:right;font-variant-numeric:tabular-nums;}
+td.c{text-align:center;}
+.bh{background:#FFE8E8;color:var(--red);border-radius:5px;padding:2px 9px;font-weight:700;font-size:.74rem;}
+.bm{background:var(--amberbg);color:var(--amber);border-radius:5px;padding:2px 9px;font-weight:700;font-size:.74rem;}
+.bl{background:var(--greenbg);color:var(--green);border-radius:5px;padding:2px 9px;font-size:.74rem;}
+.flag{display:inline-block;background:#FFF3CC;color:#7A5500;border-radius:4px;padding:1px 6px;font-size:.73rem;margin:1px 2px;}
+.flag.ok{background:var(--greenbg);color:var(--green);}
+.flag.er{background:#FFE8E8;color:var(--red);}
+.fb{display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap;align-items:center;}
+.fb input,.fb select{border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-family:var(--font);font-size:.84rem;background:#fff;}
+.fb input:focus,.fb select:focus{outline:none;border-color:var(--red);}
+.fb label{font-size:.82rem;color:#555;display:flex;align-items:center;gap:5px;}
+.sec-hdr{background:var(--navy);color:#fff;padding:8px 14px;font-weight:700;font-size:.86rem;border-radius:8px 8px 0 0;margin-top:16px;}
+.sec-note{background:var(--amberbg);padding:8px 14px;font-size:.81rem;color:var(--amber);border-left:3px solid var(--amber);}
+input.pi{width:100%;border:1.5px solid #C8D8F0;border-radius:5px;padding:4px 7px;font-size:.79rem;font-family:var(--font);text-align:right;background:#EEF4FF;color:#003090;}
+input.pi:focus{outline:none;border-color:var(--red);background:#fff;}
+input.pi:disabled{background:#f0f0f0;color:#888;}
+input.ci{width:100%;border:1.5px solid var(--border);border-radius:5px;padding:4px 7px;font-size:.78rem;font-family:var(--font);}
+input.ci.req{border-color:var(--amber);background:var(--amberbg);}
+input.ci:disabled{background:#f0f0f0;color:#666;}
+.calc{font-weight:700;}
+.vpos{color:#003090;font-weight:800;}
+.vneg{color:var(--red);font-weight:800;}
+.rwarn td{background:#FFFAED!important;}
+.totbar{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;}
+.totbar span{background:#fff;border-radius:7px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.85rem;font-weight:600;}
+.hist-empty{text-align:center;padding:52px;color:#888;font-size:.95rem;}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:.87rem;font-weight:600;cursor:pointer;font-family:var(--font);}
+.btn:hover{background:var(--reddark);}
+.btn:disabled{background:#bbb;cursor:not-allowed;}
+.btn-dark{background:var(--navy);}
+.btn-dark:hover{background:var(--navydark);}
+.btn-grn{background:var(--green);}
+.btn-grn:hover{background:#155a27;}
+.btn-o{background:transparent;color:var(--red);border:2px solid var(--red);}
+.btn-o:hover{background:var(--redlight);}
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.2);}
+.modal h2{font-size:1.05rem;font-weight:700;margin-bottom:6px;}
+.modal p{font-size:.84rem;color:#666;margin-bottom:18px;}
+.modal label{display:block;font-size:.84rem;color:#444;margin-bottom:3px;}
+.modal input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-family:var(--font);font-size:.88rem;margin-bottom:12px;}
+.modal input:focus{outline:none;border-color:var(--red);}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20px;}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="header-left">
-    <div class="logo-bar"></div>
-    <div>
-      <div class="header-title">VIA QA &mdash; Verdi i Arbeid</div>
-      <div class="header-sub">Minel AS &mdash; Periodisk kvalitetssikring av WIP</div>
-    </div>
+  <div class="hd-red">
+    <svg viewBox="0 0 40 40"><path d="M20 4 L36 12 L36 28 L20 36 L4 28 L4 12 Z" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M20 12 L20 28 M14 20 L26 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <span>MINEL</span>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span id="lastUpdated" class="small text-muted"></span>
-    <span class="badge">v7.1</span>
+  <div class="hd-main">
+    <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
+    <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
+  <span class="hd-badge">v7.1</span>
 </header>
 
-<div class="controls">
-  <div class="ctrl-group">
-    <div class="ctrl-label">Selskap</div>
-    <select id="companySelect">
-      <option value="">&#8212; Velg selskap &#8212;</option>
-    </select>
+<!-- ── START PANEL ── -->
+<div id="startPanel">
+  <div class="api-card">
+    <div class="api-card-header">
+      <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      Hent perioderegnskap fra Ordrestyring
+      <span style="margin-left:auto;font-size:.74rem;opacity:.65;font-weight:400;">Data hentes datobegrenset direkte fra API</span>
+    </div>
+    <div class="api-card-body">
+      <div class="api-row">
+        <div class="api-field" style="flex:2;">
+          <label>Selskap</label>
+          <select id="co-sel"><option value="">— Velg selskap —</option></select>
+        </div>
+        <div class="api-field" style="flex:1;">
+          <label>Periodeslutt</label>
+          <input type="date" id="period-date">
+        </div>
+        <button class="btn" id="api-btn" onclick="startApiLoad()" style="align-self:flex-end;white-space:nowrap;">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Last data
+        </button>
+      </div>
+      <div id="api-err" class="err-box"></div>
+      <div class="info-text">Timer og fakturering: eksakt t.o.m. valgt dato · Materialkost: 99,89% nøyaktig (caseMaterialAggregate)</div>
+    </div>
   </div>
-  <div class="ctrl-group">
-    <div class="ctrl-label">Periodeslutt</div>
-    <input type="date" id="periodEnd">
+
+  <div class="divider">
+    <div></div><span>eller importer fra Excel</span><div></div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;">
-    <button class="btn-primary" onclick="startLoad()">Last data</button>
-    <button class="btn-outline" onclick="clearData()">Nullstill</button>
-    <button class="btn-outline" onclick="toggleDropZone()">&#128193; Excel-import</button>
-    <button class="btn-secondary btn-sm" onclick="lockPeriod()" id="lockBtn" style="display:none">&#128274; L&aring;s periode</button>
+
+  <div id="dz" onclick="document.getElementById('fi').click()">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+    </svg>
+    <h2>Dra og slipp Excel-rapporten her</h2>
+    <p>«Forventet dekningsgradsmetode» fra Ordrestyring</p>
+    <button class="btn" style="margin-top:14px" onclick="event.stopPropagation();document.getElementById('fi').click()">Velg fil</button>
   </div>
+  <input type="file" id="fi" accept=".xlsx,.xls">
+  <p style="margin-top:10px;color:#888;font-size:.78rem;">Data behandles kun lokalt i nettleseren — ingenting sendes til server.</p>
 </div>
 
-<div id="dropSection" style="display:none; padding:16px 24px; background:var(--card); border-bottom:1px solid var(--border);">
-  <div class="drop-zone" id="dropZone">
-    <div class="drop-zone-icon">&#128202;</div>
-    <div class="drop-zone-text">Dra og slipp Excel-fil her, eller klikk for &aring; velge</div>
-    <div class="small text-muted mt-4">Forventede kolonner: Ordre nr., Status, Type, Beskrivelse, Kunde, Prosjektleder, Totale omk. (NOK), Forv. dekningsgrad (%), Tilbudspris (NOK), Fakturert (NOK), Periodisert inntekt (NOK)</div>
+<!-- ── PROGRESS ── -->
+<div id="progressWrap">
+  <div class="prog-label">
+    <span id="prog-text">Henter ordreliste…</span>
+    <span id="prog-pct">0%</span>
   </div>
-  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  <div class="prog-sub" id="prog-sub"></div>
 </div>
 
-<div id="progressSection">
-  <div class="progress-label">
-    <span id="progressText">Laster...</span>
-    <span id="progressPct">0%</span>
+<!-- ── APP ── -->
+<div id="app">
+  <div class="appbar">
+    <span class="apptitle" id="atitle"></span>
+    <span class="pill" id="aperiod"></span>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-grn" id="btnlock" onclick="openLock()">🔒 Lås periode</button>
+      <button class="btn btn-dark" onclick="expPOC()">💾 Eksporter Excel</button>
+      <button class="btn btn-dark" onclick="resetApp()">↩ Ny periode</button>
+    </div>
   </div>
-  <div class="progress-bar-outer">
-    <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
-  </div>
-</div>
-
-<div id="tabsBar" style="display:none;">
   <div class="tabs">
-    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard',this)">&#128202; Dashboard</button>
-    <button class="tab-btn" data-tab="qa" onclick="switchTab('qa',this)">&#128203; QA-Alle</button>
-    <button class="tab-btn" data-tab="risiko" onclick="switchTab('risiko',this)">&#9888;&#65039; Risikoregister</button>
-    <button class="tab-btn" data-tab="poc" onclick="switchTab('poc',this)">&#129518; POC+DG-vurdering</button>
-    <button class="tab-btn" data-tab="historikk" onclick="switchTab('historikk',this)">&#128197; Historikk</button>
+    <div class="tab active" onclick="ST('dash')">📊 Dashboard</div>
+    <div class="tab" onclick="ST('qa')">🔍 QA – Alle</div>
+    <div class="tab" onclick="ST('risk')">🚨 Risikoregister</div>
+    <div class="tab" onclick="ST('poc')">📐 POC + DG</div>
+    <div class="tab" onclick="ST('hist')">📈 Historikk</div>
+  </div>
+  <div class="tab-panel active" id="tab-dash">
+    <div class="kpis" id="kpis"></div>
+    <div class="two-col">
+      <div>
+        <div class="secttitle">🚦 Risikofordeling</div>
+        <div class="riskcards" id="rcards"></div>
+        <div class="secttitle" style="margin-top:16px;">⚠️ Viktigste funn</div>
+        <div id="findings" style="font-size:.85rem;line-height:2;"></div>
+      </div>
+      <div>
+        <div class="secttitle">👤 Per prosjektleder</div>
+        <div class="tw"><table id="pltbl"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-qa">
+    <div class="fb">
+      <input type="text" id="qs" placeholder="🔍 Søk ordre, kunde, beskrivelse…" style="width:260px" oninput="rQA()">
+      <select id="qr" onchange="rQA()"><option value="">Alle risikoklasser</option><option value="HØY">🔴 HØY</option><option value="MIDDELS">🟡 MIDDELS</option><option value="LAV">🟢 LAV</option></select>
+      <select id="qp" onchange="rQA()"><option value="">Alle prosjektledere</option></select>
+      <select id="qt" onchange="rQA()"><option value="">Alle typer</option></select>
+      <label><input type="checkbox" id="qnz" onchange="rQA()"> Kun VIA ≠ 0</label>
+    </div>
+    <div class="tw"><table id="qatbl"></table></div>
+    <div id="qacnt" style="font-size:.79rem;color:#888;margin-top:6px;"></div>
+  </div>
+  <div class="tab-panel" id="tab-risk">
+    <div class="fb">
+      <select id="rsel" onchange="rRisk()"><option value="HØY,MIDDELS">HØY + MIDDELS</option><option value="HØY">Kun HØY</option><option value="MIDDELS">Kun MIDDELS</option></select>
+    </div>
+    <div class="tw"><table id="risktbl"></table></div>
+  </div>
+  <div class="tab-panel" id="tab-poc">
+    <div style="background:var(--redlight);border-left:4px solid var(--red);padding:12px 16px;margin-bottom:14px;font-size:.84rem;line-height:1.8;">
+      <strong>1. POC:</strong> Fastpriskontrakter — gjenstående timer og materialer.
+      &nbsp;|&nbsp; <strong>2. DG-bekreftelse:</strong> Uten fastpris — DG% og begrunnelse.
+      &nbsp;|&nbsp; 🔵 Blå felt = input &nbsp;|&nbsp; 🟡 Gul rad = kommentar påkrevet
+    </div>
+    <div class="fb">
+      <select id="pp" onchange="rPOC()"><option value="">Alle prosjektledere</option></select>
+      <label>Std. timekost: <input type="number" id="stk" value="650" min="100" step="50" style="width:72px;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;" onchange="rPOC()"> kr/t</label>
+    </div>
+    <div class="sec-hdr">Seksjon 1 – Fastpriskontrakter (POC) <span id="poc-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
+    <div class="tw" style="border-radius:0 0 8px 8px;"><table id="poctbl"></table></div>
+    <div class="totbar" id="poctot"></div>
+    <div class="sec-hdr" style="margin-top:24px;">Seksjon 2 – Uten kontraktssum (DG%-bekreftelse) <span id="dg-cnt" style="font-weight:400;font-size:.8rem;opacity:.8;"></span></div>
+    <div class="sec-note">Ingen fastpris — prosjektleder skriver inn DG% og begrunner estimatet.</div>
+    <div class="tw" style="border-radius:0 0 8px 8px;"><table id="dgtbl"></table></div>
+    <div class="totbar" id="dgtot"></div>
+  </div>
+  <div class="tab-panel" id="tab-hist">
+    <div class="fb" style="margin-bottom:16px;">
+      <span style="font-size:.88rem;font-weight:600;">Historikk lagres automatisk ved låsing.</span>
+      <button class="btn btn-dark" onclick="expHist()" style="margin-left:auto;">📥 Eksporter historikk</button>
+      <button class="btn" style="background:#888;" onclick="clearHist()">🗑 Slett historikk</button>
+    </div>
+    <div id="histcontent"></div>
   </div>
 </div>
 
-<div id="mainContent">
-
-  <!-- DASHBOARD -->
-  <div id="tab-dashboard" class="tab-panel active">
-    <div class="kpi-grid" id="kpiGrid"></div>
-    <div class="risk-grid" id="riskGrid"></div>
-    <div class="section-title">N&oslash;kkelfunn</div>
-    <div class="findings-list" id="findingsList"></div>
-    <div class="section-title" style="margin-top:20px;">Prosjektleder-oversikt</div>
-    <div class="pl-overview">
-      <div id="plTable"></div>
+<div class="mbg" id="lmodal">
+  <div class="modal">
+    <h2>🔒 Lås periode og generer rapport</h2>
+    <p>Etter låsing kan ikke verdier endres. Perioden lagres i historikk.</p>
+    <label>Ditt navn</label><input type="text" id="lname" placeholder="F.eks. Øyvind Sæthersmoen">
+    <label>Selskapsenhet</label><input type="text" id="lentity">
+    <label>Periode</label><input type="text" id="lperiod">
+    <div class="mbtns">
+      <button class="btn btn-o" onclick="closeLock()">Avbryt</button>
+      <button class="btn btn-grn" onclick="doLock()">🔒 Lås og generer rapport</button>
     </div>
   </div>
-
-  <!-- QA ALLE -->
-  <div id="tab-qa" class="tab-panel">
-    <div class="filter-bar">
-      <div class="ctrl-group">
-        <div class="ctrl-label">S&oslash;k</div>
-        <input type="text" id="qaSearch" placeholder="Ordrenr, beskrivelse, kunde..." oninput="filterQATable()">
-      </div>
-      <div class="ctrl-group">
-        <div class="ctrl-label">Risiko</div>
-        <select id="qaRisk" onchange="filterQATable()">
-          <option value="">Alle</option>
-          <option value="HOY">H&Oslash;Y</option>
-          <option value="MIDDELS">MIDDELS</option>
-          <option value="LAV">LAV</option>
-        </select>
-      </div>
-      <div class="ctrl-group">
-        <div class="ctrl-label">Prosjektleder</div>
-        <select id="qaPL" onchange="filterQATable()"></select>
-      </div>
-      <div class="ctrl-group">
-        <div class="ctrl-label">Type</div>
-        <select id="qaType" onchange="filterQATable()"></select>
-      </div>
-      <label>
-        <input type="checkbox" id="qaVIAonly" onchange="filterQATable()">
-        Kun VIA &ne; 0
-      </label>
-      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-        <button class="btn-outline btn-sm" onclick="exportQAExcel()">&#11015; Excel</button>
-        <span id="qaCount" class="small text-muted"></span>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table id="qaTable">
-        <thead>
-          <tr>
-            <th onclick="sortTable('qaTable',0)">Ordrenr</th>
-            <th onclick="sortTable('qaTable',1)">Beskrivelse</th>
-            <th onclick="sortTable('qaTable',2)">Kunde</th>
-            <th onclick="sortTable('qaTable',3)">PL</th>
-            <th onclick="sortTable('qaTable',4)">Type</th>
-            <th onclick="sortTable('qaTable',5)">Status</th>
-            <th onclick="sortTable('qaTable',6)">Timekost</th>
-            <th onclick="sortTable('qaTable',7)">Materialkost</th>
-            <th onclick="sortTable('qaTable',8)">Tot.omk</th>
-            <th onclick="sortTable('qaTable',9)">DG%</th>
-            <th onclick="sortTable('qaTable',10)">Tilbud</th>
-            <th onclick="sortTable('qaTable',11)">Fakturert</th>
-            <th onclick="sortTable('qaTable',12)">fSalgsverdi</th>
-            <th onclick="sortTable('qaTable',13)">VIA</th>
-            <th onclick="sortTable('qaTable',14)">Risiko</th>
-          </tr>
-        </thead>
-        <tbody id="qaBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- RISIKOREGISTER -->
-  <div id="tab-risiko" class="tab-panel">
-    <div class="filter-bar">
-      <span class="small text-muted">Viser kun H&Oslash;Y og MIDDELS risiko, sortert etter risikoscore</span>
-      <div style="margin-left:auto;">
-        <button class="btn-outline btn-sm" onclick="exportRisikoExcel()">&#11015; Excel</button>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table id="risikoTable">
-        <thead>
-          <tr>
-            <th>Ordrenr</th>
-            <th>Beskrivelse</th>
-            <th>Kunde</th>
-            <th>PL</th>
-            <th>Type</th>
-            <th>Tot.omk</th>
-            <th>DG%</th>
-            <th>DG-avvik</th>
-            <th>Tilbud</th>
-            <th>Fakturert</th>
-            <th>VIA</th>
-            <th>Score</th>
-            <th>Risiko</th>
-            <th>&Aring;rsaker</th>
-          </tr>
-        </thead>
-        <tbody id="risikoBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- POC + DG -->
-  <div id="tab-poc" class="tab-panel">
-    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-      <button class="btn-success btn-sm" onclick="exportPOCExcel()">&#11015; Eksporter XLSX</button>
-      <button class="btn-outline btn-sm" onclick="resetPOCInputs()">&#8629; Tilbakestill</button>
-    </div>
-
-    <!-- Section 1: Fastpris -->
-    <div class="poc-section">
-      <div class="section-title">Fastpris-ordrer (POC-beregning)</div>
-      <p class="small text-muted mb-4">Rediger timer, kr/t og materialer for &aring; beregne Percentage of Completion (POC) VIA.</p>
-      <div class="table-wrap" style="border:none;">
-        <table class="poc-table">
-          <thead>
-            <tr>
-              <th>Ordrenr</th>
-              <th>Beskrivelse</th>
-              <th>PL</th>
-              <th>Tilbud</th>
-              <th>Timer (est.)</th>
-              <th>Kr/t</th>
-              <th>Materialer</th>
-              <th>Est.omk</th>
-              <th>POC%</th>
-              <th>POC Inntekt</th>
-              <th>Fakturert</th>
-              <th>POC VIA</th>
-            </tr>
-          </thead>
-          <tbody id="pocBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Section 2: Uten kontrakt -->
-    <div class="poc-section">
-      <div class="section-title">Ordrer uten kontrakt (DG-vurdering)</div>
-      <p class="small text-muted mb-4">Rediger DG% og gi begrunnelse for ordrer uten kontraktspris.</p>
-      <div class="table-wrap" style="border:none;">
-        <table class="poc-table">
-          <thead>
-            <tr>
-              <th>Ordrenr</th>
-              <th>Beskrivelse</th>
-              <th>PL</th>
-              <th>Tot.omk</th>
-              <th>DG% (API)</th>
-              <th>DG% (justert)</th>
-              <th>fSalgsverdi</th>
-              <th>Fakturert</th>
-              <th>VIA</th>
-              <th>Begrunnelse</th>
-            </tr>
-          </thead>
-          <tbody id="dgBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- HISTORIKK -->
-  <div id="tab-historikk" class="tab-panel">
-    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
-      <button class="btn-outline btn-sm" onclick="clearHistory()">&#128465; Slett all historikk</button>
-    </div>
-    <div id="histContainer"></div>
-  </div>
-
 </div>
+
+<footer>Minel AS · VIA QA v7.1 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
-'use strict';
+// ══ STATE ══
+var ACTIVE=[], POC={}, DGI={}, LOCKED=false;
+var HIST_KEY='minel_via_history_v2';
+var ROUND=new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50,.55,.60,.65,.70]);
+var VSTATUS=new Set(['I arbeid','Klar for fakturering','Venter på elektriker','Åpen']);
 
-// ═══════════════════════════════════════
-// CONSTANTS & STATE
-// ═══════════════════════════════════════
-
-const COMPANIES = [
-  {name:'Minel Kreativ Elektro Ski AS',     key:'qYtkWAowUUo2PbaE'},
-  {name:'Minel Skogvang Installasjon AS',   key:'TxE4TJAk6eeWUqQY'},
-  {name:'Minel Land Elektriske AS',         key:'yOVFmYixo35RnY6l'},
-  {name:'Minel Gjøvik AS',             key:'edewj6APD4wb8uD5'},
-  {name:'Minel Elmontasje AS',              key:'rPuAsfNqjpyoeBdV'},
-  {name:'Minel Elmontasje Elverum AS',      key:'CmJHRiMNdn68RWZM'},
-  {name:'Minel Ainstall AS',               key:'OHcNVeTrqWU7dOK7'},
-  {name:'Minel Drøbak Elektriske AS',  key:'FzmySlRzW72gOBaB'},
-  {name:'Minel Gudbrandsdal AS',            key:'yEEdLNDUCssPuhOl'}
+// ══ API CONFIG ══
+var OS_GQL='https://graphql.ordrestyring.dk/graphql';
+var OS_COMPANIES=[
+  {name:'Minel Kreativ Elektro Ski AS',  key:'qYtkWAowUUo2PbaE'},
+  {name:'Minel Skogvang Installasjon AS',key:'TxE4TJAk6eeWUqQY'},
+  {name:'Minel Land Elektriske AS',      key:'yOVFmYixo35RnY6l'},
+  {name:'Minel Gjøvik AS',               key:'edewj6APD4wb8uD5'},
+  {name:'Minel Elmontasje AS',           key:'rPuAsfNqjpyoeBdV'},
+  {name:'Minel Elmontasje Elverum AS',   key:'CmJHRiMNdn68RWZM'},
+  {name:'Minel Ainstall AS',             key:'OHcNVeTrqWU7dOK7'},
+  {name:'Minel Drøbak Elektriske AS',    key:'FzmySlRzW72gOBaB'},
+  {name:'Minel Gudbrandsdal AS',         key:'yEEdLNDUCssPuhOl'}
 ];
 
-const ACTIVE_STATUSES = ['I arbeid','Klar for fakturering','Venter på elektriker','Åpen'];
-const API_URL = 'https://graphql.ordrestyring.dk/graphql';
-const ROUND_DG = new Set([.10,.15,.17,.20,.25,.28,.30,.35,.40,.45,.50]);
-const POOL_SIZE = 5;
-
-let state = {
-  projects: [],
-  pocInputs: {},
-  dgInputs: {},
-  sortState: {},
-  loaded: false,
-  companyName: '',
-  periodEnd: '',
-};
-
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
-
-(function init() {
-  const sel = document.getElementById('companySelect');
-  COMPANIES.forEach((c, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = c.name;
-    sel.appendChild(opt);
-  });
-
-  // Default: last day of previous month
-  const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-  document.getElementById('periodEnd').value = fmtDateISO(lastDay);
-
-  setupDropZone();
-  renderHistorikkTab();
+// ══ INIT ══
+(function(){
+  // Company selector
+  var sel=document.getElementById('co-sel');
+  OS_COMPANIES.forEach(function(co,i){var o=document.createElement('option');o.value=i;o.textContent=co.name;sel.appendChild(o);});
+  // Default date: last day of previous month
+  var d=new Date();d.setDate(0);
+  document.getElementById('period-date').value=d.toISOString().substring(0,10);
+  // DZ events
+  var dz=document.getElementById('dz');
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');goExcel(e.dataTransfer.files[0]);});
+  document.getElementById('fi').addEventListener('change',function(e){goExcel(e.target.files[0]);});
 })();
 
-function fmtDateISO(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + dd;
+// ══ API HELPERS ══
+function toUnix(dateStr){
+  var p=dateStr.split('-');
+  return Math.floor(new Date(+p[0],+p[1]-1,+p[2],23,59,59).getTime()/1000);
 }
-
-function toUnixEnd(dateStr) {
-  // dateStr: YYYY-MM-DD, returns end-of-day unix timestamp
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return Math.floor(new Date(y, m - 1, d, 23, 59, 59).getTime() / 1000);
-}
-
-function toUnixStart(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return Math.floor(new Date(y, m - 1, d, 0, 0, 0).getTime() / 1000);
-}
-
-// ═══════════════════════════════════════
-// API HELPERS
-// ═══════════════════════════════════════
-
-async function gql(apiKey, query) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
-    body: JSON.stringify({ query })
+function gqlPost(key,query){
+  return fetch(OS_GQL,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({query:query})
+  }).then(function(r){return r.json();}).then(function(j){
+    if(j.errors&&j.errors.length) throw new Error(j.errors.map(function(e){return e.message;}).join('; '));
+    return j.data;
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
-  if (json.errors) throw new Error(json.errors[0].message);
-  return json.data;
 }
-
-async function fetchAllCases(apiKey) {
-  let cursor = null;
-  let all = [];
-  do {
-    const cursorPart = cursor ? 'cursor:"' + cursor + '",' : '';
-    const q = '{cases(pagination:{' + cursorPart + 'limit:200},orderBy:{field:"updatedAt",direction:DESC}){items{id caseNumber description status{text} caseType{text} customer{name} foreman{fullName} offerTotal parentCaseId subCases{id} economy{expectedCoverageRatio}} nextCursor}}';
-    const data = await gql(apiKey, q);
-    all = all.concat(data.cases.items);
-    cursor = data.cases.nextCursor || null;
-  } while (cursor);
-  return all;
-}
-
-async function fetchHours(apiKey, caseId, fromUnix, toUnix) {
-  let cursor = null;
-  let total = 0;
-  do {
-    const cursorPart = cursor ? 'cursor:"' + cursor + '",' : '';
-    const q = '{hours(pagination:{' + cursorPart + 'limit:200},between:{field:startTime,from:' + fromUnix + ',to:' + toUnix + '},filters:{case:' + caseId + '}){items{costPrice billableHours} nextCursor}}';
-    const data = await gql(apiKey, q);
-    for (const h of data.hours.items) total += (h.costPrice || 0);
-    cursor = data.hours.nextCursor || null;
-  } while (cursor);
-  return total / 100;
-}
-
-async function fetchMaterials(apiKey, caseId) {
-  const q = '{caseMaterialAggregate(caseId:' + caseId + ',type:MATERIAL){totalCostPrice}}';
-  const data = await gql(apiKey, q);
-  return (data.caseMaterialAggregate ? data.caseMaterialAggregate.totalCostPrice || 0 : 0) / 100;
-}
-
-async function fetchSales(apiKey, caseId, fromUnix, toUnix) {
-  let cursor = null;
-  let total = 0;
-  do {
-    const cursorPart = cursor ? 'cursor:"' + cursor + '",' : '';
-    const q = '{salesInvoices(pagination:{' + cursorPart + 'limit:200},between:{field:date,from:' + fromUnix + ',to:' + toUnix + '},filters:{caseIds:[' + caseId + ']}){items{id amount vat} nextCursor}}';
-    const data = await gql(apiKey, q);
-    for (const s of data.salesInvoices.items) total += (s.amount || 0);
-    cursor = data.salesInvoices.nextCursor || null;
-  } while (cursor);
-  return total / 100;
-}
-
-// ═══════════════════════════════════════
-// PROGRESS
-// ═══════════════════════════════════════
-
-function setProgress(pct, text) {
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('progressText').textContent = text;
-  document.getElementById('progressPct').textContent = Math.round(pct) + '%';
-}
-
-// ═══════════════════════════════════════
-// MAIN LOAD
-// ═══════════════════════════════════════
-
-async function startLoad() {
-  const compIdx = document.getElementById('companySelect').value;
-  const periodEnd = document.getElementById('periodEnd').value;
-  if (compIdx === '') { alert('Velg selskap først.'); return; }
-  if (!periodEnd) { alert('Velg periodeslutt.'); return; }
-
-  const company = COMPANIES[parseInt(compIdx)];
-  state.companyName = company.name;
-  state.periodEnd = periodEnd;
-
-  // Period: 1st of that month to last day
-  const [y, m] = periodEnd.split('-').map(Number);
-  const firstOfMonth = y + '-' + String(m).padStart(2,'0') + '-01';
-  const unixFrom = toUnixStart(firstOfMonth);
-  const unixTo = toUnixEnd(periodEnd);
-
-  document.getElementById('progressSection').style.display = 'block';
-  document.getElementById('mainContent').style.display = 'none';
-  document.getElementById('tabsBar').style.display = 'none';
-  document.getElementById('lockBtn').style.display = 'none';
-  setProgress(2, 'Henter ordrer...');
-
-  try {
-    const allCases = await fetchAllCases(company.key);
-    setProgress(10, 'Filtrerer ordrer (' + allCases.length + ' totalt)...');
-
-    // Filter: active status, no parent, no sub-cases
-    const active = allCases.filter(c =>
-      ACTIVE_STATUSES.includes(c.status && c.status.text) &&
-      !c.parentCaseId &&
-      (!c.subCases || c.subCases.length === 0)
-    );
-
-    setProgress(12, 'Laster finansdata for ' + active.length + ' ordrer...');
-
-    let done = 0;
-    const results = [];
-
-    async function processCase(c) {
-      const caseId = parseInt(c.id);
-      const [timekost, materialkost, fakturert] = await Promise.all([
-        fetchHours(company.key, caseId, unixFrom, unixTo),
-        fetchMaterials(company.key, caseId),
-        fetchSales(company.key, caseId, unixFrom, unixTo)
-      ]);
-
-      const totOmk = timekost + materialkost;
-      const rawDG = c.economy && c.economy.expectedCoverageRatio ? c.economy.expectedCoverageRatio : 0;
-      const dg = rawDG / 100;
-      const offerTotal = c.offerTotal || 0;
-      const tilbud = offerTotal > 0 ? offerTotal / 100 : null;
-      const hasTilbud = tilbud !== null;
-      const fSalgsverdi = (dg > 0 && dg < 1) ? totOmk / (1 - dg) : totOmk;
-      const via = fSalgsverdi - fakturert;
-
-      done++;
-      const pct = 12 + (done / active.length) * 86;
-      setProgress(pct, done + ' av ' + active.length + ' ordrer lastet (' + c.caseNumber + ')');
-
-      return {
-        id: caseId,
-        caseNumber: c.caseNumber || '',
-        description: c.description || '',
-        status: (c.status && c.status.text) || '',
-        type: (c.caseType && c.caseType.text) || '',
-        customer: (c.customer && c.customer.name) || '',
-        pl: (c.foreman && c.foreman.fullName) || '',
-        offerTotal,
-        hasTilbud,
-        tilbud,
-        timekost,
-        materialkost,
-        totOmk,
-        dg,
-        fSalgsverdi,
-        fakturert,
-        via,
-      };
-    }
-
-    // Concurrent pool of POOL_SIZE
-    const queue = [...active];
-    const workers = Array(POOL_SIZE).fill(null).map(async () => {
-      while (queue.length > 0) {
-        const c = queue.shift();
-        if (!c) break;
-        try {
-          const r = await processCase(c);
-          results.push(r);
-        } catch(e) {
-          console.error('Error for case', c.caseNumber, e);
-          done++;
-          const pct = 12 + (done / active.length) * 86;
-          setProgress(pct, done + ' av ' + active.length + ' (feil: ' + c.caseNumber + ')');
-        }
-      }
+function paginate(key,buildQ,dataFn){
+  var all=[], cursor=null;
+  function next(){
+    return gqlPost(key,buildQ(cursor)).then(function(data){
+      var page=dataFn(data);
+      all=all.concat(page.items||[]);
+      if(page.nextCursor){cursor=page.nextCursor;return next();}
+      return all;
     });
-    await Promise.all(workers);
-
-    setProgress(100, 'Ferdig!');
-    state.projects = calcRisk(results);
-    state.loaded = true;
-    state.pocInputs = {};
-    state.dgInputs = {};
-
-    setTimeout(() => {
-      document.getElementById('progressSection').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
-      document.getElementById('tabsBar').style.display = 'block';
-      document.getElementById('lockBtn').style.display = '';
-      document.getElementById('lastUpdated').textContent = 'Oppdatert: ' + new Date().toLocaleString('no-NO');
-      renderAll();
-      // Activate dashboard tab
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('[data-tab="dashboard"]').classList.add('active');
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('tab-dashboard').classList.add('active');
-    }, 400);
-
-  } catch(e) {
-    setProgress(0, 'Feil: ' + e.message);
-    console.error(e);
-    alert('Feil ved lasting: ' + e.message);
   }
+  return next();
 }
 
-// ═══════════════════════════════════════
-// RISK CALCULATION
-// ═══════════════════════════════════════
-
-function calcRisk(projects) {
-  // Calculate avg DG per type
-  const typeGroups = {};
-  for (const p of projects) {
-    const t = p.type || 'Ukjent';
-    if (!typeGroups[t]) typeGroups[t] = [];
-    typeGroups[t].push(p.dg);
-  }
-  const typeAvgDG = {};
-  for (const [t, dgs] of Object.entries(typeGroups)) {
-    typeAvgDG[t] = dgs.reduce((a, b) => a + b, 0) / dgs.length;
-  }
-
-  return projects.map(p => {
-    let score = 0;
-    const reasons = [];
-    const tKey = p.type || 'Ukjent';
-    const avgDG = typeAvgDG[tKey] !== undefined ? typeAvgDG[tKey] : 0;
-    const dgAvvik = Math.abs(p.dg - avgDG);
-    const dgRounded = Math.round(p.dg * 100) / 100;
-
-    if (p.dg === 0) { score += 3; reasons.push('DG=0%'); }
-    if (p.dg > 0 && ROUND_DG.has(dgRounded)) { score += 1; reasons.push('Rund DG'); }
-    if (p.via < -20000) { score += 3; reasons.push('VIA < -20k'); }
-    else if (p.via < -5000) { score += 1; reasons.push('VIA < -5k'); }
-    if (p.via > 100000) { score += 2; reasons.push('VIA > 100k'); }
-    else if (p.via > 50000) { score += 1; reasons.push('VIA > 50k'); }
-    if (dgAvvik > 0.10) { score += 2; reasons.push('DG-avvik ' + (dgAvvik * 100).toFixed(1) + '%'); }
-    if (!p.hasTilbud && p.totOmk > 100000) { score += 2; reasons.push('Ingen kontrakt, omk>100k'); }
-
-    const risk = score >= 4 ? 'HOY' : score >= 2 ? 'MIDDELS' : 'LAV';
-    const riskDisplay = score >= 4 ? 'HØY' : score >= 2 ? 'MIDDELS' : 'LAV';
-    return Object.assign({}, p, { riskScore: score, risk, riskDisplay, riskReasons: reasons, dgAvvik, typeAvgDG: avgDG });
-  });
+// ══ THREE DATA SOURCES ══
+// 1. Hours — date-limited, UNIX timestamps
+function fetchHours(key,caseId,unixFrom,unixTo){
+  return paginate(key,function(c){
+    return '{hours(pagination:{cursor:'+(c?'"'+c+'"':'null')+',limit:200},between:{field:startTime,from:'+unixFrom+',to:'+unixTo+'},filters:{case:'+caseId+'}){items{costPrice}nextCursor}}';
+  },function(d){return d.hours;});
 }
 
-// ═══════════════════════════════════════
-// RENDER ALL
-// ═══════════════════════════════════════
-
-function renderAll() {
-  renderDashboard();
-  renderQAFilters();
-  filterQATable();
-  renderRisikoTable();
-  renderPOCTab();
+// 2. Materials — caseMaterialAggregate, single call, type:MATERIAL
+// Verified: 99.89% accurate (1,550 kr diff = deleted items in source system)
+function fetchMaterials(key,caseId){
+  return gqlPost(key,'{caseMaterialAggregate(caseId:'+caseId+',type:MATERIAL){totalCostPrice}}')
+    .then(function(d){return(d.caseMaterialAggregate&&d.caseMaterialAggregate.totalCostPrice)||0;});
 }
 
-// ═══════════════════════════════════════
-// DASHBOARD
-// ═══════════════════════════════════════
-
-function renderDashboard() {
-  const ps = state.projects;
-  const totalVIA = ps.reduce((s, p) => s + p.via, 0);
-  const posVIA = ps.filter(p => p.via > 0).reduce((s, p) => s + p.via, 0);
-  const negVIA = ps.filter(p => p.via < 0).reduce((s, p) => s + p.via, 0);
-  const avgDG = ps.length ? ps.reduce((s, p) => s + p.dg, 0) / ps.length : 0;
-  const roundCount = ps.filter(p => p.dg > 0 && ROUND_DG.has(Math.round(p.dg * 100) / 100)).length;
-  const noContract = ps.filter(p => !p.hasTilbud).length;
-  const hoy = ps.filter(p => p.risk === 'HOY');
-  const mid = ps.filter(p => p.risk === 'MIDDELS');
-  const lav = ps.filter(p => p.risk === 'LAV');
-
-  document.getElementById('kpiGrid').innerHTML =
-    kpiCard('Aktive ordrer', ps.length, 'Filtrert: aktive, uten delprosjekter', '') +
-    kpiCard('Total VIA', nok(totalVIA), 'Samlet verdi i arbeid', totalVIA >= 0 ? 'positive' : 'negative') +
-    kpiCard('Positiv VIA', nok(posVIA), ps.filter(p => p.via > 0).length + ' ordrer', 'positive') +
-    kpiCard('Negativ VIA', nok(negVIA), ps.filter(p => p.via < 0).length + ' ordrer', 'negative') +
-    kpiCard('Gjsn. DG%', (avgDG * 100).toFixed(1) + '%', 'Forventet dekningsgrad', '') +
-    kpiCard('Runde DG', roundCount, 'Mulig estimat, bør vurderes', roundCount > 0 ? 'negative' : '') +
-    kpiCard('Uten kontrakt', noContract, 'Ingen tilbudspris registrert', noContract > 0 ? 'negative' : '') +
-    kpiCard('Periode', state.periodEnd, state.companyName.split(' ').slice(0, 2).join(' '), '');
-
-  document.getElementById('riskGrid').innerHTML =
-    '<div class="risk-card hoy">' +
-      '<div class="risk-card-title">🔴 Høy risiko</div>' +
-      '<div class="risk-count">' + hoy.length + '</div>' +
-      '<div class="risk-amount">VIA: ' + nok(hoy.reduce((s, p) => s + p.via, 0)) + '</div>' +
-    '</div>' +
-    '<div class="risk-card middels">' +
-      '<div class="risk-card-title">🟡 Middels risiko</div>' +
-      '<div class="risk-count">' + mid.length + '</div>' +
-      '<div class="risk-amount">VIA: ' + nok(mid.reduce((s, p) => s + p.via, 0)) + '</div>' +
-    '</div>' +
-    '<div class="risk-card lav">' +
-      '<div class="risk-card-title">🟢 Lav risiko</div>' +
-      '<div class="risk-count">' + lav.length + '</div>' +
-      '<div class="risk-amount">VIA: ' + nok(lav.reduce((s, p) => s + p.via, 0)) + '</div>' +
-    '</div>';
-
-  // Findings
-  const findings = [];
-  if (hoy.length > 0) findings.push({cls:'hoy', text: hoy.length + ' ordrer med HØY risiko – total VIA ' + nok(hoy.reduce((s,p)=>s+p.via,0))});
-  if (mid.length > 0) findings.push({cls:'middels', text: mid.length + ' ordrer med MIDDELS risiko'});
-  const zeroDG = ps.filter(p => p.dg === 0);
-  if (zeroDG.length > 0) findings.push({cls:'hoy', text: zeroDG.length + ' ordrer mangler DG-estimat (DG=0%)'});
-  if (noContract > 0) findings.push({cls:'middels', text: noContract + ' ordrer uten kontraktspris registrert'});
-  const bigNegVIA = ps.filter(p => p.via < -20000);
-  if (bigNegVIA.length > 0) findings.push({cls:'hoy', text: bigNegVIA.length + ' ordrer med VIA under -20 000 NOK'});
-  if (roundCount > 0) findings.push({cls:'info', text: roundCount + ' ordrer bruker «r und» DG — kan være estimater satt manuelt'});
-  const bigPosVIA = ps.filter(p => p.via > 100000);
-  if (bigPosVIA.length > 0) findings.push({cls:'info', text: bigPosVIA.length + ' ordrer med VIA over 100 000 NOK — bør dokumenteres'});
-  if (findings.length === 0) findings.push({cls:'info', text: 'Ingen vesentlige avvik identifisert for perioden.'});
-
-  document.getElementById('findingsList').innerHTML = findings.map(f =>
-    '<div class="finding-item"><div class="finding-dot ' + f.cls + '"></div><div class="finding-text">' + esc(f.text) + '</div></div>'
-  ).join('');
-
-  // PL overview
-  const plGroups = {};
-  for (const p of ps) {
-    const pl = p.pl || 'Ukjent';
-    if (!plGroups[pl]) plGroups[pl] = { count:0, via:0, hoy:0, mid:0, totOmk:0 };
-    plGroups[pl].count++;
-    plGroups[pl].via += p.via;
-    plGroups[pl].totOmk += p.totOmk;
-    if (p.risk === 'HOY') plGroups[pl].hoy++;
-    if (p.risk === 'MIDDELS') plGroups[pl].mid++;
-  }
-  const plRows = Object.entries(plGroups).sort((a, b) => b[1].via - a[1].via);
-  document.getElementById('plTable').innerHTML =
-    '<table>' +
-    '<thead><tr><th>Prosjektleder</th><th>Ordrer</th><th>Tot.omk</th><th>VIA</th><th>HØY</th><th>MIDDELS</th></tr></thead>' +
-    '<tbody>' + plRows.map(function(e) {
-      const pl = e[0]; const v = e[1];
-      return '<tr>' +
-        '<td>' + esc(pl) + '</td>' +
-        '<td>' + v.count + '</td>' +
-        '<td>' + nok(v.totOmk) + '</td>' +
-        '<td class="' + (v.via < 0 ? 'val-neg' : 'val-pos') + '">' + nok(v.via) + '</td>' +
-        '<td>' + (v.hoy > 0 ? '<span class="risk-badge HOY">' + v.hoy + '</span>' : '—') + '</td>' +
-        '<td>' + (v.mid > 0 ? '<span class="risk-badge MIDDELS">' + v.mid + '</span>' : '—') + '</td>' +
-      '</tr>';
-    }).join('') +
-    '</tbody></table>';
+// 3. Sales invoices — date-limited, UNIX timestamps
+// CRITICAL: Do NOT include fields: number, date, case, name (SQL bug in Ordrestyring backend)
+function fetchSalesInvoices(key,caseId,unixFrom,unixTo){
+  return paginate(key,function(c){
+    return '{salesInvoices(pagination:{cursor:'+(c?'"'+c+'"':'null')+',limit:200},between:{field:date,from:'+unixFrom+',to:'+unixTo+'},filters:{caseIds:['+caseId+']}){items{id amount vat}nextCursor}}';
+  },function(d){return d.salesInvoices;});
 }
 
-function kpiCard(label, value, sub, cls) {
-  return '<div class="kpi-card">' +
-    '<div class="kpi-label">' + esc(label) + '</div>' +
-    '<div class="kpi-value' + (cls ? ' ' + cls : '') + '">' + value + '</div>' +
-    '<div class="kpi-sub">' + esc(sub) + '</div>' +
-  '</div>';
-}
+// ══ MAIN LOAD ══
+function startApiLoad(){
+  var idx=parseInt(document.getElementById('co-sel').value);
+  if(isNaN(idx)){alert('Velg et selskap.');return;}
+  var co=OS_COMPANIES[idx];
+  var dateStr=document.getElementById('period-date').value;
+  if(!dateStr){alert('Velg periodeslutt-dato.');return;}
 
-// ═══════════════════════════════════════
-// QA TABLE
-// ═══════════════════════════════════════
+  document.getElementById('api-btn').disabled=true;
+  document.getElementById('api-err').style.display='none';
+  setProgress(0,'Henter ordreliste…','');
+  document.getElementById('startPanel').style.display='none';
+  document.getElementById('progressWrap').style.display='block';
 
-function renderQAFilters() {
-  const ps = state.projects;
-  const pls = Array.from(new Set(ps.map(p => p.pl || 'Ukjent'))).sort();
-  const types = Array.from(new Set(ps.map(p => p.type || 'Ukjent'))).sort();
+  var unixFrom=toUnix('2000-01-01'); // hent all historikk for timer/fakturaer
+  var unixTo=toUnix(dateStr);
 
-  const plSel = document.getElementById('qaPL');
-  plSel.innerHTML = '<option value="">Alle PL</option>' + pls.map(pl => '<option value="' + esc(pl) + '">' + esc(pl) + '</option>').join('');
+  // Fetch all cases
+  paginate(co.key,function(c){
+    return '{cases(pagination:{cursor:'+(c?'"'+c+'"':'null')+',limit:200},orderBy:{field:"id",direction:DESC}){items{id caseNumber description status{text} caseType{text} customer{name} foreman{fullName} offerTotal parentCaseId economy{expectedCoverageRatio}}nextCursor}}';
+  },function(d){return d.cases;}).then(function(cases){
 
-  const typeSel = document.getElementById('qaType');
-  typeSel.innerHTML = '<option value="">Alle typer</option>' + types.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
-}
+    // Filter: active status + not a parent case
+    var active=cases.filter(function(c){
+      var status=(c.status&&c.status.text)||'';
+      return VSTATUS.has(status)&&!c.parentCaseId;
+    });
+    setProgress(10,'Henter økonomidata for '+active.length+' ordrer…','Bruker 5 parallelle forespørsler');
 
-function filterQATable() {
-  const search = document.getElementById('qaSearch').value.toLowerCase();
-  const risk = document.getElementById('qaRisk').value;
-  const pl = document.getElementById('qaPL').value;
-  const type = document.getElementById('qaType').value;
-  const viaOnly = document.getElementById('qaVIAonly').checked;
+    var done=0;
+    var results=[];
 
-  const filtered = state.projects.filter(p => {
-    if (risk && p.risk !== risk) return false;
-    if (pl && (p.pl || 'Ukjent') !== pl) return false;
-    if (type && (p.type || 'Ukjent') !== type) return false;
-    if (viaOnly && p.via === 0) return false;
-    if (search) {
-      const hay = ((p.caseNumber || '') + ' ' + (p.description || '') + ' ' + (p.customer || '') + ' ' + (p.pl || '')).toLowerCase();
-      if (!hay.includes(search)) return false;
-    }
-    return true;
-  });
-
-  document.getElementById('qaCount').textContent = filtered.length + ' ordrer';
-  const tbody = document.getElementById('qaBody');
-  tbody.innerHTML = filtered.map(p => qaRow(p)).join('');
-}
-
-function qaRow(p) {
-  return '<tr>' +
-    '<td class="font-bold">' + esc(p.caseNumber) + '</td>' +
-    '<td>' + esc(p.description) + '</td>' +
-    '<td>' + esc(p.customer) + '</td>' +
-    '<td>' + esc(p.pl) + '</td>' +
-    '<td>' + esc(p.type) + '</td>' +
-    '<td>' + esc(p.status) + '</td>' +
-    '<td class="text-right">' + nok(p.timekost) + '</td>' +
-    '<td class="text-right">' + nok(p.materialkost) + '</td>' +
-    '<td class="text-right font-bold">' + nok(p.totOmk) + '</td>' +
-    '<td class="text-right">' + (p.dg * 100).toFixed(1) + '%</td>' +
-    '<td class="text-right">' + (p.hasTilbud ? nok(p.tilbud) : '—') + '</td>' +
-    '<td class="text-right">' + nok(p.fakturert) + '</td>' +
-    '<td class="text-right">' + nok(p.fSalgsverdi) + '</td>' +
-    '<td class="text-right ' + (p.via < 0 ? 'val-neg' : 'val-pos') + '">' + nok(p.via) + '</td>' +
-    '<td><span class="risk-badge ' + p.risk + '">' + p.riskDisplay + '</span></td>' +
-  '</tr>';
-}
-
-// ═══════════════════════════════════════
-// RISIKO TABLE
-// ═══════════════════════════════════════
-
-function renderRisikoTable() {
-  const ps = state.projects
-    .filter(p => p.risk === 'HOY' || p.risk === 'MIDDELS')
-    .sort((a, b) => b.riskScore - a.riskScore);
-
-  document.getElementById('risikoBody').innerHTML = ps.map(p =>
-    '<tr>' +
-    '<td class="font-bold">' + esc(p.caseNumber) + '</td>' +
-    '<td>' + esc(p.description) + '</td>' +
-    '<td>' + esc(p.customer) + '</td>' +
-    '<td>' + esc(p.pl) + '</td>' +
-    '<td>' + esc(p.type) + '</td>' +
-    '<td class="text-right">' + nok(p.totOmk) + '</td>' +
-    '<td class="text-right">' + (p.dg * 100).toFixed(1) + '%</td>' +
-    '<td class="text-right">' + (p.dgAvvik * 100).toFixed(1) + '%</td>' +
-    '<td class="text-right">' + (p.hasTilbud ? nok(p.tilbud) : '—') + '</td>' +
-    '<td class="text-right">' + nok(p.fakturert) + '</td>' +
-    '<td class="text-right ' + (p.via < 0 ? 'val-neg' : 'val-pos') + '">' + nok(p.via) + '</td>' +
-    '<td class="text-right font-bold">' + p.riskScore + '</td>' +
-    '<td><span class="risk-badge ' + p.risk + '">' + p.riskDisplay + '</span></td>' +
-    '<td class="small text-muted">' + esc(p.riskReasons.join(', ')) + '</td>' +
-    '</tr>'
-  ).join('');
-}
-
-// ═══════════════════════════════════════
-// POC TAB
-// ═══════════════════════════════════════
-
-function renderPOCTab() {
-  const fastpris = state.projects.filter(p => p.hasTilbud);
-  const utenKontrakt = state.projects.filter(p => !p.hasTilbud);
-
-  // Section 1: Fastpris
-  document.getElementById('pocBody').innerHTML = fastpris.map(p => {
-    const inp = state.pocInputs[p.id] || {};
-    const timer = inp.timer !== undefined ? inp.timer : '';
-    const krt = inp.krt !== undefined ? inp.krt : '';
-    const mat = inp.mat !== undefined ? inp.mat : 0;
-    const timerVal = parseFloat(timer);
-    const krtVal = parseFloat(krt);
-    const matVal = parseFloat(mat) || 0;
-    const hasInputs = !isNaN(timerVal) && !isNaN(krtVal) && krtVal > 0;
-    const estOmk = hasInputs ? timerVal * krtVal + matVal : null;
-    const poc = estOmk !== null && p.tilbud > 0 ? Math.min(1, estOmk / p.tilbud) : null;
-    const pocInntekt = poc !== null ? poc * p.tilbud : null;
-    const pocVIA = pocInntekt !== null ? pocInntekt - p.fakturert : null;
-
-    return '<tr>' +
-      '<td class="font-bold">' + esc(p.caseNumber) + '</td>' +
-      '<td>' + esc(p.description) + '</td>' +
-      '<td>' + esc(p.pl) + '</td>' +
-      '<td class="text-right">' + nok(p.tilbud) + '</td>' +
-      '<td><input type="number" value="' + (timer !== '' ? timer : '') + '" placeholder="' + Math.round(p.timekost / 600 || 0) + '" onchange="updatePOC(' + p.id + ',\'timer\',this.value)"></td>' +
-      '<td><input type="number" value="' + (krt !== '' ? krt : '') + '" placeholder="600" onchange="updatePOC(' + p.id + ',\'krt\',this.value)"></td>' +
-      '<td><input type="number" value="' + (inp.mat !== undefined ? inp.mat : '') + '" placeholder="' + Math.round(p.materialkost || 0) + '" onchange="updatePOC(' + p.id + ',\'mat\',this.value)"></td>' +
-      '<td class="poc-calc text-right">' + (estOmk !== null ? nok(estOmk) : '—') + '</td>' +
-      '<td class="poc-calc text-right">' + (poc !== null ? (poc * 100).toFixed(1) + '%' : '—') + '</td>' +
-      '<td class="poc-calc text-right">' + (pocInntekt !== null ? nok(pocInntekt) : '—') + '</td>' +
-      '<td class="text-right">' + nok(p.fakturert) + '</td>' +
-      '<td class="poc-calc text-right ' + (pocVIA !== null ? (pocVIA < 0 ? 'val-neg' : 'val-pos') : '') + '">' + (pocVIA !== null ? nok(pocVIA) : '—') + '</td>' +
-    '</tr>';
-  }).join('');
-
-  // Section 2: uten kontrakt
-  document.getElementById('dgBody').innerHTML = utenKontrakt.map(p => {
-    const inp = state.dgInputs[p.id] || {};
-    const dgAdjStr = inp.dg !== undefined ? String(inp.dg) : (p.dg * 100).toFixed(1);
-    const beg = inp.begrunnelse || '';
-    const dgVal = parseFloat(dgAdjStr) / 100;
-    const fSalg = !isNaN(dgVal) && dgVal > 0 && dgVal < 1 ? p.totOmk / (1 - dgVal) : p.totOmk;
-    const via = fSalg - p.fakturert;
-
-    return '<tr>' +
-      '<td class="font-bold">' + esc(p.caseNumber) + '</td>' +
-      '<td>' + esc(p.description) + '</td>' +
-      '<td>' + esc(p.pl) + '</td>' +
-      '<td class="text-right">' + nok(p.totOmk) + '</td>' +
-      '<td class="text-right">' + (p.dg * 100).toFixed(1) + '%</td>' +
-      '<td><input type="number" value="' + dgAdjStr + '" step="0.1" min="0" max="100" onchange="updateDG(' + p.id + ',\'dg\',this.value)" style="width:80px"></td>' +
-      '<td class="poc-calc text-right">' + nok(fSalg) + '</td>' +
-      '<td class="text-right">' + nok(p.fakturert) + '</td>' +
-      '<td class="poc-calc text-right ' + (via < 0 ? 'val-neg' : 'val-pos') + '">' + nok(via) + '</td>' +
-      '<td><textarea rows="2" style="width:200px;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:4px;" onchange="updateDG(' + p.id + ',\'begrunnelse\',this.value)" placeholder="Begrunnelse for DG...">' + esc(beg) + '</textarea></td>' +
-    '</tr>';
-  }).join('');
-}
-
-function updatePOC(id, field, val) {
-  if (!state.pocInputs[id]) state.pocInputs[id] = {};
-  state.pocInputs[id][field] = parseFloat(val);
-  renderPOCTab();
-}
-
-function updateDG(id, field, val) {
-  if (!state.dgInputs[id]) state.dgInputs[id] = {};
-  state.dgInputs[id][field] = field === 'begrunnelse' ? val : parseFloat(val);
-  renderPOCTab();
-}
-
-function resetPOCInputs() {
-  if (!confirm('Tilbakestille alle POC- og DG-justeringer?')) return;
-  state.pocInputs = {};
-  state.dgInputs = {};
-  renderPOCTab();
-}
-
-// ═══════════════════════════════════════
-// HISTORIKK
-// ═══════════════════════════════════════
-
-function renderHistorikkTab() {
-  const hist = getHistory();
-  const el = document.getElementById('histContainer');
-  if (hist.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>Ingen låste perioder ennå.</p></div>';
-    return;
-  }
-  el.innerHTML = hist.map(function(h, i) {
-    return '<div class="hist-item">' +
-      '<div class="hist-header">' +
-        '<div>' +
-          '<div class="hist-title">' + esc(h.companyName) + ' — ' + esc(h.period) + '</div>' +
-          '<div class="hist-meta">Låst av: ' + esc(h.lockedBy) + ' | ' + new Date(h.lockedAt).toLocaleString('no-NO') + '</div>' +
-        '</div>' +
-        '<button class="btn-outline btn-sm" onclick="deleteHistory(' + i + ')">🗑 Slett</button>' +
-      '</div>' +
-      '<div class="kpi-grid" style="margin-bottom:0;">' +
-        kpiCard('Ordrer', h.summary.count, 'Aktive ved periodes lutt', '') +
-        kpiCard('Total VIA', nok(h.summary.totalVIA), '', h.summary.totalVIA >= 0 ? 'positive' : 'negative') +
-        kpiCard('HØY risiko', h.summary.hoy, '', h.summary.hoy > 0 ? 'negative' : '') +
-        kpiCard('Gjsn. DG', (h.summary.avgDG * 100).toFixed(1) + '%', '', '') +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem('via_qa_history') || '[]'); }
-  catch(e) { return []; }
-}
-
-function saveHistory(hist) {
-  localStorage.setItem('via_qa_history', JSON.stringify(hist));
-}
-
-function lockPeriod() {
-  if (!state.loaded) { alert('Last data først.'); return; }
-  const lockedBy = prompt('Låst av (navn):');
-  if (!lockedBy) return;
-
-  const ps = state.projects;
-  const hist = getHistory();
-  hist.unshift({
-    companyName: state.companyName,
-    period: state.periodEnd,
-    lockedBy,
-    lockedAt: Date.now(),
-    summary: {
-      count: ps.length,
-      totalVIA: ps.reduce((s, p) => s + p.via, 0),
-      hoy: ps.filter(p => p.risk === 'HOY').length,
-      mid: ps.filter(p => p.risk === 'MIDDELS').length,
-      avgDG: ps.length ? ps.reduce((s, p) => s + p.dg, 0) / ps.length : 0,
-    },
-    projects: ps.map(p => ({
-      caseNumber: p.caseNumber,
-      description: p.description,
-      pl: p.pl,
-      totOmk: p.totOmk,
-      dg: p.dg,
-      via: p.via,
-      risk: p.riskDisplay
-    }))
-  });
-  saveHistory(hist);
-  alert('Periode låst og lagret i historikk.');
-  renderHistorikkTab();
-}
-
-function deleteHistory(i) {
-  if (!confirm('Slette denne posten?')) return;
-  const hist = getHistory();
-  hist.splice(i, 1);
-  saveHistory(hist);
-  renderHistorikkTab();
-}
-
-function clearHistory() {
-  if (!confirm('Slette ALL historikk? Dette kan ikke angres.')) return;
-  localStorage.removeItem('via_qa_history');
-  renderHistorikkTab();
-}
-
-// ═══════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════
-
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const panel = document.getElementById('tab-' + name);
-  if (panel) panel.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    if (b.dataset.tab === name) b.classList.add('active');
-  });
-  if (name === 'historikk') renderHistorikkTab();
-}
-
-// ═══════════════════════════════════════
-// SORTING
-// ═══════════════════════════════════════
-
-function sortTable(tableId, colIdx) {
-  const table = document.getElementById(tableId);
-  if (!table) return;
-  const tbody = table.querySelector('tbody');
-  const rows = Array.from(tbody.rows);
-  const key = tableId + '-' + colIdx;
-  const asc = state.sortState[key] !== 'asc';
-  state.sortState[key] = asc ? 'asc' : 'desc';
-
-  rows.sort((a, b) => {
-    const av = (a.cells[colIdx] && a.cells[colIdx].textContent.trim()) || '';
-    const bv = (b.cells[colIdx] && b.cells[colIdx].textContent.trim()) || '';
-    const an = parseNum(av);
-    const bn = parseNum(bv);
-    if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
-    return asc ? av.localeCompare(bv, 'no') : bv.localeCompare(av, 'no');
-  });
-
-  rows.forEach(r => tbody.appendChild(r));
-
-  table.querySelectorAll('thead th').forEach((th, i) => {
-    th.classList.remove('sorted-asc', 'sorted-desc');
-    if (i === colIdx) th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
-  });
-}
-
-function parseNum(s) {
-  // Remove NOK, spaces, commas, %, currency symbols
-  return parseFloat(s.replace(/[^\d.,\-]/g, '').replace(',', '.'));
-}
-
-// ═══════════════════════════════════════
-// EXCEL EXPORT
-// ═══════════════════════════════════════
-
-function exportQAExcel() {
-  if (!state.projects.length) { alert('Ingen data å eksportere.'); return; }
-  const rows = [['Ordrenr','Beskrivelse','Kunde','Prosjektleder','Type','Status','Timekost (NOK)','Materialkost (NOK)','Tot.omk. (NOK)','DG%','Tilbud (NOK)','Fakturert (NOK)','fSalgsverdi (NOK)','VIA (NOK)','Risiko','Score']];
-  state.projects.forEach(p => rows.push([
-    p.caseNumber, p.description, p.customer, p.pl, p.type, p.status,
-    r2(p.timekost), r2(p.materialkost), r2(p.totOmk),
-    r2(p.dg * 100), p.hasTilbud ? r2(p.tilbud) : '',
-    r2(p.fakturert), r2(p.fSalgsverdi), r2(p.via),
-    p.riskDisplay, p.riskScore
-  ]));
-  dlXlsx(rows, 'VIA_QA_' + state.periodEnd);
-}
-
-function exportRisikoExcel() {
-  if (!state.projects.length) { alert('Ingen data å eksportere.'); return; }
-  const ps = state.projects.filter(p => p.risk === 'HOY' || p.risk === 'MIDDELS').sort((a, b) => b.riskScore - a.riskScore);
-  const rows = [['Ordrenr','Beskrivelse','Kunde','Prosjektleder','Type','Tot.omk. (NOK)','DG%','DG-avvik%','Tilbud (NOK)','Fakturert (NOK)','VIA (NOK)','Score','Risiko','Årsaker']];
-  ps.forEach(p => rows.push([
-    p.caseNumber, p.description, p.customer, p.pl, p.type,
-    r2(p.totOmk), r2(p.dg * 100), r2(p.dgAvvik * 100),
-    p.hasTilbud ? r2(p.tilbud) : '',
-    r2(p.fakturert), r2(p.via), p.riskScore, p.riskDisplay,
-    p.riskReasons.join('; ')
-  ]));
-  dlXlsx(rows, 'VIA_Risiko_' + state.periodEnd);
-}
-
-function exportPOCExcel() {
-  if (!state.projects.length) { alert('Ingen data å eksportere.'); return; }
-  const rows = [['Seksjon','Ordrenr','Beskrivelse','Prosjektleder','Tilbud/Tot.omk (NOK)','Timer (est.)','Kr/t','Materialer','Est.omk (NOK)','POC%','POC Inntekt (NOK)','Fakturert (NOK)','POC VIA (NOK)','DG% (API)','DG% (justert)','fSalgsverdi (NOK)','VIA (NOK)','Begrunnelse']];
-
-  state.projects.filter(p => p.hasTilbud).forEach(p => {
-    const inp = state.pocInputs[p.id] || {};
-    const timerVal = parseFloat(inp.timer);
-    const krtVal = parseFloat(inp.krt);
-    const matVal = parseFloat(inp.mat) || 0;
-    const hasInputs = !isNaN(timerVal) && !isNaN(krtVal) && krtVal > 0;
-    const estOmk = hasInputs ? timerVal * krtVal + matVal : '';
-    const poc = hasInputs && p.tilbud > 0 ? Math.min(1, estOmk / p.tilbud) : '';
-    const pocInntekt = poc !== '' ? r2(poc * p.tilbud) : '';
-    const pocVIA = poc !== '' ? r2(poc * p.tilbud - p.fakturert) : '';
-    rows.push(['Fastpris', p.caseNumber, p.description, p.pl,
-      r2(p.tilbud),
-      !isNaN(timerVal) ? timerVal : '',
-      !isNaN(krtVal) ? krtVal : '',
-      !isNaN(parseFloat(inp.mat)) ? parseFloat(inp.mat) : '',
-      estOmk !== '' ? r2(estOmk) : '',
-      poc !== '' ? r2(poc * 100) : '',
-      pocInntekt,
-      r2(p.fakturert),
-      pocVIA,
-      r2(p.dg * 100), '', '', '', ''
-    ]);
-  });
-
-  state.projects.filter(p => !p.hasTilbud).forEach(p => {
-    const inp = state.dgInputs[p.id] || {};
-    const dgAdj = inp.dg !== undefined ? inp.dg / 100 : p.dg;
-    const fSalg = dgAdj > 0 && dgAdj < 1 ? p.totOmk / (1 - dgAdj) : p.totOmk;
-    const via = fSalg - p.fakturert;
-    rows.push(['Uten kontrakt', p.caseNumber, p.description, p.pl,
-      r2(p.totOmk), '', '', '', '', '', '',
-      r2(p.fakturert), '',
-      r2(p.dg * 100),
-      r2(inp.dg !== undefined ? inp.dg : p.dg * 100),
-      r2(fSalg), r2(via),
-      inp.begrunnelse || ''
-    ]);
-  });
-
-  dlXlsx(rows, 'VIA_POC_' + state.periodEnd);
-}
-
-function dlXlsx(rows, filename) {
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Data');
-  XLSX.writeFile(wb, filename + '.xlsx');
-}
-
-// ═══════════════════════════════════════
-// EXCEL IMPORT
-// ═══════════════════════════════════════
-
-function setupDropZone() {
-  const dz = document.getElementById('dropZone');
-  const fi = document.getElementById('fileInput');
-
-  dz.addEventListener('click', () => fi.click());
-  fi.addEventListener('change', e => { if (e.target.files[0]) handleImportFile(e.target.files[0]); });
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault();
-    dz.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) handleImportFile(e.dataTransfer.files[0]);
-  });
-}
-
-function toggleDropZone() {
-  const sec = document.getElementById('dropSection');
-  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
-}
-
-function handleImportFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws, {header:1});
-      if (data.length < 2) { alert('Fant ingen data i filen.'); return; }
-
-      const headers = data[0];
-      const COL_MAP_DEF = {
-        'Ordre nr.': 'caseNumber',
-        'Status': 'status',
-        'Type': 'type',
-        'Beskrivelse': 'description',
-        'Kunde': 'customer',
-        'Prosjektleder': 'pl',
-        'Totale omk. (NOK)': 'totOmk',
-        'Forv. dekningsgrad (%)': 'dgPct',
-        'Tilbudspris (NOK)': 'tilbud',
-        'Fakturert (NOK)': 'fakturert',
-        'Periodisert inntekt (NOK)': 'fSalgsverdi'
-      };
-
-      const colMap = {};
-      headers.forEach((h, i) => {
-        if (COL_MAP_DEF[String(h).trim()]) colMap[COL_MAP_DEF[String(h).trim()]] = i;
-      });
-
-      const get = (row, key) => colMap[key] !== undefined ? row[colMap[key]] : undefined;
-
-      const projects = [];
-      for (let r = 1; r < data.length; r++) {
-        const row = data[r];
-        if (!row || !row.some(v => v !== undefined && v !== '')) continue;
-        const totOmk = parseFloat(get(row,'totOmk')) || 0;
-        const dg = (parseFloat(get(row,'dgPct')) || 0) / 100;
-        const tilbudRaw = parseFloat(get(row,'tilbud'));
-        const tilbud = !isNaN(tilbudRaw) && tilbudRaw > 0 ? tilbudRaw : null;
-        const hasTilbud = tilbud !== null;
-        const fakturert = parseFloat(get(row,'fakturert')) || 0;
-        const fSalgsvedRaw = parseFloat(get(row,'fSalgsverdi'));
-        const fSalgsverdi = !isNaN(fSalgsvedRaw) ? fSalgsvedRaw
-          : (dg > 0 && dg < 1 ? totOmk / (1 - dg) : totOmk);
-        const via = fSalgsverdi - fakturert;
-        projects.push({
-          id: r,
-          caseNumber: String(get(row,'caseNumber') || r),
-          description: String(get(row,'description') || ''),
-          status: String(get(row,'status') || ''),
-          type: String(get(row,'type') || ''),
-          customer: String(get(row,'customer') || ''),
-          pl: String(get(row,'pl') || ''),
-          hasTilbud,
-          tilbud,
-          timekost: totOmk * 0.5,
-          materialkost: totOmk * 0.5,
-          totOmk,
-          dg,
-          fSalgsverdi,
-          fakturert,
-          via,
-        });
+    // Concurrent pool of 5
+    function pool(tasks,max){
+      var idx=0;
+      var out=new Array(tasks.length);
+      function worker(){
+        if(idx>=tasks.length) return Promise.resolve();
+        var i=idx++;
+        return tasks[i]().then(function(r){out[i]=r;return worker();});
       }
-
-      if (projects.length === 0) { alert('Ingen gyldige rader funnet.'); return; }
-
-      state.projects = calcRisk(projects);
-      state.loaded = true;
-      state.companyName = document.getElementById('companySelect').options[document.getElementById('companySelect').selectedIndex] ?
-        document.getElementById('companySelect').options[document.getElementById('companySelect').selectedIndex].text : 'Import';
-      state.periodEnd = document.getElementById('periodEnd').value;
-      state.pocInputs = {};
-      state.dgInputs = {};
-
-      document.getElementById('dropSection').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
-      document.getElementById('tabsBar').style.display = 'block';
-      document.getElementById('lockBtn').style.display = '';
-      document.getElementById('lastUpdated').textContent = 'Importert: ' + new Date().toLocaleString('no-NO');
-
-      renderAll();
-      switchTab('dashboard', null);
-      alert('Importert ' + projects.length + ' ordrer fra Excel.');
-    } catch(ex) {
-      alert('Feil ved import: ' + ex.message);
-      console.error(ex);
+      return Promise.all(Array.from({length:Math.min(max,tasks.length)},worker)).then(function(){return out;});
     }
+
+    var tasks=active.map(function(c){
+      return function(){
+        var rawDG=(c.economy&&c.economy.expectedCoverageRatio)||0;
+        var dg=rawDG>1?rawDG/100:rawDG;
+        var tilbud=c.offerTotal>0?c.offerTotal/100:null;
+        return Promise.all([
+          fetchHours(co.key,c.id,unixFrom,unixTo).catch(function(){return [];}),
+          fetchMaterials(co.key,c.id).catch(function(){return 0;}),
+          fetchSalesInvoices(co.key,c.id,unixFrom,unixTo).catch(function(){return [];})
+        ]).then(function(res){
+          var hrs=res[0], matOre=res[1], inv=res[2];
+          var timerkost=hrs.reduce(function(s,h){return s+(h.costPrice||0);},0)/100;
+          var materialkost=matOre/100;
+          var fakturert=inv.reduce(function(s,i){return s+(i.amount||0);},0)/100;
+          var totOmk=timerkost+materialkost;
+          var fSalgsverdi=(dg>0&&dg<1)?totOmk/(1-dg):totOmk;
+          var via=fSalgsverdi-fakturert;
+          done++;
+          setProgress(10+Math.round((done/active.length)*88),'Laster '+done+' av '+active.length+' ordrer…','');
+          return{
+            id:c.id,ordreNr:String(c.caseNumber||'').trim(),
+            status:(c.status&&c.status.text)||'',
+            type:(c.caseType&&c.caseType.text)||'',
+            beskr:String(c.description||'').replace(/[\n\r\xa0]+/g,' ').trim(),
+            kunde:(c.customer&&c.customer.name)||'',
+            pl:(c.foreman&&c.foreman.fullName)||'',
+            tilbud:tilbud,hasTilbud:tilbud!=null&&tilbud>0,
+            totOmk:totOmk,timerkost:timerkost,materialkost:materialkost,
+            dg:dg,fakt:fakturert,fSalgsverdi:fSalgsverdi,via:via
+          };
+        });
+      };
+    });
+
+    return pool(tasks,5).then(function(res){
+      var validRows=res.filter(function(r){return r&&r.ordreNr;});
+      setProgress(100,'Ferdig! '+validRows.length+' ordrer lastet.','');
+      setTimeout(function(){
+        var d=new Date(dateStr);
+        var prd=d.toLocaleDateString('no',{month:'long',year:'numeric'});
+        document.getElementById('lentity').value=co.name;
+        parseRows(validRows,co.name+' – t.o.m. '+dateStr,prd);
+        document.getElementById('progressWrap').style.display='none';
+        document.getElementById('api-btn').disabled=false;
+      },400);
+    });
+
+  }).catch(function(e){
+    document.getElementById('progressWrap').style.display='none';
+    document.getElementById('startPanel').style.display='block';
+    document.getElementById('api-btn').disabled=false;
+    var errDiv=document.getElementById('api-err');
+    errDiv.innerHTML='<strong>❌ Feil:</strong> '+e.message;
+    errDiv.style.display='block';
+    console.error('API error:',e);
+  });
+}
+
+function setProgress(pct,text,sub){
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-text').textContent=text;
+  document.getElementById('prog-sub').textContent=sub||'';
+}
+
+// ══ EXCEL IMPORT ══
+function goExcel(f){
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+    parseExcel(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null}),f.name);
   };
-  reader.readAsArrayBuffer(file);
+  r.readAsArrayBuffer(f);
+}
+function parseExcel(raw,fname){
+  var H={};
+  raw[0].forEach(function(h,i){if(h)H[h.toString().trim()]=i;});
+  var n=function(v){var x=parseFloat(v);return isNaN(x)?null:x;};
+  var rows=raw.slice(1)
+    .filter(function(r){return r[H['Ordre nr.']]!=null;})
+    .filter(function(r){return VSTATUS.has(String(r[H['Status']]||'').trim());})
+    .map(function(r){
+      var dg=n(r[H['Forv. dekningsgrad (%)']]);
+      var tilbud=n(r[H['Tilbudspris (NOK)']]);if(tilbud&&tilbud<=0)tilbud=null;
+      var totOmk=n(r[H['Totale omk. (NOK)']]);
+      var fakt=n(r[H['Fakturert (NOK)']]);
+      var via=n(r[H['Periodisert inntekt (NOK)']]);
+      var fSalgsverdi=via!=null&&fakt!=null?via+fakt:totOmk;
+      return{
+        ordreNr:String(r[H['Ordre nr.']]||'').replace('▸','').trim(),
+        status:String(r[H['Status']]||'').trim(),
+        type:String(r[H['Type']]||'').trim(),
+        beskr:String(r[H['Beskrivelse']]||'').replace(/[\n\r\xa0]+/g,' ').trim(),
+        kunde:String(r[H['Kunde']]||'').trim(),
+        pl:String(r[H['Prosjektleder']]||'').trim(),
+        tilbud:tilbud,hasTilbud:tilbud!=null&&tilbud>0,
+        totOmk:totOmk,timerkost:null,materialkost:null,
+        dg:dg,fakt:fakt,fSalgsverdi:fSalgsverdi,via:via
+      };
+    }).filter(function(r){return r.ordreNr;});
+  parseRows(rows,fname,new Date().toLocaleDateString('no',{month:'long',year:'numeric'}));
 }
 
-// ═══════════════════════════════════════
-// UTILITIES
-// ═══════════════════════════════════════
-
-function nok(v) {
-  if (v === null || v === undefined || isNaN(v)) return '—';
-  return new Intl.NumberFormat('no-NO', {style:'currency', currency:'NOK', maximumFractionDigits:0}).format(v);
+// ══ CORE PIPELINE ══
+function parseRows(rows,sourceName,periodLabel){
+  ACTIVE=rows;
+  // Type-norm for DG-avvik
+  var ts={},tc={};
+  ACTIVE.forEach(function(r){if(r.dg!=null){ts[r.type]=(ts[r.type]||0)+r.dg;tc[r.type]=(tc[r.type]||0)+1;}});
+  var tn={};Object.keys(ts).forEach(function(t){tn[t]=ts[t]/tc[t];});
+  ACTIVE.forEach(function(r){
+    r.normDG=tn[r.type]!=null?tn[r.type]:null;
+    r.dgAvvik=(r.dg!=null&&r.normDG!=null)?r.dg-r.normDG:null;
+    // Risk scoring
+    var s=0;
+    if(r.dg===0)s+=3;
+    if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))s+=1;
+    if(r.via!=null&&r.via<-20000)s+=3;else if(r.via!=null&&r.via<-5000)s+=1;
+    if(r.via!=null&&r.via>100000)s+=2;else if(r.via!=null&&r.via>50000)s+=1;
+    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)s+=2;
+    if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)s+=2;
+    r.sc=s;r.risk=s>=4?'HØY':s>=2?'MIDDELS':'LAV';
+    var f=[];
+    if(r.dg===0)f.push({t:'DG% = 0',c:'er'});
+    if(r.dg!=null&&r.dg!==0&&ROUND.has(+r.dg.toFixed(3)))f.push({t:'Rund DG%',c:''});
+    if(r.via!=null&&r.via<-20000)f.push({t:'Stor negativ VIA',c:'er'});
+    else if(r.via!=null&&r.via<-5000)f.push({t:'Negativ VIA',c:''});
+    if(r.via!=null&&r.via>100000)f.push({t:'Svært stor VIA',c:'er'});
+    else if(r.via!=null&&r.via>50000)f.push({t:'Stor VIA',c:''});
+    if(r.dgAvvik!=null&&Math.abs(r.dgAvvik)>.10)f.push({t:'DG avviker '+(r.dgAvvik*100).toFixed(0)+'% fra norm',c:''});
+    if(!r.hasTilbud&&r.totOmk!=null&&r.totOmk>100000)f.push({t:'Mangler kontraktssum',c:''});
+    r.flags=f.length?f:[{t:'OK',c:'ok'}];
+    if(r.hasTilbud){if(!POC[r.ordreNr]){var dg=r.dg!=null?r.dg:0.35;var gj=Math.max(0,(r.tilbud||0)*(1-dg)-(r.totOmk||0));POC[r.ordreNr]={timer:Math.round(gj/650),tk:650,mat:0,k:''};}}
+    else{if(!DGI[r.ordreNr])DGI[r.ordreNr]={dg:r.dg!=null?Math.round(r.dg*100):35,k:''};}
+  });
+  var pls=[...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(function(x){return x;}).sort();
+  var types=[...new Set(ACTIVE.map(function(r){return r.type;}))].filter(function(x){return x;}).sort();
+  ['qp','pp'].forEach(function(id){var s=document.getElementById(id);while(s.options.length>1)s.remove(1);pls.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;s.appendChild(o);});});
+  var qt=document.getElementById('qt');while(qt.options.length>1)qt.remove(1);
+  types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;qt.appendChild(o);});
+  document.getElementById('atitle').textContent=sourceName;
+  document.getElementById('aperiod').textContent=periodLabel;
+  document.getElementById('lperiod').value=periodLabel;
+  document.getElementById('startPanel').style.display='none';
+  document.getElementById('app').style.display='block';
+  rDash();rQA();rRisk();rPOC();rHist();
 }
 
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+// ══ FORMAT ══
+function NK(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v))+' kr';}
+function NR(v){return v==null?'–':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(v));}
+function PC(v){return v==null?'–':(v*100).toFixed(1)+' %';}
+function fmtI(v){var n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?'0':new Intl.NumberFormat('no-NO',{maximumFractionDigits:0}).format(Math.round(n));}
+function parseI(v){var s=String(v).replace(/\s/g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?0:n;}
+function piFocus(el){el.value=parseI(el.value);}
+function piBlur(el){el.value=fmtI(el.value);}
+function piChange(id,f,el){var v=parseI(el.value);if(f==='timer'||f==='tk'||f==='mat')sP(id,f,v);else if(f==='dg')sD(id,'dg',v);}
+function rb(r){return r==='HØY'?'<span class="bh">HØY</span>':r==='MIDDELS'?'<span class="bm">MIDDELS</span>':'<span class="bl">LAV</span>';}
+function fh(fs){return fs.map(function(f){return '<span class="flag '+f.c+'">'+f.t+'</span>';}).join('');}
+
+// ══ DASHBOARD ══
+function rDash(){
+  var a=ACTIVE;
+  var tv=a.reduce(function(s,r){return s+(r.via||0);},0);
+  var pv=a.filter(function(r){return(r.via||0)>0;}).reduce(function(s,r){return s+r.via;},0);
+  var nv=a.filter(function(r){return(r.via||0)<0;}).reduce(function(s,r){return s+r.via;},0);
+  var dgA=a.filter(function(r){return r.dg!=null;});
+  var avgDG=dgA.length?dgA.reduce(function(s,r){return s+r.dg;},0)/dgA.length:null;
+  var rnd=a.filter(function(r){return r.dg!=null&&ROUND.has(+r.dg.toFixed(3));}).length;
+  var noT=a.filter(function(r){return!r.hasTilbud;}).length;
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi"><div class="lb">Aktive prosjekter</div><div class="vl">'+a.length+'</div></div>'+
+    '<div class="kpi"><div class="lb">Total VIA</div><div class="vl">'+NK(tv)+'</div></div>'+
+    '<div class="kpi g"><div class="lb">Positiv VIA</div><div class="vl">'+NK(pv)+'</div></div>'+
+    '<div class="kpi r"><div class="lb">Negativ VIA</div><div class="vl">'+NK(nv)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Gjennomsnittlig DG%</div><div class="vl">'+PC(avgDG)+'</div></div>'+
+    '<div class="kpi a"><div class="lb">Runde DG%-estimater</div><div class="vl">'+rnd+' av '+a.length+'</div></div>'+
+    '<div class="kpi a"><div class="lb">Uten kontraktssum</div><div class="vl">'+noT+'</div></div>';
+  var h=a.filter(function(r){return r.risk==='HØY';}).length;
+  var m=a.filter(function(r){return r.risk==='MIDDELS';}).length;
+  var l=a.filter(function(r){return r.risk==='LAV';}).length;
+  var hVIA=a.filter(function(r){return r.risk==='HØY';}).reduce(function(s,r){return s+(r.via||0);},0);
+  var mVIA=a.filter(function(r){return r.risk==='MIDDELS';}).reduce(function(s,r){return s+(r.via||0);},0);
+  document.getElementById('rcards').innerHTML=
+    '<div class="rc h"><div class="n">'+h+'</div><div class="l">🔴 HØY RISIKO</div><div style="font-size:.8rem;margin-top:4px;">VIA: '+NK(hVIA)+'</div></div>'+
+    '<div class="rc m"><div class="n">'+m+'</div><div class="l">🟡 MIDDELS RISIKO</div><div style="font-size:.8rem;margin-top:4px;">VIA: '+NK(mVIA)+'</div></div>'+
+    '<div class="rc lo"><div class="n">'+l+'</div><div class="l">🟢 LAV RISIKO</div></div>';
+  var fs=[];
+  if(rnd>a.length*.6)fs.push('⚠️ '+rnd+' av '+a.length+' prosjekter har rund DG% — mange estimater virker å være tommelfingerregel.');
+  var dg0=a.filter(function(r){return r.dg===0;});if(dg0.length)fs.push('🔴 '+dg0.length+' prosjekt(er) med DG% = 0 — sannsynligvis ikke oppdatert.');
+  var bn=a.filter(function(r){return(r.via||0)<-20000;});if(bn.length)fs.push('🔴 '+bn.length+' prosjekt(er) med stor negativ VIA — overfakturert?');
+  var bp=a.filter(function(r){return(r.via||0)>100000;});if(bp.length)fs.push('🟡 '+bp.length+' prosjekt(er) med VIA over 100 000 kr — høy eksponering.');
+  if(!noT)fs.push('');
+  if(!fs.length)fs.push('✅ Ingen kritiske funn. Gjennomfør stikkprøvekontroll av store VIA-prosjekter.');
+  document.getElementById('findings').innerHTML=fs.filter(function(f){return f;}).map(function(f){return '<div style="margin-bottom:5px">'+f+'</div>';}).join('');
+  var pm={};
+  a.forEach(function(r){var p=r.pl||'(ukjent)';if(!pm[p])pm[p]={c:0,ds:0,dc:0,dmn:1,dmx:0,v:0,h:0,rn:0};
+    pm[p].c++;pm[p].v+=(r.via||0);if(r.risk==='HØY')pm[p].h++;
+    if(r.dg!=null){pm[p].ds+=r.dg;pm[p].dc++;pm[p].dmn=Math.min(pm[p].dmn,r.dg);pm[p].dmx=Math.max(pm[p].dmx,r.dg);}
+    if(r.dg!=null&&ROUND.has(+r.dg.toFixed(3)))pm[p].rn++;});
+  var pr=Object.entries(pm).sort(function(a,b){return Math.abs(b[1].v)-Math.abs(a[1].v);});
+  document.getElementById('pltbl').innerHTML=
+    '<thead><tr><th>Prosjektleder</th><th>Proj.</th><th>Avg DG%</th><th style="text-align:right">Total VIA</th><th>HØY</th><th>Runde</th></tr></thead>'+
+    '<tbody>'+pr.map(function(e){var p=e[1];return'<tr><td>'+e[0]+'</td><td class="c">'+p.c+'</td>'+
+      '<td class="r">'+(p.dc?PC(p.ds/p.dc):'–')+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+(p.v<0?'var(--red)':'var(--dark)')+'">'+NK(p.v)+'</td>'+
+      '<td class="c">'+(p.h>0?'<span style="color:var(--red);font-weight:800">'+p.h+'</span>':'–')+'</td>'+
+      '<td class="c">'+p.rn+'/'+p.c+'</td></tr>';}).join('')+'</tbody>';
 }
 
-function r2(v) {
-  if (isNaN(v)) return 0;
-  return Math.round(v * 100) / 100;
+// ══ QA ══
+function rQA(){
+  var s=document.getElementById('qs').value.toLowerCase();
+  var rf=document.getElementById('qr').value,pl=document.getElementById('qp').value;
+  var tp=document.getElementById('qt').value,nz=document.getElementById('qnz').checked;
+  var rows=ACTIVE.filter(function(r){
+    return(!s||[r.ordreNr,r.kunde,r.beskr,r.pl].some(function(x){return x.toLowerCase().includes(s);}))&&
+    (!rf||r.risk===rf)&&(!pl||r.pl===pl)&&(!tp||r.type===tp)&&
+    (!nz||(r.via!=null&&Math.abs(r.via)>10));
+  });
+  document.getElementById('qacnt').textContent='Viser '+rows.length+' av '+ACTIVE.length+' prosjekter';
+  document.getElementById('qatbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Status</th><th>Type</th><th>Prosjektleder</th><th>Beskrivelse</th><th>Kunde</th>'+
+    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>'+
+    '<th style="text-align:right">Kontraktssum</th><th style="text-align:right">Fakturert</th><th style="text-align:right">VIA</th>'+
+    '<th style="text-align:center">Risiko</th><th>QA Flagg</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){
+      var vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
+      return'<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td>'+
+        '<td style="white-space:nowrap">'+r.pl+'</td>'+
+        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td>'+
+        '<td>'+r.kunde+'</td>'+
+        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td>'+
+        '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r" style="'+vc+'">'+NK(r.via)+'</td>'+
+        '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
+    }).join('')+'</tbody>';
 }
 
-function clearData() {
-  state.projects = [];
-  state.loaded = false;
-  state.pocInputs = {};
-  state.dgInputs = {};
-  document.getElementById('mainContent').style.display = 'none';
-  document.getElementById('tabsBar').style.display = 'none';
-  document.getElementById('lockBtn').style.display = 'none';
-  document.getElementById('progressSection').style.display = 'none';
-  document.getElementById('lastUpdated').textContent = '';
+// ══ RISK ══
+function rRisk(){
+  var f=document.getElementById('rsel').value.split(',');
+  var rows=ACTIVE.filter(function(r){return f.indexOf(r.risk)>=0;}).sort(function(a,b){return b.sc-a.sc;});
+  document.getElementById('risktbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>Type</th><th>Prosjektleder</th><th>Kunde</th>'+
+    '<th style="text-align:right">Totale omk.</th><th style="text-align:right">DG%</th>'+
+    '<th style="text-align:right">Kontrakt</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">VIA</th><th style="text-align:center">Risiko</th><th>Risikoer</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){return'<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td>'+
+      '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td>'+
+      '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+      '<td class="r" style="'+((r.via||0)<0?'color:var(--red);font-weight:700':'')+'">'+NK(r.via)+'</td>'+
+      '<td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';}).join('')+'</tbody>';
+}
+
+// ══ POC + DG ══
+function calcPOC(r){
+  var inp=POC[r.ordreNr]||{timer:0,tk:650,mat:0,k:''};
+  var gk=(inp.timer||0)*inp.tk+(inp.mat||0);
+  var esk=(r.totOmk||0)+gk;
+  var fg=esk>0?Math.min((r.totOmk||0)/esk,1):null;
+  var innt=fg!=null?r.tilbud*fg:null;
+  var estDG=esk>0?(r.tilbud-esk)/r.tilbud:null;
+  var via=innt!=null&&r.fakt!=null?innt-r.fakt:null;
+  return{gk:gk,esk:esk,fg:fg,innt:innt,estDG:estDG,via:via};
+}
+function calcDG(r){
+  var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
+  var dg=(inp.dg||0)/100;
+  var fs=r.totOmk!=null&&dg<1?r.totOmk/(1-dg):null;
+  var via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
+  return{dg:dg,fs:fs,via:via};
+}
+function rPOC(){
+  var pl=document.getElementById('pp').value;
+  var stk=parseFloat(document.getElementById('stk').value)||650;
+  var dis=LOCKED?'disabled':'';
+  var pocR=ACTIVE.filter(function(r){return r.hasTilbud&&(!pl||r.pl===pl);});
+  var dgR=ACTIVE.filter(function(r){return!r.hasTilbud&&(!pl||r.pl===pl);});
+  document.getElementById('poc-cnt').textContent='('+pocR.length+' prosjekter)';
+  document.getElementById('dg-cnt').textContent='('+dgR.length+' prosjekter)';
+  var pv=0;
+  document.getElementById('poctbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>PL</th><th>Type</th>'+
+    '<th style="text-align:right">Kontrakt</th><th style="text-align:right">Påløpt</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst. timer</th><th style="text-align:right;color:#9EC8FF">kr/t</th>'+
+    '<th style="text-align:right;color:#9EC8FF">Gjenst. mat.</th>'+
+    '<th style="text-align:right">Gjenst. kost</th><th style="text-align:right">Est. sluttkost</th>'+
+    '<th style="text-align:right">Ferdiggrad</th><th style="text-align:right">Periodisert</th>'+
+    '<th style="text-align:right">Est. DG%</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">VIA</th><th style="color:#9EC8FF">Kommentar</th></tr></thead>'+
+    '<tbody>'+pocR.map(function(r){
+      var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};inp.tk=inp.tk||stk;
+      var c=calcPOC(r);if(c.via!=null)pv+=c.via;
+      var warn=c.via!=null&&Math.abs(c.via)>50000&&!inp.k;
+      return'<tr class="'+(warn?'rwarn':'')+'">'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td>'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.totOmk)+'</td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.timer||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'timer\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.tk)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'tk\',this)" style="width:74px"></td>'+
+        '<td><input class="pi" type="text" value="'+fmtI(inp.mat||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'mat\',this)" style="width:96px"></td>'+
+        '<td class="r calc">'+NR(c.gk)+'</td><td class="r calc">'+NR(c.esk)+'</td>'+
+        '<td class="r calc">'+(c.fg!=null?PC(c.fg):'–')+'</td>'+
+        '<td class="r calc">'+NK(c.innt)+'</td>'+
+        '<td class="r calc">'+(c.estDG!=null?PC(c.estDG):'–')+'</td>'+
+        '<td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td></tr>';
+    }).join('')+'</tbody>';
+  document.getElementById('poctot').innerHTML=
+    '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
+    '<span>Total VIA (POC): <strong style="color:'+(pv<0?'var(--red)':'var(--dark)')+'">'+NK(pv)+'</strong></span>';
+  var dv=0;
+  document.getElementById('dgtbl').innerHTML=
+    '<thead><tr><th>Ordre</th><th>PL</th><th>Type</th><th>Beskrivelse</th><th>Kunde</th>'+
+    '<th style="text-align:right">Påløpt</th><th style="text-align:right">Fakturert</th>'+
+    '<th style="text-align:right">DG% (sys)</th><th style="text-align:right;color:#9EC8FF">DG% (bekreftet)</th>'+
+    '<th style="text-align:right">Salgsverdi</th><th style="text-align:right">VIA</th>'+
+    '<th style="text-align:center">Risiko</th><th style="color:#9EC8FF">Begrunnelse</th></tr></thead>'+
+    '<tbody>'+dgR.map(function(r){
+      var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
+      var c=calcDG(r);if(c.via!=null)dv+=c.via;var warn=!inp.k;
+      return'<tr>'+
+        '<td><strong>'+r.ordreNr+'</strong></td><td>'+r.pl+'</td><td>'+r.type+'</td>'+
+        '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,36)+'…</td>'+
+        '<td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.kunde+'</td>'+
+        '<td class="r">'+NK(r.totOmk)+'</td><td class="r">'+NK(r.fakt)+'</td>'+
+        '<td class="r">'+PC(r.dg)+'</td>'+
+        '<td><div style="display:flex;align-items:center;gap:4px;">'+
+          '<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg||35)+'" '+dis+
+          ' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px">'+
+          '<span style="font-size:.8rem;color:#666">%</span></div></td>'+
+        '<td class="r calc">'+NK(c.fs)+'</td>'+
+        '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
+        '<td class="c">'+rb(r.risk)+'</td>'+
+        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td></tr>';
+    }).join('')+'</tbody>';
+  document.getElementById('dgtot').innerHTML=
+    '<span>Prosjekter: <strong>'+dgR.length+'</strong></span>'+
+    '<span>DG-VIA: <strong style="color:'+(dv<0?'var(--red)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
+    '<span>Kombinert VIA: <strong style="color:'+((pv+dv)<0?'var(--red)':'var(--dark)')+'">'+NK(pv+dv)+'</strong></span>';
+}
+function sP(id,f,v){if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''};POC[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
+function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();}
+
+// ══ HISTORY ══
+function getHist(){return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}
+function saveSnap(name,entity,period){
+  var hist=getHist(),pv=0,dv=0;
+  var projects=ACTIVE.map(function(r){
+    var via=null,dg=null;
+    if(r.hasTilbud){var c=calcPOC(r);via=c.via;dg=c.estDG;if(c.via!=null)pv+=c.via;}
+    else{var c=calcDG(r);via=c.via;dg=c.dg;if(c.via!=null)dv+=c.via;}
+    return{ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,beskr:r.beskr.substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,via:via!=null?Math.round(via):null,dg:dg!=null?Math.round(dg*1000)/1000:null,hasTilbud:r.hasTilbud,risk:r.risk};
+  });
+  var snap={id:Date.now(),period:period,entity:entity,lockedBy:name,lockedAt:new Date().toISOString(),
+    summary:{totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),projectCount:ACTIVE.length,highRisk:ACTIVE.filter(function(r){return r.risk==='HØY';}).length},
+    projects:projects};
+  var filtered=hist.filter(function(e){return e.period!==period;});
+  filtered.push(snap);filtered.sort(function(a,b){return a.id-b.id;});
+  localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
+}
+function rHist(){
+  var hist=getHist(),el=document.getElementById('histcontent');
+  if(!hist.length){el.innerHTML='<div class="hist-empty">📭 Ingen historikk enda.<br>Lås en periode for å starte historikksporing.</div>';return;}
+  el.innerHTML='<div class="tw"><table>'+
+    '<thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th>'+
+    '<th style="text-align:right">Total VIA</th><th style="text-align:right">POC-VIA</th><th style="text-align:right">DG-VIA</th>'+
+    '<th style="text-align:center">Prosjekter</th><th style="text-align:center">HØY</th></tr></thead>'+
+    '<tbody>'+hist.slice().reverse().map(function(h){return'<tr>'+
+      '<td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td>'+
+      '<td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td>'+
+      '<td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td>'+
+      '<td class="c">'+h.summary.projectCount+'</td>'+
+      '<td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td></tr>';}).join('')+'</tbody></table></div>';
+}
+function openLock(){document.getElementById('lmodal').classList.add('open');}
+function closeLock(){document.getElementById('lmodal').classList.remove('open');}
+function doLock(){
+  var name=document.getElementById('lname').value.trim();
+  var entity=document.getElementById('lentity').value.trim();
+  var period=document.getElementById('lperiod').value.trim();
+  if(!name){alert('Skriv inn ditt navn.');return;}
+  saveSnap(name,entity,period);
+  LOCKED=true;closeLock();
+  document.getElementById('btnlock').textContent='✅ Låst: '+period;
+  document.getElementById('btnlock').disabled=true;
+  rPOC();rHist();ST('hist');
+  alert('Periode låst og lagret i historikk!');
+}
+function expPOC(){
+  var rows=[];
+  ACTIVE.forEach(function(r){
+    if(r.hasTilbud){var c=calcPOC(r);var inp=POC[r.ordreNr]||{};
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,Kontraktssum:r.tilbud,PåløpteKostnader:r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),EstDG:c.estDG!=null?Math.round(c.estDG*1000)/10:null,Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});}
+    else{var c=calcDG(r);var inp=DGI[r.ordreNr]||{};
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Type:r.type,PåløpteKostnader:r.totOmk,Timerkost:r.timerkost,Materialkost:r.materialkost,Fakturert:r.fakt,DGSystem:r.dg!=null?Math.round(r.dg*1000)/10:null,DGBekreftet:Math.round(c.dg*1000)/10,ForventetSalgsverdi:Math.round(c.fs||0),VIA:Math.round(c.via||0),Begrunnelse:inp.k||''});}
+  });
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
+  XLSX.writeFile(wb,'VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+function expHist(){
+  var hist=getHist();if(!hist.length){alert('Ingen historikk.');return;}
+  var rows=[];
+  hist.forEach(function(h){h.projects.forEach(function(p){rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,VIA:p.via,DG:p.dg,Risiko:p.risk});});});
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Historikk',ws);
+  XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+function clearHist(){if(confirm('Slette all historikk?')){localStorage.removeItem(HIST_KEY);rHist();}}
+function ST(name){
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+  var idx={dash:0,qa:1,risk:2,poc:3,hist:4}[name];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+}
+function resetApp(){
+  ACTIVE=[];POC={};DGI={};LOCKED=false;
+  document.getElementById('app').style.display='none';
+  document.getElementById('progressWrap').style.display='none';
+  document.getElementById('startPanel').style.display='block';
+  document.getElementById('api-btn').disabled=false;
+  document.getElementById('btnlock').textContent='🔒 Lås periode';
+  document.getElementById('btnlock').disabled=false;
+  ['qp','pp','qt'].forEach(function(id){var s=document.getElementById(id);while(s.options.length>1)s.remove(1);});
+  ST('dash');
 }
 </script>
 </body>
