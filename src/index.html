@@ -289,12 +289,63 @@ const CONFIG = {
 
 const GRAPH='https://graph.microsoft.com/v1.0';
 const SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
-let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected'];
+let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected','User.Read'];
 try{msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});console.log('[MSAL] OK');}catch(e){console.warn('[MSAL]:',e.message);}
 async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
 async function gFetch(url,opts={}){const tok=await getToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
 function auditUser(){const accs=msalApp?msalApp.getAllAccounts():[];if(!accs.length)return'ukjent';const acc=accs[0];if(acc.name&&acc.name!=='unknown'&&!acc.name.includes('#'))return acc.name;const local=(acc.username||'').split('@')[0];return local.split('.').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ');}
 function auditNow(){return new Date().toISOString();}
+
+// ── TILGANGSSTYRING: officeLocation → selskap ──
+let _userCompany = null; // satt etter innlogging
+let _isAdmin = false;
+const OFFICE_MAP = {
+  '372 minel as': '__admin__',
+  '374 minel skogvang installasjon as': 'Minel Skogvang Installasjon AS',
+  '374 minel skogvang installasjon': 'Minel Skogvang Installasjon AS',
+  '374 minel skogvang teledata øst': 'Minel Skogvang Installasjon AS',
+  '375 minel elmontasje as': 'Minel Elmontasje AS',
+  '375 minel elmontasje hamar': 'Minel Elmontasje AS',
+  '376 minel gjøvik as': 'Minel Gjøvik AS',
+  '376 minel gjøvik': 'Minel Gjøvik AS',
+  '377 minel land elektriske as': 'Minel Land Elektriske AS',
+  '377 minel land elektrisk as': 'Minel Land Elektriske AS',
+  '377 minel land elektriske': 'Minel Land Elektriske AS',
+  '377 minel land elektrisk': 'Minel Land Elektriske AS',
+  '378 minel elmontasje elverum as': 'Minel Elmontasje Elverum AS',
+  '378 minel elmontasje elverum': 'Minel Elmontasje Elverum AS',
+  '379 minel gudbrandsdal as': 'Minel Gudbrandsdal AS',
+  '379 minel gudbrandsdal': 'Minel Gudbrandsdal AS',
+  '381 minel ainstall as': 'Minel Ainstall AS',
+  '381 minel ainstall': 'Minel Ainstall AS',
+  '383 minel kreativ elektro ski as': 'Minel Kreativ Elektro Ski AS',
+  '383 minel kreativ elektro ski': 'Minel Kreativ Elektro Ski AS',
+  '383 minel kreativ ski': 'Minel Kreativ Elektro Ski AS',
+  '384 minel drøbak elektriske as': 'Minel Drøbak Elektriske AS',
+  '384 minel drøbak elektriske': 'Minel Drøbak Elektriske AS',
+};
+
+async function fetchUserCompany() {
+  try {
+    const tok = await getToken();
+    if (!tok) return null;
+    const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,officeLocation', {
+      headers: { 'Authorization': 'Bearer ' + tok }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const me = await r.json();
+    const loc = (me.officeLocation || '').trim().toLowerCase();
+    console.log('[Tilgang] officeLocation:', me.officeLocation, '→', OFFICE_MAP[loc] || 'ukjent');
+    const mapped = OFFICE_MAP[loc] || null;
+    _userCompany = mapped;
+    _isAdmin = (mapped === '__admin__');
+    return mapped;
+  } catch(e) {
+    console.warn('[Tilgang] feilet:', e.message);
+    return null;
+  }
+}
+
 </script>
 <!-- ══════════════════════════════════════════ -->
 
@@ -1658,6 +1709,11 @@ function saveProject(){
   const notes=(document.getElementById('pNotes')?.value||'').trim();
   if(!name){alert('Prosjektnavn er åkrevd.');return;}
   if(!company){alert('Velg et selskap.');return;}
+  // Tilgangskontroll: blokkér hvis brukeren prøver å lagre til annet selskap
+  if(_userCompany && _userCompany !== '__admin__' && company !== _userCompany){
+    alert('Du kan kun registrere kontrakter for '+_userCompany+'.');
+    return;
+  }
   const weeklyCrews={};
   document.querySelectorAll('#wTbl [data-wk]').forEach(inp=>{
     const v=parseInt(inp.value)||0;
@@ -1844,9 +1900,20 @@ async function postToSharePointList(p){
     document.getElementById('msLoginBox').style.display='none';
     document.getElementById('coSelBox').style.display='block';
     const _post=sessionStorage.getItem('msal_post_login');
-    const _saved=_post||localStorage.getItem('minel_company');
     sessionStorage.removeItem('msal_post_login');
-    if(_saved){selectCompany(_saved);}else{document.getElementById('loginScreen').style.display='flex';}
+    // Hent brukerens selskap fra officeLocation
+    const _mapped = await fetchUserCompany();
+    if(_mapped && _mapped !== '__admin__'){
+      // Vanlig ansatt — velg selskap automatisk, hopp over login-skjerm
+      selectCompany(_mapped);
+    } else if(_mapped === '__admin__'){
+      // Admin — vis konsernvisning direkte
+      selectCompany('__admin__');
+    } else {
+      // Ukjent officeLocation — vis login-skjerm for manuelt valg
+      const _saved=_post||localStorage.getItem('minel_company');
+      if(_saved){selectCompany(_saved);}else{document.getElementById('loginScreen').style.display='flex';}
+    }
   }
 })();
 async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
