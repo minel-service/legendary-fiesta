@@ -63,12 +63,12 @@
 
     /* ── Company status strip ── */
     .co-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
-    .co-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.73rem;font-weight:600;border:1.5px solid transparent;white-space:nowrap}
+    .co-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.73rem;font-weight:600;border:1.5px solid #1A2744;background:#1A2744;color:#ffffff;cursor:default;white-space:nowrap}
     .co-pill .pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-    .co-pill.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
-    .co-pill.demo{background:#fffbeb;border-color:#fde68a;color:#92400e}
-    .co-pill.err{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
-    .co-pill.loading{background:#e8ecf5;border-color:#b0bbd4;color:#1C2344}
+    .co-pill.ok{background:#1A2744;border-color:#1A2744;color:#ffffff}
+    .co-pill.demo{background:#2d3d6b;border-color:#2d3d6b;color:#fde68a}
+    .co-pill.err{background:#C8102E;border-color:#C8102E;color:#ffffff}
+    .co-pill.loading{background:#8394b8;border-color:#8394b8;color:#ffffff}
 
     /* ── Stats ── */
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
@@ -81,7 +81,7 @@
 
     /* ── Tabs ── */
     .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
-    .tab{padding:5px 13px;border-radius:99px;font-size:.77rem;font-weight:600;cursor:pointer;border:2px solid #e2e8f0;background:white;color:#64748b;transition:all .15s;display:flex;align-items:center;gap:5px}
+    .tab{padding:5px 13px;border-radius:99px;font-size:.77rem;font-weight:600;cursor:pointer;border:2px solid #e2e8f0;background:white;color:#1A2744;transition:all .15s;display:flex;align-items:center;gap:5px}.tab:hover:not(.active){background:#f0f4ff;border-color:#1A2744}
     .tab:hover{border-color:#94a3b8;color:#374151}
     .tab.active{color:white;border-color:transparent}
     .tab .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
@@ -426,19 +426,34 @@ async function fetchUserCompany() {
     <div class="tabs" id="tabs"></div>
 
     <div class="card">
-      <div class="chdr">
-        <span class="ctitle">Mannskapsbehov per uke — neste 20 uker</span>
-        <div class="leg" id="leg"></div>
+      <!-- Kontrollpanel: toggle + datovelger -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
+        <div style="display:flex;gap:3px;background:#f1f5f9;border-radius:8px;padding:3px">
+          <button id="vbtnWeek" onclick="setViewMode('week')" style="padding:5px 14px;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;background:#fff;color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,.12);font-family:inherit">📊 Uker</button>
+          <button id="vbtnMonth" onclick="setViewMode('month')" style="padding:5px 14px;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;font-family:inherit">📅 Måneder</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#64748b">
+          <span>Fra:</span>
+          <select id="rangeFrom" onchange="applyRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <span>Til:</span>
+          <select id="rangeTo" onchange="applyRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <button onclick="resetRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 10px;font-size:.75rem;font-weight:600;color:#94a3b8;background:#fff;cursor:pointer;font-family:inherit" title="Tilbakestill visning">↺ Tilbakestill</button>
+        </div>
+        <div class="leg" id="leg" style="margin-left:auto"></div>
       </div>
-      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      <!-- Ukentlig diagram -->
+      <div id="weekChartWrap">
+        <div style="font-size:.9rem;font-weight:700;color:#1e293b;margin-bottom:8px" id="weekChartTitle">Mannskapsbehov per uke</div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
       <div class="wkdet" id="wkdet">
         <div class="wdt-title"><span id="wdtTitle">Ukedetalj</span><button class="wdt-close" onclick="closeWkDet()">✕</button></div>
         <div class="wdt-grid" id="wdtGrid"></div>
       </div>
     </div>
 
-    <div class="sl">Månedlig konsernoversikt</div>
-    <div class="card">
+    <div class="sl" id="monthlySection" style="display:none">Månedlig konsernoversikt</div>
+    <div class="card" id="monthlyCard" style="display:none">
       <div class="chdr">
         <div>
           <span class="ctitle">Kapasitetsutnyttelse per måned — neste 12 måneder</span>
@@ -535,7 +550,7 @@ async function fetchUserCompany() {
 // ════════════════════════════════════════════
 // FARGER
 // ════════════════════════════════════════════
-const COLORS=['#3b82f6','#10b981','#8b5cf6','#f97316','#ec4899','#06b6d4','#84cc16','#eab308','#ef4444'];
+const COLORS=['#1A2744','#C8102E','#2d5a9e','#a01020','#3d7abf','#8b1a28','#5a8fc2','#c43040','#1e3a6e'];
 const MANUAL_COLOR='#0d9488'; // teal — gjennomgående farge for kontraherte prosjekter
 const col=i=>COLORS[i%COLORS.length];
 
@@ -882,7 +897,8 @@ function updateTabs(){
   const el=document.getElementById('tabs');
   const mk=(lbl,filter,dc)=>{
     const isA=activeFilter===filter;
-    return`<div class="tab${isA?' active':''}" style="${isA?`background:${dc};border-color:${dc}`:''}" data-f="${filter}"><span class="dot" style="background:${isA?'rgba(255,255,255,.7)':dc}"></span>${lbl}</div>`;
+    const activeBg = filter==='all' ? '#C8102E' : '#1A2744';
+    return`<div class="tab${isA?' active':''}" style="${isA?`background:${activeBg};border-color:${activeBg}`:'border-color:'+dc}" data-f="${filter}"><span class="dot" style="background:${isA?'rgba(255,255,255,.85)':dc}"></span>${lbl}</div>`;
   };
   let html=mk('Alle selskaper','all','#C8102E');
   companies.forEach((co,i)=>html+=mk(co.navn,co.navn,col(i)));
@@ -891,7 +907,8 @@ function updateTabs(){
 }
 
 // Kategorifarger
-const CAT_OPPDRAG = '#3b82f6'; // blå
+const CAT_OPPDRAG = '#1A2744'; // Minel-blå
+const MINEL_BLA = '#1A2744';
 const CAT_INTERN  = '#f59e0b'; // amber
 const CAT_FRAVAER = '#ef4444'; // rød
 const CAT_LEDIG   = 'rgba(203,213,225,0.55)'; // lys grå
@@ -913,6 +930,10 @@ function setViewMode(mode){
   const mc = document.getElementById('monthlyCard');
   if(ms) ms.style.display = mode==='month' ? '' : 'none';
   if(mc) mc.style.display = mode==='month' ? '' : 'none';
+  const ms2=document.getElementById('monthlySection2');
+  const mc2=document.getElementById('monthlyCard2');
+  if(ms2) ms2.style.display = mode==='month' ? '' : 'none';
+  if(mc2) mc2.style.display = mode==='month' ? '' : 'none';
   document.getElementById('leg').style.display = mode==='week' ? '' : 'none';
   if(mode==='month') updateMonthlyChart();
 }
@@ -981,7 +1002,7 @@ function updateChart(){
     {label:'Kontraherte prosjekter',data:aggContr, backgroundColor:MANUAL_COLOR, borderRadius:0, borderSkipped:false, stack:'main'},
     {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
-  if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
+  if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -1021,7 +1042,7 @@ function updateChart(){
   let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Fra Ordrestyring</span>`;
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
-  if(maxKap>0) lh+=`<span><span class="ldot" style="background:#6366f1;border-radius:0"></span>Maks kap. (${maxKap})</span>`;
+  if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
