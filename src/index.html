@@ -269,15 +269,15 @@ const CONFIG = {
   // maxAnsatte: totalt antall ansatte i selskapet (brukes til «Ledig»-beregning).
   // Sett til 0 for å la dashbordet telle automatisk fra API-data.
   selskaper: [
-    { navn: 'Minel Drøbak Elektriske AS',     apiKey: 'FzmySlRzW72gOBAb', maxAnsatte: 15 },
-    { navn: 'Minel Kreativ Elektro Ski AS',   apiKey: 'qYtkWAowUUo2PbaE', maxAnsatte: 0  },
-    { navn: 'Minel Elmontasje AS',            apiKey: 'rPuAsfNqjpyoeBdV', maxAnsatte: 37 },
-    { navn: 'Minel Elmontasje Elverum AS',    apiKey: 'CmJHRiMNdn68RWZM', maxAnsatte: 0  },
-    { navn: 'Minel Gjøvik AS',                apiKey: 'edewj6APD4wb8uD5', maxAnsatte: 40 },
-    { navn: 'Minel Ainstall AS',              apiKey: 'OhCnVeTrqWU7dOK7', maxAnsatte: 0  },
-    { navn: 'Minel Land Elektriske AS',       apiKey: 'yOVFmYixo35RnY6l', maxAnsatte: 0  },
-    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 30 },
-    { navn: 'Minel Gudbrandsdal AS',          apiKey: 'yEEdLNDUCssPuhOl', maxAnsatte: 45 },
+    { navn: 'Minel Drøbak Elektriske AS',     apiKey: 'FzmySlRzW72gOBAb', maxAnsatte: 0 },
+    { navn: 'Minel Kreativ Elektro Ski AS',   apiKey: 'qYtkWAowUUo2PbaE', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje AS',            apiKey: 'rPuAsfNqjpyoeBdV', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje Elverum AS',    apiKey: 'CmJHRiMNdn68RWZM', maxAnsatte: 0 },
+    { navn: 'Minel Gjøvik AS',                apiKey: 'edewj6APD4wb8uD5', maxAnsatte: 0 },
+    { navn: 'Minel Ainstall AS',              apiKey: 'OhCnVeTrqWU7dOK7', maxAnsatte: 0 },
+    { navn: 'Minel Land Elektriske AS',       apiKey: 'yOVFmYixo35RnY6l', maxAnsatte: 0 },
+    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 0 },
+    { navn: 'Minel Gudbrandsdal AS',          apiKey: 'yEEdLNDUCssPuhOl', maxAnsatte: 0 },
   ],
 
   // ── Varsler ────────────────────────────────
@@ -660,10 +660,14 @@ async function fetchSelskap(co){
       };
     });
 
-    // Unike ansatte fra events (god tilnærming til faktisk ansatteantall)
-    const allUniqueFromEvents = new Set(j.map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
-    // Bruk CONFIG-verdi hvis satt (> 0), ellers bruk talt fra events
-    const finalTotal = (co.maxAnsatte > 0) ? co.maxAnsatte : allUniqueFromEvents;
+    // Maks unike ansatte sett i noen uke — brukes som kapasitetslinje
+    // Siden alle aktive ansatte har registrering (oppdrag/intern/fravaer) er max uketall riktig headcount
+    const maxWeeklyUsers = Math.max(0, ...Object.values(weekData).map(cats => {
+      const all = new Set([...cats.oppdrag, ...cats.intern, ...cats.fravaer]);
+      return all.size;
+    }));
+    const finalTotal = maxWeeklyUsers || new Set(j.map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
+    console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
     return { real: true, totalUsers: finalTotal, items: mapped };
@@ -793,7 +797,19 @@ function updateWhoBar(){
 // TOTALER
 // ════════════════════════════════════════════
 function buildTotals(){
-  const weeks=next20();
+  // Finn lengste horisont: 20 uker ELLER lengste registrerte kontrakt — hva som er størst
+  const contractWeeks = allProjects.filter(p=>!p.inOS).flatMap(p=>Object.keys(p.weeklyCrews||{}));
+  const maxContractWk = contractWeeks.length ? contractWeeks.sort().pop() : null;
+  const baseWeeks = next20();
+  const baseEnd = baseWeeks[baseWeeks.length-1];
+  const horizon = maxContractWk && maxContractWk > baseEnd ? maxContractWk : baseEnd;
+  // Bygg ukeliste fra i dag til horisont
+  const startMon = new Date(); startMon.setDate(startMon.getDate()-((startMon.getDay()+6)%7)); startMon.setHours(0,0,0,0);
+  const weeks = [];
+  const cur = new Date(startMon);
+  while(wKey(cur) <= horizon){ weeks.push(wKey(cur)); cur.setDate(cur.getDate()+7); }
+  if(weeks.length === 0) weeks.push(...baseWeeks);
+
   const byCo={};
   companies.forEach(co=>{
     byCo[co.navn]={};
@@ -880,8 +896,71 @@ const CAT_INTERN  = '#f59e0b'; // amber
 const CAT_FRAVAER = '#ef4444'; // rød
 const CAT_LEDIG   = 'rgba(203,213,225,0.55)'; // lys grå
 
+
+// ════════════════════════════════════════════
+// VISNINGSKONTROLL — toggle uke/mnd + fra/til
+// ════════════════════════════════════════════
+let _viewMode = 'week';
+let _rangeFrom = null;
+let _rangeTo   = null;
+
+function setViewMode(mode){
+  _viewMode = mode;
+  document.getElementById('vbtnWeek').classList.toggle('active', mode==='week');
+  document.getElementById('vbtnMonth').classList.toggle('active', mode==='month');
+  document.getElementById('weekChartWrap').style.display = mode==='week' ? '' : 'none';
+  const ms = document.getElementById('monthlySection');
+  const mc = document.getElementById('monthlyCard');
+  if(ms) ms.style.display = mode==='month' ? '' : 'none';
+  if(mc) mc.style.display = mode==='month' ? '' : 'none';
+  document.getElementById('leg').style.display = mode==='week' ? '' : 'none';
+  if(mode==='month') updateMonthlyChart();
+}
+
+function buildRangeSelectors(weeks){
+  const from = document.getElementById('rangeFrom');
+  const to   = document.getElementById('rangeTo');
+  if(!from||!to) return;
+  const savedFrom = _rangeFrom, savedTo = _rangeTo;
+  from.innerHTML = ''; to.innerHTML = '';
+  weeks.forEach(w=>{
+    const[y,wn]=w.split('-W'); const label=`Uke ${parseInt(wn)}, ${y}`;
+    const o1=document.createElement('option'); o1.value=w; o1.textContent=label; from.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=w; o2.textContent=label; to.appendChild(o2);
+  });
+  from.value = savedFrom && weeks.includes(savedFrom) ? savedFrom : weeks[0];
+  to.value   = savedTo   && weeks.includes(savedTo)   ? savedTo   : weeks[weeks.length-1];
+}
+
+function applyRange(){
+  _rangeFrom = document.getElementById('rangeFrom')?.value || null;
+  _rangeTo   = document.getElementById('rangeTo')?.value   || null;
+  if(_rangeFrom && _rangeTo && _rangeFrom > _rangeTo){
+    document.getElementById('rangeTo').value = _rangeFrom;
+    _rangeTo = _rangeFrom;
+  }
+  updateChart();
+}
+
+function resetRange(){
+  _rangeFrom = null; _rangeTo = null;
+  const from = document.getElementById('rangeFrom');
+  const to   = document.getElementById('rangeTo');
+  if(from?.options.length) from.value = from.options[0].value;
+  if(to?.options.length)   to.value   = to.options[to.options.length-1].value;
+  updateChart();
+}
+
 function updateChart(){
-  const{weeks,byCo,manT}=buildTotals();
+  const{weeks:allWeeks,byCo,manT}=buildTotals();
+  buildRangeSelectors(allWeeks);
+  const fromWk=_rangeFrom||allWeeks[0];
+  const toWk=_rangeTo||allWeeks[allWeeks.length-1];
+  const weeks=allWeeks.filter(w=>w>=fromWk&&w<=toWk);
+  if(!weeks.length) return;
+  const[fy,fw]=fromWk.split('-W');const[ty,tw]=toWk.split('-W');
+  const wtEl=document.getElementById('weekChartTitle');
+  if(wtEl) wtEl.textContent=`Mannskapsbehov per uke — Uke ${parseInt(fw)} ${fy} til Uke ${parseInt(tw)} ${ty}`;
   const labels=weeks.map(wLabel);
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
 
@@ -1598,12 +1677,29 @@ async function loadProjects(){
 }
 
 async function saveToSharePoint(){
-  const payload=JSON.stringify(allProjects);
-  try{localStorage.setItem('minel_projects',payload);}catch(_){}
+  // Reload-merge: hent gjeldende fil, flett inn lokale endringer, skriv tilbake
+  // Sikrer at samtidige brukere ikke mister hverandres data
   try{
+    const existing = await (async()=>{
+      try{
+        const r=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`);
+        if(r&&r.ok){ const j=await r.json(); return Array.isArray(j)?j:[]; }
+      }catch(_){}
+      return [];
+    })();
+    // Flett: behold alle prosjekter fra server som IKKE er endret lokalt, legg til/erstatt lokale
+    const localIds = new Set(allProjects.map(p=>p.id));
+    const serverOnly = existing.filter(p=>!localIds.has(p.id));
+    const merged = [...serverOnly, ...allProjects];
+    const payload = JSON.stringify(merged);
+    try{localStorage.setItem('minel_projects',payload);}catch(_){}
     const r=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
-    if(r&&!r.ok)console.warn('[Graph] save HTTP',r.status);
-  }catch(e){console.warn('[Graph] save:',e.message);}
+    if(r&&!r.ok) console.warn('[Graph] save HTTP',r.status);
+    else { allProjects=merged; console.log('[Graph] Lagret OK, totalt',merged.length,'prosjekter'); }
+  }catch(e){
+    console.warn('[Graph] saveToSharePoint:',e.message);
+    try{localStorage.setItem('minel_projects',JSON.stringify(allProjects));}catch(_){}
+  }
 }
 
 function showToast(msg,ok=true){
