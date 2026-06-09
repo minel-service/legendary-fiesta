@@ -434,9 +434,10 @@ async function fetchUserCompany() {
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#64748b">
           <span>Fra:</span>
-          <select id="rangeFrom" onchange="applyRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <select id="rangeFrom" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
           <span>Til:</span>
-          <select id="rangeTo" onchange="applyRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <select id="rangeTo" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <button onclick="applyRange()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 14px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit">OK</button>
           <button onclick="resetRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 10px;font-size:.75rem;font-weight:600;color:#94a3b8;background:#fff;cursor:pointer;font-family:inherit" title="Tilbakestill visning">↺ Tilbakestill</button>
         </div>
         <div class="leg" id="leg" style="margin-left:auto"></div>
