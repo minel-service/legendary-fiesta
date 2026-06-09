@@ -417,9 +417,8 @@ async function fetchUserCompany() {
 
     <div class="sl">Konsernoversikt</div>
     <div class="stats">
-      <div class="scard c0"><div class="lbl">🔵 På oppdrag</div><div class="val" id="s0">—</div><div class="sub" id="s0sub">aktive på jobb denne uken</div></div>
-      <div class="scard c1"><div class="lbl">🟡 Interntid / kurs</div><div class="val" id="s1">—</div><div class="sub" id="s1sub">intern denne uken</div></div>
-      <div class="scard c2"><div class="lbl">🔴 Fravær</div><div class="val" id="s2">—</div><div class="sub" id="s2sub">ferie / sykdom denne uken</div><div class="peak-badge" id="peakBadge" style="display:none">PEAK</div></div>
+      <div class="scard c0"><div class="lbl">🔵 Aktive i Ordrestyring</div><div class="val" id="s0">—</div><div class="sub" id="s0sub">registrert i OS denne uken</div></div>
+      <div class="scard c1"><div class="lbl">🟩 Kontraherte prosjekter</div><div class="val" id="s1">—</div><div class="sub" id="s1sub">manuelt registrerte kontrakter</div></div>
       <div class="scard c3"><div class="lbl">⚪ Ledig kapasitet</div><div class="val" id="s3">—</div><div class="sub" id="s3sub">ikke registrert denne uken</div></div>
     </div>
 
@@ -848,24 +847,19 @@ function updateStats(){
   const{weeks,byCo,manT}=buildTotals();
   const tw=weeks[0];
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
-  let opp=manT[tw]||0, intern=0, frav=0, ledig=0;
+  let fraOS=0, kontr=manT[tw]||0, ledig=0;
   visCos.forEach(co=>{
     const d=byCo[co.navn]?.[tw]||{};
-    opp   += d.oppdrag||0;
-    intern += d.intern ||0;
-    frav   += d.fravaer||0;
-    ledig  += d.ledig  ||0;
+    fraOS += (d.oppdrag||0)+(d.intern||0)+(d.fravaer||0);
+    ledig += d.ledig||0;
   });
   const totalAnsatte = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
-  document.getElementById('s0').textContent=opp;
-  document.getElementById('s0sub').textContent=`aktive på jobb denne uken`;
-  document.getElementById('s1').textContent=intern;
-  document.getElementById('s1sub').textContent=`intern / kurs denne uken`;
-  document.getElementById('s2').textContent=frav;
-  document.getElementById('s2sub').textContent=`ferie / sykdom denne uken`;
+  document.getElementById('s0').textContent=fraOS;
+  document.getElementById('s0sub').textContent=`registrert i OS denne uken`;
+  document.getElementById('s1').textContent=kontr;
+  document.getElementById('s1sub').textContent=`manuelt registrerte kontrakter`;
   document.getElementById('s3').textContent=ledig;
   document.getElementById('s3sub').textContent=totalAnsatte>0?`av ${totalAnsatte} totalt`:`ikke registrert`;
-  document.getElementById('peakBadge').style.display='none';
 }
 
 function updateTabs(){
@@ -892,21 +886,21 @@ function updateChart(){
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
 
   // Summer kategorier på tvers av synlige selskaper per uke
-  const aggOpp   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.oppdrag||0); return t; });
-  const aggContr = weeks.map(w=>manT[w]||0); // Kontraherte prosjekter — egen farge
-  const aggInt   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.intern||0); return t; });
-  const aggFrav  = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.fravaer||0); return t; });
+  // Slå sammen oppdrag+intern+fravær til én blå bar ("Fra Ordrestyring")
+  const aggFraOS = weeks.map(w=>{ let t=0; visCos.forEach(co=>{ const d=byCo[co.navn]?.[w]||{}; t+=(d.oppdrag||0)+(d.intern||0)+(d.fravaer||0); }); return t; });
+  const aggOpp   = aggFraOS; // alias for bakoverkompatibilitet
+  const aggContr = weeks.map(w=>manT[w]||0);
+  const aggInt   = weeks.map(()=>0); // fjernet
+  const aggFrav  = weeks.map(()=>0); // fjernet
   const aggLed   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.ledig||0); return t; });
 
   // Maks kapasitet = sum av totalUsers for synlige selskaper
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
 
   const datasets=[
-    {label:'Oppdrag hentet fra OS',           data:aggOpp,   backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
+    {label:'Fra Ordrestyring',      data:aggFraOS, backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
     {label:'Kontraherte prosjekter',data:aggContr, backgroundColor:MANUAL_COLOR, borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Interntid',            data:aggInt,   backgroundColor:CAT_INTERN,  borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Fravær',               data:aggFrav,  backgroundColor:CAT_FRAVAER, borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Ledig',                data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
+    {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
 
@@ -923,18 +917,14 @@ function updateChart(){
           title:items=>wLong(weeks[items[0].dataIndex]),
           afterBody:items=>{
             const wk=weeks[items[0].dataIndex];
-            const opp=aggOpp[items[0].dataIndex];
+            const fraOS=aggFraOS[items[0].dataIndex];
             const contr=aggContr[items[0].dataIndex];
-            const int_=aggInt[items[0].dataIndex];
-            const frav=aggFrav[items[0].dataIndex];
             const led=aggLed[items[0].dataIndex];
-            const aktive=opp+contr+int_+frav;
+            const aktive=fraOS+contr;
             const lines=['───────────────'];
-            if(opp>0)   lines.push(`🔵 Oppdrag (OS): ${opp}`);
-            if(contr>0) lines.push(`🟩 Kontrahert:  ${contr}`);
-            if(int_>0)  lines.push(`🟡 Interntid:   ${int_}`);
-            if(frav>0)  lines.push(`🔴 Fravær:      ${frav}`);
-            if(led>0)   lines.push(`⚪ Ledig:       ${led}`);
+            if(fraOS>0)  lines.push(`🔵 Fra OS: ${fraOS}`);
+            if(contr>0)  lines.push(`🟩 Kontrahert: ${contr}`);
+            if(led>0)    lines.push(`⚪ Ledig: ${led}`);
             lines.push('───────────────');
             const tot=aktive+led;
             lines.push(`Aktive: ${aktive}${tot>0?` / ${tot}`:''}${tot>0?` (${Math.round(aktive/tot*100)}%)`:''}`);
@@ -949,10 +939,8 @@ function updateChart(){
     }
   });
 
-  let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Oppdrag (OS)</span>`;
+  let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Fra Ordrestyring</span>`;
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
-  lh+=`<span><span class="ldot" style="background:${CAT_INTERN}"></span>Interntid</span>`;
-  lh+=`<span><span class="ldot" style="background:${CAT_FRAVAER}"></span>Fravær</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#6366f1;border-radius:0"></span>Maks kap. (${maxKap})</span>`;
   document.getElementById('leg').innerHTML=lh;
