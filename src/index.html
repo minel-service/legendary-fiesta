@@ -994,10 +994,9 @@ function updateChart(){
   const aggInt   = weeks.map(()=>0); // fjernet
   const aggFrav  = weeks.map(()=>0); // fjernet
   // Ledig = maxKap - Fra OS - Kontrakter (stopper på 0, aldri negativt)
-  const aggLed   = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
-
-  // Maks kapasitet = sum av totalUsers for synlige selskaper
+  // Maks kapasitet = sum av totalUsers for synlige selskaper (må defineres FØR aggLed)
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
+  const aggLed = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
   const datasets=[
     {label:'Fra Ordrestyring',      data:aggFraOS, backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
