@@ -993,7 +993,8 @@ function updateChart(){
   const aggContr = weeks.map(w=>manT[w]||0);
   const aggInt   = weeks.map(()=>0); // fjernet
   const aggFrav  = weeks.map(()=>0); // fjernet
-  const aggLed   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.ledig||0); return t; });
+  // Ledig = maxKap - Fra OS - Kontrakter (stopper på 0, aldri negativt)
+  const aggLed   = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
   // Maks kapasitet = sum av totalUsers for synlige selskaper
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
