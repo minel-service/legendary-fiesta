@@ -709,14 +709,9 @@ async function fetchSelskap(co){
     const currentWkMonday = mondayOf(...wKey(new Date()).split('-W').map(Number));
     const fraInt = Math.floor(currentWkMonday.getTime() / 1000);
     const tilInt = Math.floor((now + 35*864e5) / 1000);
-    const gqlUrl = `${CONFIG.apiBase}/graphql`;
-    const gqlHeaders = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${co.apiKey}`
-    };
-
-    // Hent events — bekreftet å fungere med Bearer token + field:startTime
+    // Bruk Azure Function proxy (API-nøkler server-side)
+    const gqlUrl = '/api/ordrestyring-proxy';
+    // Hent events via Azure Function proxy (API-nøkler er server-side)
     const gqlQuery = `query KapPrognose($fra:Int!,$til:Int!){
       events(between:{field:startTime,from:$fra,to:$til}){
         identifier startTime stopTime header text
@@ -725,8 +720,14 @@ async function fetchSelskap(co){
       }
     }`;
     const resp = await fetch(gqlUrl, {
-      method: 'POST', headers: gqlHeaders,
-      body: JSON.stringify({operationName:'KapPrognose', query:gqlQuery, variables:{fra:fraInt,til:tilInt}})
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        company: co.navn,
+        operationName: 'KapPrognose',
+        query: gqlQuery,
+        variables: {fra:fraInt, til:tilInt}
+      })
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
