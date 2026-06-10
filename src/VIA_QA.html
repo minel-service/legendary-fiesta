@@ -783,7 +783,7 @@ function startApiLoad(){
   Promise.all([
     fetchBenchmark(co.key),
     paginate(co.key, function(c){
-      return '{cases(pagination:{cursor:'+(c?'"'+c+'"':'null')+',limit:200},orderBy:{field:"id",direction:DESC}){items{id caseNumber description status{text} caseType{text} customer{name} foreman{fullName} offerTotal parentCaseId subCases{id} economy{expectedCoverageRatio revenue}}nextCursor}}';
+      return '{cases(pagination:{cursor:'+(c?'"'+c+'"':'null')+',limit:200},orderBy:{field:"id",direction:DESC}){items{id caseNumber description status{text} caseType{text} customer{name} foreman{fullName} offerTotal parentCaseId subCases{id} economy{expectedCoverageRatio revenue hoursSalesprice materialsSalesprice hoursCostprice materialsCostprice}}nextCursor}}';
     }, function(d){return d.cases;})
   ]).then(function(res){
     BENCH = res[0];
@@ -824,8 +824,8 @@ function startApiLoad(){
           var mk = r[1]/100;
           var fk = r[2].reduce(function(s,i){return s+(i.amount||0);},0)/100;
           var tot = tk + mk;
-          var tmRev = (c.economy&&c.economy.revenue) ? c.economy.revenue/100 : 0;
-          var isTM = !tilbud && tmRev>0 && tmRev > tot * 1.05;
+          var tmRev = (((c.economy&&c.economy.hoursSalesprice)||0)+((c.economy&&c.economy.materialsSalesprice)||0))/100;
+          var isTM = !tilbud&&((((c.economy&&c.economy.hoursSalesprice)||0)>((c.economy&&c.economy.hoursCostprice)||0)*1.05)||(((c.economy&&c.economy.materialsSalesprice)||0)>((c.economy&&c.economy.materialsCostprice)||0)*1.05));
           var fsv = isTM ? tmRev : (dg>0&&dg<1) ? tot/(1-dg) : tot;
           var via = fsv - fk;
           done++; setP(10+Math.round((done/active.length)*88),'Laster '+done+' av '+active.length+' ordrer…','');
@@ -931,22 +931,7 @@ function parseRows(rows,src,prd){
   ACTIVE.forEach(function(r){
     r.normDG = tn[r.type]!=null ? tn[r.type] : null;
     r.dgAvvik = (r.dg!=null&&r.normDG!=null) ? r.dg-r.normDG : null;
-    // Risk scoring
-    var s=0;
-    if(r.dg===0) s+=3;
-    else if(r.dg!=null && r.dg<0.05 && (r.totOmk||0)>10000) s+=3;
-    else if(r.dg!=null && r.dg<0.10 && (r.totOmk||0)>50000) s+=2;
-    if(r.dg!=null && r.dg!==0 && ROUND.has(+r.dg.toFixed(3))) s+=1;
-    if(!r.hasTilbud && !(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim())) s+=1;
-    r.sc=s; r.risk=s>=4?'HØY':s>=2?'MIDDELS':'LAV';
-    // Flags
-    var f=[];
-    if(r.dg===0) f.push({t:'DG% = 0',c:'er'});
-    if(r.dg!=null&&r.dg!==0&&ROUND.has(+r.dg.toFixed(3))) f.push({t:'Rund DG%',c:''});
-    if(r.dg!=null&&r.dg!==0&&r.dg<0.05&&(r.totOmk||0)>10000) f.push({t:'Kritisk lav margin (<5%)',c:'er'});
-    else if(r.dg!=null&&r.dg!==0&&r.dg<0.10&&(r.totOmk||0)>50000) f.push({t:'Svak margin (<10%)',c:''});
-    r.flags = f.length ? f : [{t:'OK',c:'ok'}];
-    // Init input state
+    // Init input state first (so risk scoring can use DGI)
     if(r.hasTilbud){
       if(!POC[r.ordreNr]){
         var dg0=r.dg!=null?r.dg:0.35;
@@ -959,6 +944,23 @@ function parseRows(rows,src,prd){
         DGI[r.ordreNr]={dg:_sysDG,k:''};
       }
     }
+    // Use user-entered DG (DGI) for risk scoring, fall back to system DG
+    var effDG = (!r.hasTilbud&&DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0) ? DGI[r.ordreNr].dg/100 : r.dg;
+    // Risk scoring
+    var s=0;
+    if(effDG===0) s+=3;
+    else if(effDG!=null && effDG<0.05 && (r.totOmk||0)>10000) s+=3;
+    else if(effDG!=null && effDG<0.10 && (r.totOmk||0)>50000) s+=2;
+    if(effDG!=null && effDG!==0 && ROUND.has(+effDG.toFixed(3))) s+=1;
+    if(!r.hasTilbud && !(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim())) s+=1;
+    r.sc=s; r.risk=s>=4?'HØY':s>=2?'MIDDELS':'LAV';
+    // Flags
+    var f=[];
+    if(effDG===0) f.push({t:'DG% = 0',c:'er'});
+    if(effDG!=null&&effDG!==0&&ROUND.has(+effDG.toFixed(3))) f.push({t:'Rund DG%',c:''});
+    if(effDG!=null&&effDG!==0&&effDG<0.05&&(r.totOmk||0)>10000) f.push({t:'Kritisk lav margin (<5%)',c:'er'});
+    else if(effDG!=null&&effDG!==0&&effDG<0.10&&(r.totOmk||0)>50000) f.push({t:'Svak margin (<10%)',c:''});
+    r.flags = f.length ? f : [{t:'OK',c:'ok'}];
   });
 
   var pls=[...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(Boolean).sort();
@@ -1076,7 +1078,8 @@ function rQA(){
   }).join('')+'<th>QA Flagg</th></tr></thead>';
   document.getElementById('qatbl').innerHTML=hdr+'<tbody>'+rows.map(function(r){
     var vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
-    return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td><td style="white-space:nowrap">'+r.pl+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td><td>'+r.kunde+'</td><td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td><td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td><td class="r" style="'+vc+'">'+NK(r.via)+'</td><td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
+    var _qdg = r.hasTilbud ? r.dg : (DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0 ? DGI[r.ordreNr].dg/100 : r.dg);
+    return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td><td style="white-space:nowrap">'+r.pl+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td><td>'+r.kunde+'</td><td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(_qdg)+'</td><td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td><td class="r" style="'+vc+'">'+NK(r.via)+'</td><td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
   }).join('')+'</tbody>';
 }
 
@@ -1293,6 +1296,91 @@ function doLock(){
   saveSnap(name,entity,period);
   LOCKED=true;
   closeLock();
+  document.getElementById('btnlock').textContent='✅ Låst: '+period;
+  document.getElementById('btnlock').disabled=true;
+  rPOC(); rHist(); ST('hist');
+  alert('Periode låst! "DG% forrige periode" aktiveres fra neste periode.');
+}
+function saveSnap(name,entity,period){
+  var hist=getHist(), pv=0, dv=0;
+  var projects=ACTIVE.map(function(r){
+    var via=null, dg=null, _fg=null;
+    if(r.hasTilbud){
+      var c=calcPOC(r); via=c.via; dg=c.estDG; _fg=c.fg;
+      if(c.via!=null) pv+=c.via;
+    } else {
+      var c=calcDG(r); via=c.via; dg=c.dg;
+      if(c.via!=null) dv+=c.via;
+    }
+    return {
+      ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,
+      beskr:r.beskr.substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,
+      via:via!=null?Math.round(via):null,
+      dg:dg!=null?Math.round(dg*10000)/10000:null,
+      fg:r.hasTilbud&&_fg!=null?Math.round(_fg*1000)/1000:null,
+      hasTilbud:r.hasTilbud,risk:r.risk
+    };
+  });
+  var snap={
+    id:Date.now(),period:period,entity:entity,lockedBy:name,lockedAt:new Date().toISOString(),
+    summary:{totalVIA:Math.round(pv+dv),pocVIA:Math.round(pv),dgVIA:Math.round(dv),projectCount:ACTIVE.length,highRisk:ACTIVE.filter(function(r){return r.risk==='HØY';}).length},
+    projects:projects
+  };
+  var filtered=hist.filter(function(e){return e.period!==period;});
+  filtered.push(snap);
+  filtered.sort(function(a,b){return a.id-b.id;});
+  localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function expPOC(){
+  var rows=[];
+  ACTIVE.forEach(function(r){
+    if(r.hasTilbud){
+      var c=calcPOC(r),inp=POC[r.ordreNr]||{};
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,Kontraktssum:r.tilbud,'Påløpte kostnader':r.totOmk,GjeståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjeståendeMat:inp.mat||0,GjeståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,'DG%vFerdig':c.estDG!=null?Math.round(c.estDG*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});
+    } else {
+      var c=calcDG(r),inp=DGI[r.ordreNr]||{},prev=getPrevDG(r.ordreNr);
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,'Påløpte kostnader':r.totOmk,Fakturert:r.fakt,'DG%bekreftet':Math.round(c.dg*1000)/10,'DG%forrigePeriode':prev?Math.round(prev.dg*1000)/10:null,ForrigePeriode:prev?prev.period:null,ForventetSalgsverdi:Math.round(c.fs||0),VIA:Math.round(c.via||0),Begrunnelse:inp.k||''});
+    }
+  });
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
+  XLSX.writeFile(wb,'VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+function expHist(){
+  var hist=getHist();
+  if(!hist.length){ alert('Ingen historikk.'); return; }
+  var rows=[];
+  hist.forEach(function(h){
+    h.projects.forEach(function(p){
+      rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,VIA:p.via,DG:p.dg!=null?Math.round(p.dg*1000)/10:null,Risiko:p.risk});
+    });
+  });
+  var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Historikk',ws);
+  XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
+}
+function clearHist(){
+  if(confirm('Slette all historikk?')){ localStorage.removeItem(HIST_KEY); rHist(); }
+}
+
+/* ============================================================
+   NAV & RESET
+   ============================================================ */
+function ST(n){
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+n).classList.add('active');
+  document.querySelectorAll('.tab')[{dash:0,qa:1,risk:2,poc:3,status:4,hist:5}[n]].classList.add('active');
+  if(n==='status') rStatus();
+}
+function resetApp(){
+  ACTIVE=[];POC={};DGI={};LOCKED=false;BENCH={};
+  QS={col:6,asc:false};RS={col:8,asc:false};POCS={col:4,asc:false};DGS={col:5,asc:false};
+  HIDE_SETTLED=false;HIDE_SMALL=false;
   document.getElementById('btnlock').textContent='✅ Låst: '+period;
   document.getElementById('btnlock').disabled=true;
   rPOC(); rHist(); ST('hist');
