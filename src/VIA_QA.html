@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v8.1</title>
+<title>VIA QA – Minel AS v8.2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
@@ -153,7 +153,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
-  <span class="hd-badge">v8.1</span>
+  <span class="hd-badge">v8.2</span>
 </header>
 
 <!-- START PANEL -->
@@ -382,7 +382,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v8.1 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v8.2 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -395,6 +395,7 @@ var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
 
 async function initMSAL(){
   if(_msalApp)return;
+  if(typeof msal==='undefined'){console.warn('[SP] MSAL ikke lastet');return;}
   _msalApp=new msal.PublicClientApplication(MSAL_CFG);
   await _msalApp.initialize();
   try{var resp=await _msalApp.handleRedirectPromise();if(resp){_spToken=resp.accessToken;_spUser=resp.account.username;}}catch(e){}
@@ -402,7 +403,9 @@ async function initMSAL(){
 
 async function getSpToken(){
   try{
+    if(typeof msal==='undefined') return null;
     await initMSAL();
+    if(!_msalApp) return null;
     if(_spToken)return _spToken;
     var accounts=_msalApp.getAllAccounts();
     if(accounts.length>0){
@@ -1124,12 +1127,24 @@ function calcDG(r){
   var inp=DGI[r.ordreNr]||{dg:35,k:''};
   var dgVal=inp.dg!=null?inp.dg:35;
   var dg=dgVal/100;
-  var fs=r.isTM?(r.fSalgsverdi||r.totOmk):(r.totOmk!=null&&dg>0&&dg<1)?r.totOmk/(1-dg):r.totOmk;
+  var useTM=r.isTM&&!inp.tmOverride;
+  var fs=useTM?(r.fSalgsverdi||r.totOmk):(r.totOmk!=null&&dg>0&&dg<1)?r.totOmk/(1-dg):r.totOmk;
   var via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
-  return {dg:dg,fs:fs,via:via};
+  return {dg:dg,fs:fs,via:via,useTM:useTM};
 }
 function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); }
-function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();var _p=document.getElementById('aperiod').textContent,_c=document.getElementById('lentity').value||'';spSaveDebounced(_p,_c,id,DGI[id].dg,DGI[id].k,'');}
+function sD(id,f,v){
+  if(!DGI[id])DGI[id]={dg:35,k:''};
+  DGI[id][f]=f==='k'?v:parseFloat(v)||0;
+  if(f==='dg'){var _r=ACTIVE.find(function(x){return x.ordreNr===id;});if(_r&&_r.isTM)DGI[id].tmOverride=true;}
+  rPOC();
+  var _p=document.getElementById('aperiod').textContent,_c=document.getElementById('lentity').value||'';
+  spSaveDebounced(_p,_c,id,DGI[id].dg,DGI[id].k,'');
+}
+function resetTM(id){
+  if(DGI[id]){DGI[id].tmOverride=false;var _r=ACTIVE.find(function(x){return x.ordreNr===id;});if(_r){var pct=_r.fSalgsverdi&&_r.totOmk?Math.round((_r.fSalgsverdi-_r.totOmk)/_r.fSalgsverdi*100):35;DGI[id].dg=pct;}}
+  rPOC();
+}
 function applyGlobalDG(){
   var val=parseFloat(document.getElementById('global-dg').value);
   if(isNaN(val)||val<0||val>100){ alert('Skriv inn et gyldig tall mellom 0 og 100.'); return; }
