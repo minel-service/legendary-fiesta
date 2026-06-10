@@ -475,9 +475,28 @@ async function fetchUserCompany() {
       <div id="ordreBody"><div class="empty-msg" style="padding:18px">Ingen kontraherte prosjekter registrert ennå.</div></div>
     </div>
 
+    <div class="sl" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Historikk</span>
+      <button onclick="saveHistorySnapshot()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit">📸 Lagre snapshot nå</button>
+    </div>
+    <div class="card">
+      <div class="tbw" id="historyContent"><div class="empty-msg">Laster historikk…</div></div>
+    </div>
+
     <div class="sl">Detaljert oversikt</div>
     <div class="card">
-      <div class="chdr"><span class="ctitle" id="tblTitle">Alle oppdrag og prosjekter</span></div>
+      <div class="chdr" style="flex-wrap:wrap;gap:10px">
+        <span class="ctitle" id="tblTitle">Alle oppdrag og prosjekter</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <input type="text" id="tblSearch" placeholder="🔍 Søk i prosjekter…"
+            oninput="filterTable()"
+            style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 12px;font-size:.82rem;font-family:inherit;width:220px;color:#1e293b;outline:none"
+            onfocus="this.style.borderColor='#1A2744'"
+            onblur="this.style.borderColor='#e2e8f0'"/>
+          <button onclick="document.getElementById('tblSearch').value='';filterTable()"
+            style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:.78rem;color:#94a3b8;background:#fff;cursor:pointer;font-family:inherit" title="Nullstill søk">✕</button>
+        </div>
+      </div>
       <div class="tbw" id="tblWrap"></div>
     </div>
   </div>
@@ -1331,6 +1350,88 @@ function fmtKrInput(inp){
 }
 function parseKrInput(id){return parseInt((document.getElementById(id).value||'').replace(/\D/g,''))||0;}
 
+
+// ════ SØK I TABELLEN ════
+let _tblSearchTerm = '';
+function filterTable(){
+  _tblSearchTerm = (document.getElementById('tblSearch')?.value||'').toLowerCase().trim();
+  updateTable();
+}
+
+// ════ HISTORIKK — ukentlig snapshot ════
+const HIST_FILE = 'kapasitet_historikk.json';
+
+async function saveHistorySnapshot(){
+  try{
+    const weekStr = wKey(new Date());
+    // Last eksisterende historikk
+    let history = [];
+    try{
+      const r = await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`);
+      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) history=j; }
+    }catch(_){}
+    // Ikke lagre ny snapshot om det allerede finnes én for denne uken
+    if(history.some(h=>h.week===weekStr)){
+      console.log('[Historikk] Snapshot for',weekStr,'finnes allerede');
+      return;
+    }
+    // Bygg snapshot
+    const snapshot = {
+      week: weekStr,
+      savedAt: new Date().toISOString(),
+      savedBy: auditUser(),
+      projects: allProjects.map(p=>({
+        id:p.id, name:p.name, company:p.company,
+        kontraktssum:p.kontraktssum||0, weeklyCrews:p.weeklyCrews, inOS:p.inOS||false
+      })),
+      capacityByCompany: Object.fromEntries(
+        companies.map(co=>[ co.navn, coData[co.navn]?.totalUsers||0 ])
+      )
+    };
+    history.unshift(snapshot); // nyeste først
+    if(history.length>52) history=history.slice(0,52); // maks 1 år
+    const payload=JSON.stringify(history);
+    try{localStorage.setItem('minel_historikk',payload);}catch(_){}
+    await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`,
+      {method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
+    console.log('[Historikk] Snapshot lagret for',weekStr);
+    renderHistoryTab();
+  }catch(e){console.warn('[Historikk] feilet:',e.message);}
+}
+
+async function loadHistory(){
+  try{
+    const r=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`);
+    if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) return j; }
+  }catch(_){}
+  try{const ls=localStorage.getItem('minel_historikk');if(ls)return JSON.parse(ls);}catch(_){}
+  return[];
+}
+
+function renderHistoryTab(){
+  const el=document.getElementById('historyContent');
+  if(!el)return;
+  loadHistory().then(history=>{
+    if(!history.length){
+      el.innerHTML='<div class="empty-msg">Ingen historikk ennå. Historikk lagres automatisk én gang per uke.</div>';
+      return;
+    }
+    let html='<table><thead><tr><th>Uke</th><th>Lagret</th><th>Av</th><th>Kontrakter</th><th>Kapasitet</th></tr></thead><tbody>';
+    history.forEach(h=>{
+      const [y,w]=h.week.split('-W');
+      const dt=new Date(h.savedAt).toLocaleDateString('no-NO');
+      const totKap=Object.values(h.capacityByCompany||{}).reduce((s,v)=>s+v,0);
+      html+=`<tr>
+        <td><strong>Uke ${parseInt(w)}, ${y}</strong></td>
+        <td style="color:#64748b;font-size:.82rem">${dt}</td>
+        <td style="font-size:.82rem">${h.savedBy||'—'}</td>
+        <td>${h.projects?.length||0} stk</td>
+        <td>${totKap} ansatte</td>
+      </tr>`;
+    });
+    el.innerHTML=html+'</tbody></table>';
+  });
+}
 function updateTable(){
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
   document.getElementById('tblTitle').textContent=activeFilter==='all'?'Alle oppdrag og prosjekter':`Oppdrag — ${activeFilter}`;
@@ -1359,7 +1460,13 @@ function updateTable(){
     });
   });
 
-  const visMp=allProjects.filter(p=>activeFilter==='all'||!p.company||p.company===activeFilter);
+  const visMp=allProjects.filter(p=>{
+    if(activeFilter!=='all'&&p.company&&p.company!==activeFilter) return false;
+    if(!_tblSearchTerm) return true;
+    return (p.name||'').toLowerCase().includes(_tblSearchTerm)
+        || (p.company||'').toLowerCase().includes(_tblSearchTerm)
+        || (p.notes||'').toLowerCase().includes(_tblSearchTerm);
+  });
   if(visMp.length>0){
     if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
     html+=`<tr class="sec-row"><td colspan="6">📝 Kontraherte prosjekter</td></tr>`;
