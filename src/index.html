@@ -565,6 +565,39 @@ const FILE_MAP = {
   'Minel Gudbrandsdal AS':          'kapasitet_gudbrandsdal.json',
 };
 function lsKey(fn){return 'minel_'+fn;}
+
+// ════ SKJEMAVERSJON OG MIGRERING ════
+// Øk SCHEMA_VERSION når du endrer datastrukturen
+// Legg til migrasjonssteg i migrateProject()
+const SCHEMA_VERSION = 1;
+
+function migrateProject(p){
+  // Fremtidssikker migrering — kjøres på hvert prosjekt ved lasting
+  // Sett standardverdier for felt som mangler (bakoverkompatibilitet)
+  if(!p.id)         p.id = Math.random().toString(36).slice(2,10);
+  if(!p.company)    p.company = '';
+  if(!p.name)       p.name = 'Ukjent';
+  if(!p.weeklyCrews) p.weeklyCrews = {};
+  if(p.kontraktssum === undefined) p.kontraktssum = 0;
+  if(p.dg === undefined)           p.dg = null;
+  if(p.notes === undefined)        p.notes = '';
+  if(p.inOS === undefined)         p.inOS = false;
+  if(p.warnDismissed === undefined) p.warnDismissed = false;
+  if(!p.created)    p.created = new Date().toISOString();
+  if(!p.createdBy)  p.createdBy = null;
+  if(!p.createdAt)  p.createdAt = p.created || null;
+  if(!p.lastEditedBy)  p.lastEditedBy = null;
+  if(!p.lastEditedAt)  p.lastEditedAt = null;
+  if(p._schemaVersion === undefined) p._schemaVersion = SCHEMA_VERSION;
+  // Fremtidige migrasjonssteg legges til her:
+  // if(p._schemaVersion < 2){ p.nyFelt = standardVerdi; p._schemaVersion = 2; }
+  return p;
+}
+
+function migrateAll(projects){
+  if(!Array.isArray(projects)) return [];
+  return projects.map(migrateProject).filter(p=>p.id && p.company);
+}
 async function loadCompanyProjects(company){
   const fn=FILE_MAP[company];if(!fn)return[];
   const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${fn}:/content`;
@@ -572,11 +605,11 @@ async function loadCompanyProjects(company){
     const r=await gFetch(url);
     if(!r||r.status===0)throw new Error('ingen token');
     if(r.status===404)return[];
-    if(r.ok){const j=await r.json();if(Array.isArray(j)){try{localStorage.setItem(lsKey(fn),JSON.stringify(j));}catch(_){}return j;}}
+    if(r.ok){const j=await r.json();if(Array.isArray(j)){const migrated=migrateAll(j);try{localStorage.setItem(lsKey(fn),JSON.stringify(migrated));}catch(_){}return migrated;}}
     throw new Error('HTTP '+r.status);
   }catch(e){
     console.warn(`[Graph] load ${company}: ${e.message}`);
-    try{const ls=localStorage.getItem(lsKey(fn));if(ls)return JSON.parse(ls);}catch(_){}
+    try{const ls=localStorage.getItem(lsKey(fn));if(ls)return migrateAll(JSON.parse(ls));}catch(_){}
     return[];
   }
 }
@@ -1738,7 +1771,7 @@ async function loadProjects(){
         const oldData=await oldR.json();
         if(Array.isArray(oldData)&&oldData.length>0){
           const existingIds=new Set(allProjects.map(p=>p.id));
-          const migrants=oldData.filter(p=>p.id&&!existingIds.has(p.id)&&p.company&&FILE_MAP[p.company]);
+          const migrants=migrateAll(oldData).filter(p=>!existingIds.has(p.id)&&FILE_MAP[p.company]);
           if(migrants.length>0){
             console.log('[Migrasjon]',migrants.length,'prosjekter fra gammel fil');
             allProjects=[...allProjects,...migrants];
