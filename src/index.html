@@ -1650,10 +1650,8 @@ function oreUpdateCrew(id,wk,val){
 }
 
 function scheduleSave(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{
-    saveToSharePoint().then(()=>showToast('Lagret ✓')).catch(()=>showToast('Lagret lokalt',false));
-  },600);
+  const cos=[...new Set(allProjects.map(p=>p.company).filter(Boolean))];
+  cos.forEach(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co)));
 }
 
 function openOreDrawerNewProj(){
@@ -1681,66 +1679,39 @@ function renderAll(){
 // ════════════════════════════════════════════
 async function loadProjects(){
   try{
-    const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`;
-    const r=await gFetch(url);
-    if(r&&r.status===404){console.log('[Graph] ingen data');}
-    else if(r&&r.ok){const j=await r.json();if(Array.isArray(j))allProjects=j;}
-    else if(r&&r.status===0){console.warn('[Graph] load: ingen token, beholder lokal data');}
-    else if(r)throw new Error('HTTP '+r.status);
-  } catch(e){
-    try{const ls=localStorage.getItem('minel_projects');if(ls)allProjects=JSON.parse(ls);}catch(_){}
-  }
-  // Rydd bort ev. testdata fra utvikling
-  const _testNames=['Test','Test prosjekt 1','Test prosjekt 2','Test prosjekt'];
-  const _before=allProjects.length;
-  allProjects=allProjects.filter(p=>!_testNames.includes((p.name||'').trim()));
-  if(allProjects.length<_before){
-    try{localStorage.setItem('minel_projects',JSON.stringify(allProjects));}catch(_){}
+    allProjects = await loadAllProjects();
+    // Migrasjon: sjekk gammel felles fil og flett inn det som mangler
+    try{
+      const oldR=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`);
+      if(oldR&&oldR.ok){
+        const oldData=await oldR.json();
+        if(Array.isArray(oldData)&&oldData.length>0){
+          const existingIds=new Set(allProjects.map(p=>p.id));
+          const migrants=oldData.filter(p=>p.id&&!existingIds.has(p.id)&&p.company&&FILE_MAP[p.company]);
+          if(migrants.length>0){
+            console.log('[Migrasjon]',migrants.length,'prosjekter fra gammel fil');
+            allProjects=[...allProjects,...migrants];
+            const byCo={};
+            migrants.forEach(p=>{if(!byCo[p.company])byCo[p.company]=[];byCo[p.company].push(p);});
+            for(const co of Object.keys(byCo)){
+              await saveCompanyProjects(co,allProjects.filter(p=>p.company===co));
+            }
+          }
+        }
+      }
+    }catch(_){}
+  }catch(e){
+    console.warn('[Graph] loadProjects feilet:',e.message);
+    allProjects=[];
+    for(const [,fn] of Object.entries(FILE_MAP)){
+      try{const ls=localStorage.getItem(lsKey(fn));if(ls)allProjects=[...allProjects,...JSON.parse(ls)];}catch(_){}
+    }
   }
 }
 
 async function saveToSharePoint(){
-  // SIKKER reload-merge med tre sikkerhetsventiler mot datatap
-  try{localStorage.setItem('minel_projects',JSON.stringify(allProjects));}catch(_){}
-  try{
-    // 1. Hent gjeldende fil fra SharePoint
-    const spUrl = `${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`;
-    const existingResp = await gFetch(spUrl);
-
-    // SIKKERHETSVENTIL 1: Hvis token ikke er klar (status 0 = redirect pågår), avbryt
-    if(!existingResp || existingResp.status===0){
-      console.warn('[Graph] save avbrutt: ingen token tilgjengelig');
-      return;
-    }
-
-    let existing = [];
-    if(existingResp.ok){
-      try{ const j=await existingResp.json(); if(Array.isArray(j)) existing=j; }catch(_){}
-    } else if(existingResp.status!==404){
-      // SIKKERHETSVENTIL 2: Hvis lesing feiler (ikke 404), avbryt — vi vet ikke hva som er på server
-      console.warn('[Graph] save avbrutt: kunne ikke lese eksisterende data, HTTP',existingResp.status);
-      return;
-    }
-
-    // Flett: behold server-prosjekter som IKKE er i lokal liste, legg til/erstatt lokale
-    const localIds = new Set(allProjects.map(p=>p.id));
-    const serverOnly = existing.filter(p=>!localIds.has(p.id));
-    const merged = [...serverOnly, ...allProjects];
-
-    // SIKKERHETSVENTIL 3: Avbryt hvis vi er i ferd med å slette data
-    if(existing.length > 0 && merged.length < existing.length && allProjects.length < existing.length){
-      console.warn('[Graph] save avbrutt: merge ville redusert antall prosjekter fra',existing.length,'til',merged.length,'— mulig datatap');
-      return;
-    }
-
-    const payload = JSON.stringify(merged);
-    try{localStorage.setItem('minel_projects',payload);}catch(_){}
-    const r = await gFetch(spUrl,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
-    if(r&&!r.ok) console.warn('[Graph] save HTTP',r.status);
-    else{ allProjects=merged; console.log('[Graph] Lagret OK —',merged.length,'prosjekter'); }
-  }catch(e){
-    console.warn('[Graph] saveToSharePoint:',e.message);
-  }
+  const cos=[...new Set(allProjects.map(p=>p.company).filter(Boolean))];
+  await Promise.allSettled(cos.map(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co))));
 }
 
 function showToast(msg,ok=true){
@@ -1855,15 +1826,15 @@ function saveProject(){
     closeProjModal();
     renderAll();
     if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-    saveToSharePoint()
-      .then(()=>{ postBjelle(nyP); showToast('🔔 Kontrakt lagret og varslet!'); })
+    saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
+      .then(ok=>{postBjelle(nyP);showToast(ok?'🔔 Kontrakt lagret og varslet!':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok);})
       .catch(()=>showToast('Lagret lokalt',false));
     return;
   }
   closeProjModal();
   renderAll();
   if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-  saveToSharePoint().then(()=>showToast('Kontrakt oppdatert ✓')).catch(()=>showToast('Lagret lokalt',false));
+  {const _co2=allProjects.find(p=>p.id===editingId)?.company;if(_co2)saveCompanyProjects(_co2,allProjects.filter(p=>p.company===_co2)).then(ok=>showToast(ok?'Kontrakt oppdatert ✓':'⚠️ Lokalt lagret',ok));}
 }
 
 function editProj(id){
@@ -1899,7 +1870,7 @@ function delProj(id){
   if(!confirm(`Slett kontrakt «${p.name}»?`))return;
   allProjects=allProjects.filter(x=>x.id!==id);
   renderAll();
-  saveToSharePoint().then(()=>showToast('Kontrakt slettet')).catch(()=>showToast('Slettet lokalt',false));
+  if(p.company)saveCompanyProjects(p.company,allProjects.filter(x=>x.company===p.company)).then(ok=>showToast(ok?'Kontrakt slettet':'⚠️ Slettet lokalt',ok));
 }
 
 // ════════════════════════════════════════════
