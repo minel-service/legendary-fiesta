@@ -1770,6 +1770,8 @@ async function loadProjects(){
       if(oldR&&oldR.ok){
         const oldData=await oldR.json();
         if(Array.isArray(oldData)&&oldData.length>0){
+          // Tøm alltid gammel fil for å stoppe gjentatt migrasjon
+          try{await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:'[]',headers:{'Content-Type':'application/octet-stream'}});}catch(_){}
           const existingIds=new Set(allProjects.map(p=>p.id));
           const migrants=migrateAll(oldData).filter(p=>!existingIds.has(p.id)&&FILE_MAP[p.company]);
           if(migrants.length>0){
@@ -1781,6 +1783,12 @@ async function loadProjects(){
               await saveCompanyProjects(co,allProjects.filter(p=>p.company===co));
             }
           }
+          // Tøm gammel fil etter migrasjon — hindrer gjentatt re-import
+          try{
+            await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,
+              {method:'PUT',body:'[]',headers:{'Content-Type':'application/octet-stream'}});
+            console.log('[Migrasjon] Gammel fil tømt');
+          }catch(_){}
         }
       }
     }catch(_){}
