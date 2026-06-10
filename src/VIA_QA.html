@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VIA QA – Minel AS v8.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -384,6 +385,88 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 <footer>Minel AS · VIA QA v8.1 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
+// ════ SHAREPOINT INTEGRASJON ════
+var SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
+var SP_LIST='17a680a1-2dac-4cbb-ac95-69a707eb138c';
+var SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/lists/'+SP_LIST;
+var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
+var SP_SCOPES=['https://graph.microsoft.com/Sites.ReadWrite.All'];
+var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
+
+async function initMSAL(){
+  if(_msalApp)return;
+  _msalApp=new msal.PublicClientApplication(MSAL_CFG);
+  await _msalApp.initialize();
+  try{var resp=await _msalApp.handleRedirectPromise();if(resp){_spToken=resp.accessToken;_spUser=resp.account.username;}}catch(e){}
+}
+
+async function getSpToken(){
+  try{
+    await initMSAL();
+    if(_spToken)return _spToken;
+    var accounts=_msalApp.getAllAccounts();
+    if(accounts.length>0){
+      try{var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});_spToken=r.accessToken;_spUser=accounts[0].username;return _spToken;}catch(e){}
+    }
+    _msalApp.acquireTokenRedirect({scopes:SP_SCOPES});
+    return null;
+  }catch(e){console.warn('MSAL feil:',e);return null;}
+}
+
+async function spLoadAssessments(period,company){
+  try{
+    var tok=await getSpToken();if(!tok)return false;
+    var filter=encodeURIComponent("fields/Periode eq '"+period+"' and fields/Selskap eq '"+company+"'");
+    var r=await fetch(SP_GRAPH+'/items?$expand=fields&$filter='+filter+'&$top=2000',{headers:{'Authorization':'Bearer '+tok}});
+    var j=await r.json();
+    (j.value||[]).forEach(function(item){
+      var f=item.fields||{};
+      if(!f.OrdreNr)return;
+      if(f.OrdreNr==='_STATUS_'){
+        var stKey=(f.Periode||'')+'__'+(f.Selskap||'')+'__'+(f.Begrunnelse||'');
+        var st=JSON.parse(localStorage.getItem(STATUS_KEY)||'{}');
+        st[stKey]={pl:f.Begrunnelse,period:f.Periode,entity:f.Selskap,ts:f.UpdatedAt,done:true};
+        localStorage.setItem(STATUS_KEY,JSON.stringify(st));
+        _spIds['_STATUS_'+(f.Begrunnelse||'')]=item.id;
+      } else {
+        _spIds[f.OrdreNr]=item.id;
+        if(f.DG!=null){if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:parseFloat(f.DG)||35,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=parseFloat(f.DG)||35;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
+        if(f.Kommentar){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:650,mat:0,k:f.Kommentar};else POC[f.OrdreNr].k=f.Kommentar;}
+      }
+    });
+    console.log('[SP] Lastet',j.value&&j.value.length,'vurderinger for',period);
+    return true;
+  }catch(e){console.warn('[SP] Load feilet:',e);return false;}
+}
+
+async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar){
+  try{
+    var tok=await getSpToken();if(!tok)return;
+    var fields={Periode:period,Selskap:company,OrdreNr:ordreNr,DG:dg!=null?dg:null,Begrunnelse:begrunnelse||'',Kommentar:kommentar||'',UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
+    var existId=_spIds[ordreNr];
+    if(existId){
+      await fetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(fields)});
+    } else {
+      var r=await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+      var j=await r.json();if(j.id)_spIds[ordreNr]=j.id;
+    }
+  }catch(e){console.warn('[SP] Save feilet:',e);}
+}
+
+function spSaveDebounced(period,company,ordreNr,dg,k,kommentar){
+  clearTimeout(_spDebounce[ordreNr]);
+  _spDebounce[ordreNr]=setTimeout(function(){spSaveAssessment(period,company,ordreNr,dg,k,kommentar);},2000);
+}
+
+async function spMarkDone(period,company,pl){
+  try{
+    var tok=await getSpToken();if(!tok)return;
+    var fields={Periode:period,Selskap:company,OrdreNr:'_STATUS_',Begrunnelse:pl,UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
+    await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+  }catch(e){console.warn('[SP] MarkDone feilet:',e);}
+}
+// ════ END SHAREPOINT ════
+
 /* ============================================================
    GLOBALS
    ============================================================ */
@@ -645,7 +728,7 @@ function markReady(){
     var igjen = dgR.length - vurderte.length;
     if(!confirm('Det gjenstår '+igjen+' ordre uten begrunnelse. Vil du likevel markere som ferdig?')) return;
   }
-  saveStatus(pl,period,entity);
+  saveStatus(pl,period,entity);spMarkDone(period,entity,pl).catch(function(e){console.warn('[SP] Status feilet:',e);});
   alert('✅ '+pl+' er markert som ferdig for '+period+'!\nDaglig leder kan se status i Status-fanen.');
   rStatus(); ST('status');
 }
@@ -894,7 +977,7 @@ function parseRows(rows,src,prd){
   document.getElementById('lperiod').value=prd;
   document.getElementById('startPanel').style.display='none';
   document.getElementById('app').style.display='block';
-  rDash();rQA();rRisk();rPOC();rHist();rStatus();
+  rDash();rQA();rRisk();rPOC();rHist();rStatus();var _per=document.getElementById('aperiod').textContent,_co=document.getElementById('lentity').value||'';if(_per)spLoadAssessments(_per,_co).then(function(ok){if(ok){rPOC();rStatus();}});
 }
 
 /* ============================================================
@@ -1043,7 +1126,7 @@ function calcDG(r){
   return {dg:dg,fs:fs,via:via};
 }
 function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); }
-function sD(id,f,v){ if(!DGI[id])DGI[id]={dg:35,k:''}; DGI[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); }
+function sD(id,f,v){if(!DGI[id])DGI[id]={dg:35,k:''};DGI[id][f]=f==='k'?v:parseFloat(v)||0;rPOC();var _p=document.getElementById('aperiod').textContent,_c=document.getElementById('lentity').value||'';spSaveDebounced(_p,_c,id,DGI[id].dg,DGI[id].k,'');}
 function applyGlobalDG(){
   var val=parseFloat(document.getElementById('global-dg').value);
   if(isNaN(val)||val<0||val>100){ alert('Skriv inn et gyldig tall mellom 0 og 100.'); return; }
