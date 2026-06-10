@@ -1241,8 +1241,17 @@ function rPOC(){
       if(c.via!=null) dv+=c.via;
       var warn=!inp.k;
       var bs=r.beskr?r.beskr.substring(0,36)+(r.beskr.length>36?'…':''):'–';
+      var _tmPct=r.isTM&&r.fSalgsverdi&&r.fSalgsverdi>r.totOmk?Math.round((r.fSalgsverdi-r.totOmk)/r.fSalgsverdi*100):35;
+      var _tmOvr=inp.tmOverride;
       var dgCell = r.isTM
-        ? '<span style="background:var(--greenbg);color:var(--green);border-radius:5px;padding:2px 8px;font-size:.76rem;font-weight:700;" title="Auto-beregnet (T&amp;M — omsetning > kostnader)">⚡ Auto T&amp;M</span>'
+        ? '<div style="display:flex;align-items:center;gap:5px;">'
+          +(_tmOvr
+            ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px" title="Manuell overstyring"><span style="font-size:.8rem;color:#666">%</span>'
+              +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 5px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;" title="Tilbake til Auto T&M">⚡ Auto</button>'
+            :'<span style="background:var(--greenbg);color:var(--green);border-radius:5px;padding:2px 8px;font-size:.76rem;font-weight:700;">⚡ Auto T&amp;M</span>'
+              +'<input class="pi" type="text" inputmode="numeric" value="" '+dis+' placeholder="overstyr%" onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:72px;font-size:.75rem;" title="Skriv inn DG% for å overstyre Auto T&M">'
+            )
+          +'</div>'
         : '<div style="display:flex;align-items:center;gap:4px;"><input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:35)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px"><span style="font-size:.8rem;color:#666">%</span></div>';
       return '<tr>'+
         '<td><strong>'+r.ordreNr+'</strong>'+newBadge(r.ordreNr)+'</td>'+
