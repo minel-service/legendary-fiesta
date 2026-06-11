@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v8.3</title>
+<title>VIA QA – Minel AS v8.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -153,7 +153,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
-  <span class="hd-badge">v8.3</span>
+  <span class="hd-badge">v8.4</span>
 </header>
 
 <!-- START PANEL -->
@@ -386,7 +386,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v8.3 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v8.4 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -958,13 +958,13 @@ function parseRows(rows,src,prd){
     if(effDG===0) s+=3;
     else if(effDG!=null && effDG<0.05 && (r.totOmk||0)>10000) s+=3;
     else if(effDG!=null && effDG<0.10 && (r.totOmk||0)>50000) s+=2;
-    if(effDG!=null && effDG!==0 && ROUND.has(+effDG.toFixed(3))) s+=1;
+    if(!r.isTM && effDG!=null && effDG!==0 && ROUND.has(+effDG.toFixed(3))) s+=1;
     if(!r.hasTilbud && !(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim())) s+=1;
     r.sc=s; r.risk=s>=4?'HØY':s>=2?'MIDDELS':'LAV';
     // Flags
     var f=[];
     if(effDG===0) f.push({t:'DG% = 0',c:'er'});
-    if(effDG!=null&&effDG!==0&&ROUND.has(+effDG.toFixed(3))) f.push({t:'Rund DG%',c:''});
+    if(!r.isTM&&effDG!=null&&effDG!==0&&ROUND.has(+effDG.toFixed(3))) f.push({t:'Rund DG%',c:''});
     if(effDG!=null&&effDG!==0&&effDG<0.05&&(r.totOmk||0)>10000) f.push({t:'Kritisk lav margin (<5%)',c:'er'});
     else if(effDG!=null&&effDG!==0&&effDG<0.10&&(r.totOmk||0)>50000) f.push({t:'Svak margin (<10%)',c:''});
     r.flags = f.length ? f : [{t:'OK',c:'ok'}];
@@ -1203,13 +1203,14 @@ function rPOC(){
   var pv=0;
   document.getElementById('poctbl').innerHTML=
     '<thead><tr>'+
-    ['Ordre','PL','Beskrivelse','Kontraktssum','Påløpte kostnader','Gjenst. timer','kr/t','Gjenst. mat.','Gjenst. kost','Est. sluttkost','Ferdiggrad','Periodisert','DG% ved ferdig','Fakturert','VIA','Fremdrift','DG% forr.','Kommentar'].map(function(n,i){
+    ['Ordre','PL','Beskrivelse','Kontraktssum','Påløpte kostnader','Gjenst. timer','kr/t','Gjenst. mat.','Gjenst. kost','Est. sluttkost','Ferdiggrad','Periodisert','DG% ved ferdig','Fakturert','VIA','FG (forr.p.)','DG% (forr.p.)','Kommentar'].map(function(n,i){
       var sortable=[0,1,2,3,4,13,14].indexOf(i)>=0;
       var cls=POCS.col===i?(POCS.asc?' class="sa"':' class="sd"'):'';
       var style=([3,4,8,9,10,11,12,13,14,15,16].indexOf(i)>=0)?'style="text-align:right"':'';
       if([5,6,7,17].indexOf(i)>=0) style='style="color:#9EC8FF'+(i>=3?';text-align:right':'')+'\"';
       if(sortable) return '<th'+cls+' '+style+' onclick="POCS={col:'+i+',asc:POCS.col==='+i+'?!POCS.asc:false};rPOC()">'+n+'</th>';
-      return '<th '+style+'>'+n+'</th>';
+      var prevTip=(i===15||i===16)?' title="Verdier fra forrige vurderingsperiode"':'';
+      return '<th '+style+prevTip+'>'+n+'</th>';
     }).join('')+
     '</tr></thead><tbody>'+
     pocR.map(function(r){
@@ -1248,12 +1249,13 @@ function rPOC(){
   var dv=0;
   document.getElementById('dgtbl').innerHTML=
     '<thead><tr>'+
-    ['Ordre','PL','Type','Beskrivelse','Kunde','Påløpte kostnader','Fakturert','Vurdert DG%','DG% forrige periode','Forv. salgsverdi','VIA','Begrunnelse','Risiko'].map(function(n,i){
+    ['Ordre','PL','Type','Beskrivelse','Kunde','Påløpte kostnader','Fakturert','DG%','DG% forrige periode','Forv. salgsverdi','VIA','Begrunnelse','Risiko'].map(function(n,i){
       var sortable=[0,1,2,3,4,5,6,9,10,12].indexOf(i)>=0;
       var style=([5,6,9,10].indexOf(i)>=0)?'style="text-align:right"':([7].indexOf(i)>=0)?'style="text-align:right;color:#9EC8FF"':([8].indexOf(i)>=0)?'style="text-align:center"':([12].indexOf(i)>=0)?'style="text-align:center"':'';
       var cls=DGS.col===i?(DGS.asc?' class="sa"':' class="sd"'):'';
       if(sortable) return '<th'+cls+' '+style+' onclick="DGS={col:'+i+',asc:DGS.col==='+i+'?!DGS.asc:false};rPOC()">'+n+'</th>';
-      return '<th '+style+'>'+n+'</th>';
+      var dg2tip=(i===8)?' title="DG% fra forrige vurderingsperiode"':'';
+      return '<th '+style+dg2tip+'>'+n+'</th>';
     }).join('')+
     '</tr></thead><tbody>'+
     dgR.map(function(r){
@@ -1269,7 +1271,7 @@ function rPOC(){
           +(_tmOvr
             ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px"><span style="font-size:.8rem;color:#666">%</span>'
               +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 6px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;line-height:1.6" title="Tilbake til Auto T&M">⚡</button>'
-            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for å overstyre"><span style="font-size:.8rem;color:var(--green)">% ⚡</span>'
+            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for å overstyre"><span style="font-size:.8rem;color:var(--green)">% <span title="Hentet automatisk fra Ordrestyring" style="font-size:.65rem;background:var(--green);color:#fff;border-radius:3px;padding:0 3px;margin-left:1px;font-weight:700;letter-spacing:.3px">OS</span></span>'
             )
           +'</div>'
         : '<div style="display:flex;align-items:center;gap:4px;"><input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:35)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px"><span style="font-size:.8rem;color:#666">%</span></div>';
