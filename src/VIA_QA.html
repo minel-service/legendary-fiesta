@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VIA QA – Minel AS v8.2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -390,7 +390,7 @@ var SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290
 var SP_LIST='17a680a1-2dac-4cbb-ac95-69a707eb138c';
 var SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/lists/'+SP_LIST;
 var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
-var SP_SCOPES=['https://graph.microsoft.com/Sites.ReadWrite.All'];
+var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
 var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
 
 async function initMSAL(){
@@ -1259,12 +1259,11 @@ function rPOC(){
       var _tmPct=r.isTM&&r.fSalgsverdi&&r.fSalgsverdi>r.totOmk?Math.round((r.fSalgsverdi-r.totOmk)/r.fSalgsverdi*100):35;
       var _tmOvr=inp.tmOverride;
       var dgCell = r.isTM
-        ? '<div style="display:flex;align-items:center;gap:5px;">'
+        ? '<div style="display:flex;align-items:center;gap:4px;">'
           +(_tmOvr
-            ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px" title="Manuell overstyring"><span style="font-size:.8rem;color:#666">%</span>'
-              +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 5px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;" title="Tilbake til Auto T&M">⚡ Auto</button>'
-            :'<span style="background:var(--greenbg);color:var(--green);border-radius:5px;padding:2px 8px;font-size:.76rem;font-weight:700;">⚡ Auto T&amp;M</span>'
-              +'<input class="pi" type="text" inputmode="numeric" value="" '+dis+' placeholder="overstyr%" onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:72px;font-size:.75rem;" title="Skriv inn DG% for å overstyre Auto T&M">'
+            ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px"><span style="font-size:.8rem;color:#666">%</span>'
+              +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 6px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;line-height:1.6" title="Tilbake til Auto T&M">⚡</button>'
+            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for å overstyre"><span style="font-size:.8rem;color:var(--green)">% ⚡</span>'
             )
           +'</div>'
         : '<div style="display:flex;align-items:center;gap:4px;"><input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:35)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px"><span style="font-size:.8rem;color:#666">%</span></div>';
