@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v8.7</title>
+<title>VIA QA – Minel AS v8.8</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -153,7 +153,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
-  <span class="hd-badge">v8.7</span>
+  <span class="hd-badge">v8.8</span>
 </header>
 
 <!-- START PANEL -->
@@ -386,7 +386,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v8.7 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v8.8 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -415,9 +415,11 @@ async function getSpToken(){
     if(accounts.length>0){
       try{var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});_spToken=r.accessToken;_spUser=accounts[0].username;return _spToken;}catch(e){}
     }
-    _msalApp.acquireTokenRedirect({scopes:SP_SCOPES});
-    return null;
-  }catch(e){console.warn('MSAL feil:',e);return null;}
+    try{
+      var pr=await _msalApp.acquireTokenPopup({scopes:SP_SCOPES});
+      _spToken=pr.accessToken;_spUser=pr.account.username;return _spToken;
+    }catch(pe){console.warn('[SP] Popup avvist:',pe);return null;}
+  }catch(e){console.warn('[SP] MSAL feil:',e);return null;}
 }
 
 async function spLoadAssessments(period,company){
