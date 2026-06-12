@@ -244,14 +244,13 @@
      ══════════════════════════════════════════ -->
 <script>
 const CONFIG = {
-  // API-nøkler er fjernet fra klienten — håndteres av Azure Function proxy (/api/ordrestyring-proxy)
+  // API-nøkler håndteres av Azure Function proxy (/api/ordrestyring-proxy)
 
   // ── SharePoint ─────────────────────────────
   sharepointFil: '/sites/IntranettMinel/SiteAssets/kapasitet_prosjekter.json',
 
   // ── Selskaper ──────────────────────────────
-  // maxAnsatte: totalt antall ansatte i selskapet (brukes til «Ledig»-beregning).
-  // Sett til 0 for å la dashbordet telle automatisk fra API-data.
+  // maxAnsatte: totalt antall ansatte (0 = tell automatisk fra API-data)
   selskaper: [
     { navn: 'Minel Drøbak Elektriske AS',     maxAnsatte: 15 },
     { navn: 'Minel Kreativ Elektro Ski AS',   maxAnsatte: 0  },
@@ -317,7 +316,7 @@ const CONFIG = {
   </header>
 
   <div class="demo-bar" id="demoBanner">
-    ⚠️ DEMO-MODUS — Simulerte data. Live-data aktiveres automatisk når appen kjører på Azure.
+    ⚠️ DEMO-MODUS — Simulerte data. Kontakt administrator dersom du ser dette på produksjons-URL.
   </div>
   <div class="restrict-bar" id="restrictBar">
     🔒 Du er innlogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
@@ -526,7 +525,7 @@ async function fetchSelskap(co){
     const currentWkMonday = mondayOf(...wKey(new Date()).split('-W').map(Number));
     const fraInt = Math.floor(currentWkMonday.getTime() / 1000);
     const tilInt = Math.floor((now + 35*864e5) / 1000);
-    // Proxy: API-nøkkel slås opp server-side basert på selskapsnavnet
+    // API-nøkkel slås opp server-side av Azure Function proxy
     const gqlUrl = '/api/ordrestyring-proxy';
     const gqlHeaders = {
       'Content-Type': 'application/json',
