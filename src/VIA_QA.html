@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v8.4</title>
+<title>VIA QA – Minel AS v8.7</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -153,7 +153,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
-  <span class="hd-badge">v8.4</span>
+  <span class="hd-badge">v8.7</span>
 </header>
 
 <!-- START PANEL -->
@@ -326,7 +326,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       • Rund DG% på manuelle ordrer: +1 poeng<br>
       • Mangler begrunnelse (manuell regningsordre): +1 poeng
     </div>
-    <div class="sec-note" id="sec2note">Ingen fastpris — prosjektleder skriver inn forventet DG% og begrunner estimatet.</div>
+    <div class="sec-note" id="sec2note">Ingen fastpris — prosjektleder skriver inn forventet DG% og begrunner estimatet. <span title="DG%-verdier med OS-merke er hentet automatisk fra avtalene registrert i Ordrestyring. Ordrer uten OS-merke vurderes manuelt av prosjektleder." style="cursor:help;background:#f0f4ff;color:#3b5fc0;border:1px solid #c7d4f5;border-radius:12px;padding:1px 9px;font-size:.75rem;font-weight:600;margin-left:6px;">ℹ️ OS-merke</span></div>
     <div style="margin:8px 0 4px;display:flex;gap:16px;flex-wrap:wrap;">
       <label style="display:inline-flex;align-items:center;gap:7px;font-size:.83rem;color:var(--mid);cursor:pointer;">
         <input type="checkbox" id="hideSettledChk" onchange="HIDE_SETTLED=this.checked;rPOC()"> Skjul ordrer med VIA &lt; ±5 000 kr (fullt fakturerte)
@@ -386,7 +386,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v8.4 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v8.7 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -762,7 +762,10 @@ function rStatus(){
     '<thead><tr><th>Prosjektleder</th><th style="text-align:center">Ordrer</th><th style="text-align:center" title="Fastprisordrer">Fastpris</th><th style="text-align:center" title="Andel DG%-ordrer med begrunnelse">Fullført</th><th style="text-align:center">Status</th><th>Ferdig kl.</th></tr></thead>'+
     '<tbody>'+rows.map(function(r){
       var bar = '<div style="height:6px;background:#E0E0E0;border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-right:6px;"><div style="height:100%;width:'+r.pct+'%;background:'+(r.done?'var(--green)':'var(--amber)')+'"></div></div>';
-      var statusBadge = r.done ? '<span class="status-done">✅ Ferdig</span>' : '<span class="status-wait">⏳ Ikke meldt</span>';
+      var _lts2=localStorage.getItem('VIA_LOAD_TS');
+      var _stale2=r.done&&_lts2&&r.done.ts&&new Date(_lts2)>new Date(r.done.ts);
+      var _stTag2=_stale2?'<span title="Data lastet inn etter ferdig-melding — bør bekrefte på nytt" style="font-size:.7rem;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:4px;padding:0 5px;margin-left:4px;cursor:help;">⚠️ ny data</span>':'';
+      var statusBadge = r.done ? '<span class="status-done">✅ Ferdig</span>'+_stTag2 : '<span class="status-wait">⏳ Ikke meldt</span>';
       var ts = r.done ? new Date(r.done.ts).toLocaleString('no-NO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '–';
       return '<tr><td><strong>'+r.pl+'</strong></td><td class="c">'+r.total+'</td><td class="c">'+r.pocTotal+'</td><td class="c">'+bar+r.pct+'%</td><td class="c">'+statusBadge+'</td><td style="font-size:.8rem;color:#888;">'+ts+'</td></tr>';
     }).join('')+'</tbody>';
@@ -796,7 +799,7 @@ function startApiLoad(){
     BENCH = res[0];
     var cases = res[1];
     var bn = Object.keys(BENCH).length;
-    if(bn > 0) document.getElementById('sec2note').innerHTML = 'Ingen fastpris — prosjektleder skriver inn forventet DG% og begrunner estimatet. <span style="background:var(--bluebg);color:var(--blue);border-radius:4px;padding:2px 8px;font-size:.78rem;font-weight:700;">📊 Benchmark: '+bn+' ordretyper</span>';
+    document.getElementById('sec2note').innerHTML = 'Ingen fastpris — prosjektleder skriver inn forventet DG% og begrunner estimatet.'+(bn>0?' <span style="background:var(--bluebg);color:var(--blue);border-radius:4px;padding:2px 8px;font-size:.78rem;font-weight:700;">📊 Benchmark: '+bn+' ordretyper</span>':'')+'  <span title="DG%-verdier med OS-merke er hentet automatisk fra avtalene registrert i Ordrestyring. Ordrer uten OS-merke vurderes manuelt av prosjektleder." style="cursor:help;background:#f0f4ff;color:#3b5fc0;border:1px solid #c7d4f5;border-radius:12px;padding:1px 9px;font-size:.75rem;font-weight:600;margin-left:6px;">ℹ️ OS-merke</span>';
 
     var active = cases.filter(function(c){
       var isParent = c.subCases && c.subCases.length > 0 && !c.parentCaseId;
@@ -929,6 +932,7 @@ function parseExcel(raw,fname){
    PARSE ROWS (shared)
    ============================================================ */
 function parseRows(rows,src,prd){
+  localStorage.setItem('VIA_LOAD_TS',new Date().toISOString());
   ACTIVE = rows;
   // Build type averages
   var ts={},tc={};
@@ -996,7 +1000,7 @@ function rDash(){
   var a = ACTIVE;
   var _pocOrdrer = a.filter(function(r){return r.hasTilbud;}).length;
   var _dg2 = a.filter(function(r){return !r.hasTilbud;});
-  var _manglerBegr = _dg2.filter(function(r){return !r.isTM&&!(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim().length>0);}).length;
+  var _manglerBegr = _dg2.filter(function(r){return !r.isTM&&(r.risk==='MIDDELS'||r.risk==='HØY')&&!(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim().length>0);}).length;
   var _pls = [...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(Boolean);
   var _st = getStatus();
   var _curPrd = document.getElementById('aperiod').textContent;
@@ -1004,13 +1008,18 @@ function rDash(){
     var k = _curPrd+'__'+(document.getElementById('lentity').value||'')+'__'+pl;
     return _st[k]&&_st[k].done;
   }).length;
-  var _fastprisUtenKomm = ACTIVE.filter(function(r){return r.hasTilbud&&!(POC[r.ordreNr]&&POC[r.ordreNr].k&&POC[r.ordreNr].k.trim());}).length;
+  var _negVIA = ACTIVE.filter(function(r){return (r.via||0)<-5000;});
+  var _negVIAkr = _negVIA.reduce(function(s,r){return s+Math.abs(r.via||0);},0);
+  // Weighted avg DG% across all T&M orders with costs > 0
+  var _dgVurd = _dg2.filter(function(r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return e!=null&&e>0&&(r.totOmk||0)>500;});
+  var _dgTotCost = _dgVurd.reduce(function(s,r){return s+(r.totOmk||0);},0);
+  var _wgtDG = _dgTotCost>0?_dgVurd.reduce(function(s,r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return s+(e||0)*(r.totOmk||0);},0)/_dgTotCost:null;
 
   document.getElementById('kpis').innerHTML =
     '<div class="kpi"><div class="lb">Aktive ordrer</div><div class="vl">'+a.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">'+_pocOrdrer+' fastpris · '+_dg2.length+' regningsordrer</div></div>'+
     '<div class="kpi '+((_plFerdig===_pls.length&&_pls.length>0)?'g':'a')+'"><div class="lb">PLer ferdige</div><div class="vl">'+_plFerdig+'/'+_pls.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Har meldt seg ferdig i Status-fanen</div></div>'+
-    '<div class="kpi '+(_manglerBegr>0?'a':'g')+'"><div class="lb">Mangler begrunnelse</div><div class="vl">'+_manglerBegr+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Av '+_dg2.length+' regningsordrer</div></div>'+
-    '<div class="kpi"><div class="lb">Fastpris u. kommentar</div><div class="vl">'+_fastprisUtenKomm+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Fastprisordrer uten kommentar</div></div>';
+    '<div class="kpi '+(_wgtDG==null?'':_wgtDG>=0.30?'g':_wgtDG>=0.18?'a':'r')+'"><div class="lb">Snitt DG%</div><div class="vl">'+(_wgtDG!=null?Math.round(_wgtDG*100)+'%':'–')+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Vektet snitt — regningsordrer</div></div>'+
+    '<div class="kpi '+(_negVIA.length>0?'r':'g')+'"><div class="lb">Neg. VIA</div><div class="vl">'+_negVIA.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">'+(_negVIA.length>0?'Tap: '+NK(_negVIAkr):'Ingen kostnadssprekk')+'</div></div>';
 
   var h=a.filter(function(r){return r.risk==='HØY';}),
       m=a.filter(function(r){return r.risk==='MIDDELS';}),
@@ -1028,7 +1037,8 @@ function rDash(){
   var fs=[];
   var _dgFall=_dg2.filter(function(r){var p=getPrevDG(r.ordreNr);var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return p&&e!=null&&(p.dg-e)>0.02;});
   if(_dgFall.length>0) fs.push('🔴 '+_dgFall.length+' ordre(r) har lavere DG% enn forrige periode.');
-  if(_manglerBegr>0) fs.push('⚠️ '+_manglerBegr+' av '+_dg2.filter(function(r){return !r.isTM;}).length+' manuelle regningsordrer mangler begrunnelse.');
+  if(_negVIA.length>0) fs.push('🔴 '+_negVIA.length+' ordre(r) med negativ VIA — samlet tap: '+NK(_negVIAkr)+'.');
+  if(_manglerBegr>0) fs.push('⚠️ '+_manglerBegr+' MIDDELS/HØY-ordre mangler begrunnelse.');
   if(_lavMargin.length) fs.push('🔴 '+_lavMargin.length+' ordre(r) med under 10% margin og kostnader over 50 000 kr.');
   if(rnd>a.length*.3) fs.push('ℹ️ '+rnd+' ordrer har rund DG% — be PLene om presisering.');
   if(_plIkkeFerdig>0) fs.push('⏳ '+_plIkkeFerdig+' prosjektleder(e) har ikke meldt seg ferdige ennå.');
@@ -1045,7 +1055,7 @@ function rDash(){
   var pr=Object.entries(pm).sort(function(a,b){return b[1].c-a[1].c;});
   var stObj=getStatus();
   document.getElementById('pltbl').innerHTML=
-    '<thead><tr><th>Prosjektleder</th><th title="Antall aktive ordrer">Ordrer</th><th title="Ordrer uten begrunnelse">Ikke vurdert</th><th title="Ordrer med VIA under -5000 kr">Neg. VIA</th><th title="Sum negativ VIA">Eksponering</th><th>Status</th></tr></thead>'+
+    '<thead><tr><th>Prosjektleder</th><th title="Antall aktive ordrer">Ordrer</th><th title="Vektet snitt DG% på regningsordrer">Snitt DG%</th><th title="Ordrer uten begrunnelse">Ikke vurdert</th><th title="Ordrer med VIA under -5000 kr">Neg. VIA</th><th title="Sum negativ VIA">Eksponering</th><th>Status</th></tr></thead>'+
     '<tbody>'+pr.map(function(e){
       var pl=e[0];
       var ikkeVurdertPL=ACTIVE.filter(function(r){return r.pl===pl&&!r.hasTilbud&&!(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim().length>0);}).length;
@@ -1053,7 +1063,16 @@ function rDash(){
       var ekspPL=ACTIVE.filter(function(r){return r.pl===pl&&(r.via||0)<-5000;}).reduce(function(s,r){return s+Math.abs(r.via);},0);
       var stKey=Object.keys(stObj).find(function(k){return k.indexOf('__'+pl)>0;});
       var stDone=stKey&&stObj[stKey]&&stObj[stKey].done;
-      return '<tr><td>'+pl+'</td><td class="c">'+e[1].c+'</td><td class="c">'+(ikkeVurdertPL>0?'<span style="color:var(--amber);font-weight:700">'+ikkeVurdertPL+'</span>':'<span style="color:var(--green)">0</span>')+'</td><td class="c">'+(negVIAPL>0?'<span style="color:var(--red);font-weight:700">'+negVIAPL+'</span>':'–')+'</td><td class="r" style="font-weight:700;color:'+(ekspPL>0?'var(--red)':'var(--dark)')+'">'+NK(ekspPL)+'</td><td class="c">'+(stDone?'<span class="status-done">✅</span>':'<span class="status-wait">⏳</span>')+'</td></tr>';
+      var _lts=localStorage.getItem('VIA_LOAD_TS');
+      var _stale=stDone&&_lts&&stObj[stKey]&&stObj[stKey].ts&&new Date(_lts)>new Date(stObj[stKey].ts);
+      var _stTag=_stale?'<span title="Data lastet inn etter ferdig-melding — bør bekrefte på nytt" style="font-size:.67rem;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:4px;padding:0 4px;margin-left:3px;cursor:help;">⚠️ ny data</span>':'';
+      // Weighted avg DG% for this PL's T&M orders
+      var _plDGRows=ACTIVE.filter(function(r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return r.pl===pl&&!r.hasTilbud&&e!=null&&e>0&&(r.totOmk||0)>500;});
+      var _plCost=_plDGRows.reduce(function(s,r){return s+(r.totOmk||0);},0);
+      var _plDG=_plCost>0?_plDGRows.reduce(function(s,r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return s+(e||0)*(r.totOmk||0);},0)/_plCost:null;
+      var _plDGcol=_plDG==null?'#aaa':_plDG>=0.30?'var(--green)':_plDG>=0.18?'var(--amber)':'var(--red)';
+      var _plDGstr=_plDG!=null?'<span style="color:'+_plDGcol+';font-weight:700">'+Math.round(_plDG*100)+'%</span>':'–';
+      return '<tr><td>'+pl+'</td><td class="c">'+e[1].c+'</td><td class="c">'+_plDGstr+'</td><td class="c">'+(ikkeVurdertPL>0?'<span style="color:var(--amber);font-weight:700">'+ikkeVurdertPL+'</span>':'<span style="color:var(--green)">0</span>')+'</td><td class="c">'+(negVIAPL>0?'<span style="color:var(--red);font-weight:700">'+negVIAPL+'</span>':'–')+'</td><td class="r" style="font-weight:700;color:'+(ekspPL>0?'var(--red)':'var(--dark)')+'">'+NK(ekspPL)+'</td><td class="c">'+(stDone?'<span class="status-done">✅</span>'+_stTag:'<span class="status-wait">⏳</span>')+'</td></tr>';
     }).join('')+'</tbody>';
 }
 
@@ -1097,7 +1116,7 @@ function rQA(){
    ============================================================ */
 function rRisk(){
   var f=document.getElementById('rsel').value.split(',');
-  var rows=ACTIVE.filter(function(r){return f.indexOf(r.risk)>=0;});
+  var rows=ACTIVE.filter(function(r){return f.indexOf(r.risk)>=0&&(r.totOmk||0)>=500;});
   var cols=['ordreNr','type','pl','kunde','totOmk','dg','tilbud','fakt','via','risk'];
   rows.sort(function(a,b){
     var c=RS.col,va=a[cols[c]],vb=b[cols[c]];
@@ -1262,7 +1281,7 @@ function rPOC(){
       var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
       var c=calcDG(r);
       if(c.via!=null) dv+=c.via;
-      var warn=!inp.k;
+      var warn=!inp.k&&(r.risk==='MIDDELS'||r.risk==='HØY');
       var bs=r.beskr?r.beskr.substring(0,36)+(r.beskr.length>36?'…':''):'–';
       var _tmPct=r.isTM&&r.fSalgsverdi&&r.fSalgsverdi>r.totOmk?Math.round((r.fSalgsverdi-r.totOmk)/r.fSalgsverdi*100):35;
       var _tmOvr=inp.tmOverride;
