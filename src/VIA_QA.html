@@ -153,7 +153,8 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <h1>VIA / Fakturareserve – Kvalitetssikring</h1>
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
-  <span class="hd-badge">v8.8</span>
+  <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
+  <span class="hd-badge">v8.9</span>
 </header>
 
 <!-- START PANEL -->
@@ -193,6 +194,13 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <div id="api-err" class="err-box"></div>
     </div>
   </div>
+  <div class="divider"><div></div><span>eller importer datasett (JSON)</span><div></div></div>
+  <div style="display:flex;align-items:center;gap:12px;background:#f0f4ff;border:1.5px dashed #c7d4f5;border-radius:10px;padding:16px 20px;margin-bottom:4px;">
+    <svg width="28" height="28" fill="none" stroke="#3b5fc0" stroke-width="1.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    <div style="flex:1"><strong style="color:#3b5fc0;">Importer datasett fra DL</strong><br><span style="font-size:.8rem;color:#666;">JSON-fil eksportert av daglig leder — ingen API-token nødvendig</span></div>
+    <button class="btn" style="background:#3b5fc0;" onclick="document.getElementById('fi-json').click()">Velg JSON-fil</button>
+    <input type="file" id="fi-json" accept=".json" style="display:none" onchange="if(this.files[0])loadDatasetJSON(this.files[0])">
+  </div>
   <div class="divider"><div></div><span>eller importer fra Excel</span><div></div></div>
   <div id="dz" onclick="document.getElementById('fi').click()">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -218,6 +226,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <span class="pill" id="aperiod"></span>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-grn" id="btnlock" onclick="openLock()">🔒 Lås periode</button>
+      <button class="btn btn-dark" onclick="exportDataset()" title="Eksporter ordredata som JSON — del med PLer så de slipper å laste fra OS">📤 Del datasett</button>
       <button class="btn btn-dark" onclick="expPOC()">📥 Eksporter Excel</button>
       <button class="btn btn-dark" onclick="resetApp()">↩ Ny periode</button>
     </div>
@@ -396,6 +405,68 @@ var SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/lists/'+SP_LIST
 var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
 var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
 var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
+var _currentUser=null;
+var DL_LIST={
+  'anthoni.hulthin@minel.no':'Minel Elmontasje Elverum AS',
+  'bjornar.sleppen@minel.no':'Minel Elmontasje AS',
+  'geitatle.sangnaes@minel.no':'Minel Gjøvik Installasjon AS',
+  'susann.endrestad@minel.no':'Minel Gudbrandsdal AS',
+  'ola.sillerud@minel.no':'Minel Kreativ Elektro Ski AS',
+  'lars.aamodt@minel.no':'Minel Land Elektriske AS',
+  'jon.hulberg@minel.no':'Minel Skogvang Installasjon AS',
+  'jonas.prestkvern@minel.no':'Minel Ainstall AS',
+  'stian.ekhougen@minel.no':'Minel Drøbak Elektriske AS'
+};
+function detectUser(account){
+  if(!account)return;
+  var email=(account.username||'').toLowerCase();
+  var name=account.name||email.split('@')[0].split('.').map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+  var isDL=!!DL_LIST[email];
+  _currentUser={email:email,name:name,isDL:isDL,company:DL_LIST[email]||null,plName:name};
+  _spUser=email;
+  var badge=document.getElementById('user-badge');
+  if(badge) badge.innerHTML=(isDL?'👑 DL: ':'👤 PL: ')+'<strong>'+name+'</strong>';
+  rPOC();
+}
+function isEditable(r){
+  if(LOCKED) return 'disabled';
+  if(!_currentUser) return '';
+  if(_currentUser.isDL) return '';
+  if(r&&r.pl&&r.pl!==_currentUser.plName) return 'disabled';
+  var period=document.getElementById('aperiod').textContent;
+  var company=document.getElementById('lentity').value||'';
+  var stObj=getStatus();
+  var k=period+'__'+company+'__'+(r?r.pl:_currentUser.plName);
+  if(stObj[k]&&stObj[k].done) return 'disabled';
+  return '';
+}
+function exportDataset(){
+  if(!ACTIVE.length){alert('Ingen data lastet inn ennå.');return;}
+  var data={src:document.getElementById('lentity').value,period:document.getElementById('aperiod').textContent,exported:new Date().toISOString(),rows:ACTIVE};
+  var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='VIA_datasett_'+(data.period||'ukjent').replace(/\s/g,'_')+'.json';a.click();
+}
+function loadDatasetJSON(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data.rows||!data.period){alert('Ugyldig datasett-fil.');return;}
+      parseRows(data.rows,data.src||'Importert datasett',data.period);
+    }catch(err){alert('Kunne ikke lese filen: '+err.message);}
+  };
+  reader.readAsText(file);
+}
+function unlockPL(pl){
+  if(!_currentUser||!_currentUser.isDL){alert('Kun DL kan åpne for redigering.');return;}
+  var stObj=getStatus();
+  var period=document.getElementById('aperiod').textContent;
+  var company=document.getElementById('lentity').value||'';
+  var k=period+'__'+company+'__'+pl;
+  if(stObj[k]){delete stObj[k];localStorage.setItem(STATUS_KEY,JSON.stringify(stObj));}
+  rStatus();rPOC();
+}
 
 async function initMSAL(){
   if(_msalApp)return;
@@ -413,11 +484,11 @@ async function getSpToken(){
     if(_spToken)return _spToken;
     var accounts=_msalApp.getAllAccounts();
     if(accounts.length>0){
-      try{var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});_spToken=r.accessToken;_spUser=accounts[0].username;return _spToken;}catch(e){}
+      try{var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});_spToken=r.accessToken;detectUser(accounts[0]);return _spToken;}catch(e){}
     }
     try{
       var pr=await _msalApp.acquireTokenPopup({scopes:SP_SCOPES});
-      _spToken=pr.accessToken;_spUser=pr.account.username;return _spToken;
+      _spToken=pr.accessToken;detectUser(pr.account);return _spToken;
     }catch(pe){console.warn('[SP] Popup avvist:',pe);return null;}
   }catch(e){console.warn('[SP] MSAL feil:',e);return null;}
 }
@@ -727,8 +798,8 @@ function saveStatus(pl,period,entity){
 }
 function clearAllReady(){ localStorage.removeItem(STATUS_KEY); rStatus(); alert('Status nullstilt.'); }
 function markReady(){
-  var pl = document.getElementById('pp').value;
-  if(!pl){ alert('Velg din prosjektleder-fil i filteret øverst i POC-fanen først.'); return; }
+  var pl = document.getElementById('pp').value||(_currentUser&&!_currentUser.isDL?_currentUser.plName:'');
+  if(!pl){ alert('Velg prosjektleder i filteret øverst, eller logg inn for automatisk gjenkjenning.'); return; }
   var period = document.getElementById('aperiod').textContent;
   var entity = document.getElementById('lentity').value || document.getElementById('atitle').textContent;
   var dgR = ACTIVE.filter(function(r){return !r.hasTilbud && r.pl===pl;});
@@ -767,7 +838,8 @@ function rStatus(){
       var _lts2=localStorage.getItem('VIA_LOAD_TS');
       var _stale2=r.done&&_lts2&&r.done.ts&&new Date(_lts2)>new Date(r.done.ts);
       var _stTag2=_stale2?'<span title="Data lastet inn etter ferdig-melding — bør bekrefte på nytt" style="font-size:.7rem;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:4px;padding:0 5px;margin-left:4px;cursor:help;">⚠️ ny data</span>':'';
-      var statusBadge = r.done ? '<span class="status-done">✅ Ferdig</span>'+_stTag2 : '<span class="status-wait">⏳ Ikke meldt</span>';
+      var _unlockBtn=(_currentUser&&_currentUser.isDL&&r.done)?'<button onclick="unlockPL(\''+r.pl+'\')" style="font-size:.7rem;margin-left:6px;padding:1px 7px;background:#fff;border:1px solid var(--amber);color:var(--amber);border-radius:4px;cursor:pointer;">Åpne</button>':'';
+      var statusBadge = r.done ? '<span class="status-done">✅ Ferdig</span>'+_stTag2+_unlockBtn : '<span class="status-wait">⏳ Ikke meldt</span>';
       var ts = r.done ? new Date(r.done.ts).toLocaleString('no-NO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '–';
       return '<tr><td><strong>'+r.pl+'</strong></td><td class="c">'+r.total+'</td><td class="c">'+r.pocTotal+'</td><td class="c">'+bar+r.pct+'%</td><td class="c">'+statusBadge+'</td><td style="font-size:.8rem;color:#888;">'+ts+'</td></tr>';
     }).join('')+'</tbody>';
@@ -1235,6 +1307,7 @@ function rPOC(){
     }).join('')+
     '</tr></thead><tbody>'+
     pocR.map(function(r){
+      var dis=isEditable(r);
       var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
       inp.tk=inp.tk||stk;
       var c=calcPOC(r);
@@ -1280,6 +1353,7 @@ function rPOC(){
     }).join('')+
     '</tr></thead><tbody>'+
     dgR.map(function(r){
+      var dis=isEditable(r);
       var inp=DGI[r.ordreNr]||{dg:r.dg!=null?Math.round(r.dg*100):35,k:''};
       var c=calcDG(r);
       if(c.via!=null) dv+=c.via;
