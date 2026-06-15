@@ -519,6 +519,8 @@ function categorizeHourType(name) {
 // ════════════════════════════════════════════
 // ORDRESTYRING API
 // ════════════════════════════════════════════
+// Roller som telles som feltarbeidere i kapasitetsprognosen
+const FELTARBEIDER_ROLLER=['Elektriker','Lærling','Hjelpemontør','Fagarbeider','Montør','Svenn','Hjelpemontør'];
 async function fetchSelskap(co){
   try {
     const now = Date.now();
@@ -536,7 +538,7 @@ async function fetchSelskap(co){
     const gqlQuery = `query KapPrognose($fra:Int!,$til:Int!){
       events(between:{field:startTime,from:$fra,to:$til}){
         identifier startTime stopTime header text
-        user{id fullName}
+        user{id fullName role}
         hourType{name}
       }
     }`;
@@ -562,6 +564,9 @@ async function fetchSelskap(co){
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
+      // Filtrer til feltarbeidere (admin, økonomi, prosjektleder telles ikke)
+      const _role = o.user?.role || '';
+      if (_role && !FELTARBEIDER_ROLLER.includes(_role)) return;
       const cat = categorizeHourType(o.hourType?.name);
       const startMs = toMs(o.startTime);
       const stopMs  = toMs(o.stopTime || o.startTime);
@@ -596,7 +601,7 @@ async function fetchSelskap(co){
     });
 
     // Unike ansatte fra events (god tilnærming til faktisk ansatteantall)
-    const allUniqueFromEvents = new Set(j.map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
+    const allUniqueFromEvents = new Set(j.filter(o=>{const r=o.user?.role||'';return !r||FELTARBEIDER_ROLLER.includes(r);}).map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
     // Bruk CONFIG-verdi hvis satt (> 0), ellers bruk talt fra events
     const finalTotal = (co.maxAnsatte > 0) ? co.maxAnsatte : allUniqueFromEvents;
 
