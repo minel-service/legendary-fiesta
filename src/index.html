@@ -10,11 +10,11 @@
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
 
     /* ── Login screen ── */
-    #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#1e40af);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+    #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#7f1d1d,#991b1b);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
     .login-box{background:white;border-radius:20px;padding:36px 40px;width:700px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:popIn .3s ease}
     @keyframes popIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
     .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-    .login-logo .mark{width:44px;height:44px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+    .login-logo .mark{width:44px;height:44px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
     .login-logo h1{font-size:1.3rem;font-weight:800;color:#1e293b}
     .login-sub{font-size:.85rem;color:#64748b;margin-bottom:28px}
     .login-label{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:12px}
@@ -26,13 +26,13 @@
     .co-card .c-name{font-size:.82rem;font-weight:700;color:#1e293b;line-height:1.3}
     .admin-card{border:2px solid #e2e8f0;border-radius:12px;padding:14px 16px;cursor:pointer;background:#f8fafc;display:flex;align-items:center;gap:12px;margin-bottom:20px;transition:all .15s}
     .admin-card:hover{background:#f1f5f9;border-color:#94a3b8}
-    .admin-card.selected{border-color:#1e40af;background:#eff6ff}
-    .login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .admin-card.selected{border-color:#991b1b;background:#fef2f2}
+    .login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s}
     .login-btn:hover{opacity:.9}
     .login-btn:disabled{opacity:.4;cursor:not-allowed}
 
     /* ── Header ── */
-    header{background:linear-gradient(135deg,#1e3a8a,#1e40af);color:white;padding:15px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);gap:12px;flex-wrap:wrap}
+    header{background:linear-gradient(135deg,#7f1d1d,#991b1b);color:white;padding:15px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);gap:12px;flex-wrap:wrap}
     .logo{display:flex;align-items:center;gap:12px}
     .logo-mark{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
     header h1{font-size:1.15rem;font-weight:800}
@@ -50,7 +50,7 @@
     .demo-bar.show{display:flex}
 
     /* ── Restricted banner ── */
-    .restrict-bar{background:linear-gradient(90deg,#eff6ff,#dbeafe);color:#1d4ed8;padding:7px 28px;font-size:.78rem;font-weight:600;display:none;align-items:center;gap:8px;border-bottom:1px solid #bfdbfe}
+    .restrict-bar{background:linear-gradient(90deg,#fef2f2,#fee2e2);color:#b91c1c;padding:7px 28px;font-size:.78rem;font-weight:600;display:none;align-items:center;gap:8px;border-bottom:1px solid #fecaca}
     .restrict-bar.show{display:flex}
 
     /* ── Container ── */
@@ -65,12 +65,12 @@
     .co-pill.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
     .co-pill.demo{background:#fffbeb;border-color:#fde68a;color:#92400e}
     .co-pill.err{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
-    .co-pill.loading{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+    .co-pill.loading{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
 
     /* ── Stats ── */
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
     .scard{background:white;border-radius:12px;padding:17px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-top:3px solid #e2e8f0;position:relative;overflow:hidden}
-    .scard.c0{border-top-color:#3b82f6}.scard.c1{border-top-color:#6366f1}.scard.c2{border-top-color:#f59e0b}.scard.c3{border-top-color:#10b981}
+    .scard.c0{border-top-color:#dc2626}.scard.c1{border-top-color:#6366f1}.scard.c2{border-top-color:#f59e0b}.scard.c3{border-top-color:#10b981}
     .scard .lbl{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
     .scard .val{font-size:1.95rem;font-weight:800;color:#1e293b;margin:3px 0 1px;line-height:1}
     .scard .sub{font-size:.71rem;color:#94a3b8}
@@ -103,7 +103,7 @@
     .wdt-color{width:11px;height:34px;border-radius:3px;flex-shrink:0}
     .wdt-name{font-size:.76rem;color:#64748b;font-weight:500;line-height:1.3;margin-bottom:1px}
     .wdt-num{font-size:1.3rem;font-weight:800;color:#1e293b;line-height:1}
-    .wdt-total{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:white;border-radius:9px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+    .wdt-total{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:white;border-radius:9px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
     .wdt-tl{font-size:.76rem;opacity:.8;font-weight:600}
     .wdt-tn{font-size:1.4rem;font-weight:800;line-height:1}
 
@@ -126,7 +126,7 @@
     /* ── Action buttons in table ── */
     .act-btns{display:flex;gap:4px}
     .act-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;cursor:pointer;color:#64748b;font-size:.82rem;padding:5px 9px;border-radius:7px;transition:all .15s;line-height:1;font-weight:500}
-    .act-btn.edit:hover{color:#3b82f6;background:#eff6ff;border-color:#bfdbfe}
+    .act-btn.edit:hover{color:#dc2626;background:#fef2f2;border-color:#fecaca}
     .act-btn.del:hover{color:#ef4444;background:#fee2e2;border-color:#fecaca}
 
     /* ── Badge ── */
@@ -135,7 +135,7 @@
     .badge-man{background:#f1f5f9;color:#475569}
 
     /* ── FAB ── */
-    .fab{position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border:none;border-radius:56px;padding:13px 22px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(30,64,175,.45);display:flex;align-items:center;gap:7px;transition:transform .2s,box-shadow .2s;z-index:50}
+    .fab{position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:56px;padding:13px 22px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(153,27,27,.45);display:flex;align-items:center;gap:7px;transition:transform .2s,box-shadow .2s;z-index:50}
     .fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(30,64,175,.55)}
     .fab:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
@@ -148,35 +148,35 @@
     .fg{margin-bottom:13px}
     .fl{display:block;font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px}
     .fi{width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.87rem;outline:none;transition:border-color .2s,box-shadow .2s;color:#1e293b;background:white}
-    .fi:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    .fi:focus{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
     .fi:disabled{background:#f8fafc;color:#94a3b8;cursor:not-allowed}
     .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .wtbl{width:100%;border-collapse:collapse;margin-top:5px;font-size:.82rem}
     .wtbl th{background:#f8fafc;padding:7px 10px;text-align:left;color:#64748b;font-weight:600;font-size:.71rem;border:1px solid #e2e8f0}
     .wtbl td{padding:5px 10px;border:1px solid #e2e8f0}
     .wtbl input{width:65px;padding:4px 8px;border:1.5px solid #d1d5db;border-radius:6px;text-align:center;font-size:.85rem;outline:none}
-    .wtbl input:focus{border-color:#3b82f6}
+    .wtbl input:focus{border-color:#dc2626}
     .mfooter{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f1f5f9}
     .bsec{padding:8px 18px;border:1.5px solid #d1d5db;background:white;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:500;color:#374151}
     .bsec:hover{background:#f8fafc}
-    .bpri{padding:8px 22px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border:none;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700}
+    .bpri{padding:8px 22px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700}
     .bpri:hover{opacity:.9}
     .hint{font-size:.72rem;color:#94a3b8;margin-top:4px}
 
     /* ── Ordrereserve ── */
-    .ore-total{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:white;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .ore-total{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:white;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
     .ore-total-lbl{font-size:.78rem;opacity:.8;font-weight:600}
     .ore-total-val{font-size:1.9rem;font-weight:800;line-height:1}
     .ore-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
     .ore-item{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .18s;user-select:none}
-    .ore-item:hover{background:#f0f9ff;border-color:#93c5fd;transform:translateY(-2px);box-shadow:0 4px 14px rgba(59,130,246,.12)}
-    .ore-item.active{background:#eff6ff;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    .ore-item:hover{background:#f0f9ff;border-color:#fca5a5;transform:translateY(-2px);box-shadow:0 4px 14px rgba(220,38,38,.12)}
+    .ore-item.active{background:#fef2f2;border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
     .ore-co{font-size:.76rem;font-weight:700;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:6px}
     .ore-val{font-size:1.1rem;font-weight:800;color:#1e293b}
     .ore-sub{font-size:.7rem;color:#94a3b8;margin-top:2px}
     .ore-bar{height:5px;background:#e2e8f0;border-radius:3px;margin-top:7px;overflow:hidden}
     .ore-bar-fill{height:100%;border-radius:3px;transition:width .5s}
-    .ore-hint{font-size:.67rem;color:#93c5fd;margin-top:5px;font-weight:600;display:flex;align-items:center;gap:3px}
+    .ore-hint{font-size:.67rem;color:#fca5a5;margin-top:5px;font-weight:600;display:flex;align-items:center;gap:3px}
 
     /* ── Ordrereserve Drawer ── */
     #oreDrawerBackdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(2px);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -202,7 +202,7 @@
     .od-c-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:11px}
     .od-c-name{font-size:.9rem;font-weight:700;color:#1e293b;flex:1;line-height:1.3;cursor:text;border-radius:6px;padding:2px 5px;margin:-2px -5px;transition:background .15s;outline:none}
     .od-c-name:hover{background:#f1f5f9}
-    .od-c-name:focus{background:#eff6ff;box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+    .od-c-name:focus{background:#fef2f2;box-shadow:0 0 0 2px rgba(220,38,38,.25)}
     .od-del-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:.9rem;padding:2px 5px;border-radius:5px;transition:all .15s;flex-shrink:0;line-height:1}
     .od-del-btn:hover{color:#ef4444;background:#fee2e2}
     .od-c-sum-wrap{margin-bottom:10px}
@@ -224,7 +224,7 @@
     .od-wk-cell{display:flex;flex-direction:column;gap:2px;align-items:center}
     .od-wk-lbl{font-size:.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase}
     .od-wk-inp{width:100%;padding:5px 4px;border:1.5px solid #e2e8f0;border-radius:7px;text-align:center;font-size:.88rem;font-weight:700;color:#1e293b;outline:none;transition:border-color .15s,box-shadow .15s;background:white}
-    .od-wk-inp:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
+    .od-wk-inp:focus{border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.15)}
 
     /* ── Saving indicator ── */
     .save-toast{position:fixed;bottom:90px;right:28px;background:#1e293b;color:white;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;z-index:100;display:none;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
@@ -277,7 +277,7 @@ const CONFIG = {
 
     <div class="login-label">Konsernvisning</div>
     <div class="admin-card" id="adminCard" onclick="selectCompany('__admin__')">
-      <div style="width:36px;height:36px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏢</div>
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏢</div>
       <div>
         <div style="font-size:.88rem;font-weight:700;color:#1e293b">Konsern / Full tilgang</div>
         <div style="font-size:.77rem;color:#64748b">Se og redigere alle selskaper — kun for konsernledelse</div>
@@ -710,7 +710,7 @@ function logout(){
 function updateWhoBar(){
   const isAdmin=currentCompany==='__admin__';
   const coIdx=companies.findIndex(c=>c.navn===currentCompany);
-  const dotColor=isAdmin?'#3b82f6':col(coIdx);
+  const dotColor=isAdmin?'#dc2626':col(coIdx);
   const label=isAdmin?'Konsern (full tilgang)':currentCompany;
   document.getElementById('whoDot').style.background=dotColor;
   document.getElementById('whoName').textContent=label;
@@ -772,7 +772,7 @@ function updateStrip(){
   companies.forEach((co,i)=>{
     const s=coData[co.navn]?.status||'loading';
     const cls=s==='ok'?'ok':s==='demo'?'demo':s==='err'?'err':'loading';
-    const pip=s==='ok'?col(i):s==='demo'?'#f59e0b':s==='err'?'#ef4444':'#93c5fd';
+    const pip=s==='ok'?col(i):s==='demo'?'#f59e0b':s==='err'?'#ef4444':'#fca5a5';
     const lbl=s==='ok'?'Live':s==='demo'?'Demo':s==='err'?'Feil':'…';
     html+=`<div class="co-pill ${cls}"><span class="pip" style="background:${pip}"></span>${co.navn} <span style="opacity:.7;font-weight:500">(${lbl})</span></div>`;
   });
@@ -811,16 +811,16 @@ function updateTabs(){
     const isA=activeFilter===filter;
     return`<div class="tab${isA?' active':''}" style="${isA?`background:${dc};border-color:${dc}`:''}" data-f="${filter}"><span class="dot" style="background:${isA?'rgba(255,255,255,.7)':dc}"></span>${lbl}</div>`;
   };
-  let html=mk('Alle selskaper','all','#1e40af');
+  let html=mk('Alle selskaper','all','#991b1b');
   companies.forEach((co,i)=>html+=mk(co.navn,co.navn,col(i)));
   el.innerHTML=html;
   el.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{activeFilter=t.dataset.f;selectedWeek=null;renderAll()}));
 }
 
 // Kategorifarger
-const CAT_OPPDRAG = '#3b82f6'; // blå
+const CAT_OPPDRAG = '#dc2626'; // Minel rød
 const CAT_INTERN  = '#f59e0b'; // amber
-const CAT_FRAVAER = '#ef4444'; // rød
+const CAT_FRAVAER = '#94a3b8'; // grå (fravær)
 const CAT_LEDIG   = 'rgba(203,213,225,0.55)'; // lys grå
 
 function updateChart(){
@@ -1245,7 +1245,7 @@ function openOreDrawer(coNavn,coIdx){
   const isAll=coNavn==='__all__';
   if(isAll){
     const dot=document.getElementById('odDot');
-    dot.style.background='linear-gradient(135deg,#1e3a8a,#3b82f6)';
+    dot.style.background='linear-gradient(135deg,#7f1d1d,#dc2626)';
     dot.style.borderRadius='50%';
     document.getElementById('odCoName').textContent='Minel Konsern';
     document.querySelectorAll('.ore-item').forEach(el=>el.classList.remove('active'));
@@ -1375,7 +1375,7 @@ function buildOreCard(p){
       <div class="od-crew-toggle" data-id="${p.id}" style="flex:1">
         <span class="arr">&#9658;</span> Juster mannskap per uke
       </div>
-      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe';this.style.color='#3b82f6'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
+      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
         ⧺ ${wks.length} uke${wks.length!==1?'r':''}
       </button>
     </div>
