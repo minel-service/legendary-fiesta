@@ -70,7 +70,7 @@
     /* ── Stats ── */
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
     .scard{background:white;border-radius:12px;padding:17px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-top:3px solid #e2e8f0;position:relative;overflow:hidden}
-    .scard.c0{border-top-color:#dc2626}.scard.c1{border-top-color:#6366f1}.scard.c2{border-top-color:#f59e0b}.scard.c3{border-top-color:#10b981}
+    .scard.c0{border-top-color:#3b82f6}.scard.c3{border-top-color:#10b981}
     .scard .lbl{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
     .scard .val{font-size:1.95rem;font-weight:800;color:#1e293b;margin:3px 0 1px;line-height:1}
     .scard .sub{font-size:.71rem;color:#94a3b8}
@@ -329,8 +329,6 @@ const CONFIG = {
     <div class="sl">Konsernoversikt</div>
     <div class="stats">
       <div class="scard c0"><div class="lbl">🔵 På oppdrag</div><div class="val" id="s0">—</div><div class="sub" id="s0sub">aktive på jobb denne uken</div></div>
-      <div class="scard c1"><div class="lbl">🟡 Interntid / kurs</div><div class="val" id="s1">—</div><div class="sub" id="s1sub">intern denne uken</div></div>
-      <div class="scard c2"><div class="lbl">🔴 Fravær</div><div class="val" id="s2">—</div><div class="sub" id="s2sub">ferie / sykdom denne uken</div><div class="peak-badge" id="peakBadge" style="display:none">PEAK</div></div>
       <div class="scard c3"><div class="lbl">⚪ Ledig kapasitet</div><div class="val" id="s3">—</div><div class="sub" id="s3sub">ikke registrert denne uken</div></div>
     </div>
 
@@ -785,21 +783,15 @@ function updateStats(){
   const{weeks,byCo,manT}=buildTotals();
   const tw=weeks[0];
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
-  let opp=manT[tw]||0, intern=0, frav=0, ledig=0;
+  let opp=manT[tw]||0, ledig=0;
   visCos.forEach(co=>{
     const d=byCo[co.navn]?.[tw]||{};
     opp   += d.oppdrag||0;
-    intern += d.intern ||0;
-    frav   += d.fravaer||0;
     ledig  += d.ledig  ||0;
   });
   const totalAnsatte = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
   document.getElementById('s0').textContent=opp;
   document.getElementById('s0sub').textContent=`aktive på jobb denne uken`;
-  document.getElementById('s1').textContent=intern;
-  document.getElementById('s1sub').textContent=`intern / kurs denne uken`;
-  document.getElementById('s2').textContent=frav;
-  document.getElementById('s2sub').textContent=`ferie / sykdom denne uken`;
   document.getElementById('s3').textContent=ledig;
   document.getElementById('s3sub').textContent=totalAnsatte>0?`av ${totalAnsatte} totalt`:`ikke registrert`;
   document.getElementById('peakBadge').style.display='none';
@@ -841,8 +833,6 @@ function updateChart(){
   const datasets=[
     {label:'Planlagte oppdrag (OS)',           data:aggOpp,   backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
     {label:'Kontraherte prosjekter',data:aggContr, backgroundColor:MANUAL_COLOR, borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Interntid',            data:aggInt,   backgroundColor:CAT_INTERN,  borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Fravær',               data:aggFrav,  backgroundColor:CAT_FRAVAER, borderRadius:0, borderSkipped:false, stack:'main'},
     {label:'Ledig',                data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
@@ -862,15 +852,11 @@ function updateChart(){
             const wk=weeks[items[0].dataIndex];
             const opp=aggOpp[items[0].dataIndex];
             const contr=aggContr[items[0].dataIndex];
-            const int_=aggInt[items[0].dataIndex];
-            const frav=aggFrav[items[0].dataIndex];
             const led=aggLed[items[0].dataIndex];
-            const aktive=opp+contr+int_+frav;
+            const aktive=opp+contr;
             const lines=['───────────────'];
             if(opp>0)   lines.push(`🔵 Oppdrag:     ${opp}`);
             if(contr>0) lines.push(`🟩 Kontrahert:  ${contr}`);
-            if(int_>0)  lines.push(`🟡 Interntid:   ${int_}`);
-            if(frav>0)  lines.push(`🔴 Fravær:      ${frav}`);
             if(led>0)   lines.push(`⚪ Ledig:       ${led}`);
             lines.push('───────────────');
             const tot=aktive+led;
@@ -888,14 +874,12 @@ function updateChart(){
 
   let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Oppdrag</span>`;
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
-  lh+=`<span><span class="ldot" style="background:${CAT_INTERN}"></span>Interntid</span>`;
-  lh+=`<span><span class="ldot" style="background:${CAT_FRAVAER}"></span>Fravær</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#6366f1;border-radius:0"></span>Maks kap. (${maxKap})</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════════════════
 // MÅNEDLIG KONSERNOVERSIKT
 // ════════════════════════════════════════════
 function next12Months(){
@@ -1085,7 +1069,7 @@ function showWkDet(wk){
 }
 function closeWkDet(){selectedWeek=null;document.getElementById('wkdet').classList.remove('open')}
 
-function formatKr(v){if(!v)return'—';return'kr '+Math.round(v).toLocaleString('no-NO')}
+function formatKr(v){if(!v)return'—';return'kr\u202f'+Math.round(v).toLocaleString('no-NO')}
 
 // Tusenvis-formatering i input-felt (type=text)
 function fmtKrInput(inp){
@@ -1221,7 +1205,7 @@ function updateOrdrereserve(){
     const pct=maxCo>0?Math.round(v/maxCo*100):0;
     if(v===0&&n===0&&!isAdmin) return; // skjul tomme for selskapbruker
     const hint=n>0?`<div class="ore-hint">▶ Se og rediger kontraktene</div>`:'';
-    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${i})" data-co="${co.navn}">
+    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${ i})" data-co="${co.navn}">
       <div class="ore-co"><span style="width:10px;height:10px;border-radius:3px;background:${col(i)};display:inline-block;flex-shrink:0"></span>${co.navn}</div>
       <div class="ore-val">${formatKr(v)}</div>
       <div class="ore-sub">${n} kontrakt${n!==1?'er':''}</div>
@@ -1376,7 +1360,7 @@ function buildOreCard(p){
         <span class="arr">&#9658;</span> Juster mannskap per uke
       </div>
       <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
-        ⧺ ${wks.length} uke${wks.length!==1?'r':''}
+        ⚺ ${wks.length} uke${wks.length!==1?'r':''}
       </button>
     </div>
     <div class="od-crew-grid" id="odcrew-${p.id}">${crewCells}</div>
@@ -1524,289 +1508,20 @@ function showToast(msg,ok=true){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ════════════════════════════════════════════
-// INIT APP (etter login)
-// ════════════════════════════════════════════
 async function initApp(){
   updateWhoBar();
   await loadProjects();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
-    const o=document.createElement('option');
-    o.value=co.navn;o.textContent=co.navn;
-    if(currentCompany!=='__admin__'&&co.navn===currentCompany) o.selected=true;
-    sel.appendChild(o);
+    const opt=document.createElement('option');
+    opt.value=co.navn;
+    opt.textContent=co.navn;
+    sel.append(opt);
   });
-  sel.disabled=(currentCompany!=='__admin__');
+  await loadOSData();
   renderAll();
-  await refreshAll();
 }
-
-// ════════════════════════════════════════════
-// PROSJEKTMODAL
-// ════════════════════════════════════════════
-function openProjModal(){
-  editingId=null;
-  document.getElementById('modalTitle').textContent='\u{1F4CB} Legg til kontrakt';
-  document.getElementById('saveBtn').textContent='\u{1F4BE} Lagre kontrakt';
-  document.getElementById('pName').value='';
-  document.getElementById('pKontrakt').value='';
-  document.getElementById('pStart').value='';
-  document.getElementById('pDur').value='4';
-  const sel=document.getElementById('pCo');
-  sel.disabled=(currentCompany!=='__admin__');
-  if(currentCompany!=='__admin__'){
-    for(const o of sel.options) if(o.value===currentCompany) o.selected=true;
-  } else { sel.value=''; }
-  document.getElementById('wTbl').innerHTML='';
-  document.getElementById('projOverlay').style.display='flex';
-}
-
-function closeProjModal(){
-  document.getElementById('projOverlay').style.display='none';
-  editingId=null;
-}
-
-function ovcClick(e){if(e.target===document.getElementById('projOverlay'))closeProjModal();}
-
-function genWTbl(){
-  const startVal=document.getElementById('pStart').value;
-  const dur=parseInt(document.getElementById('pDur').value)||4;
-  const wrap=document.getElementById('wTbl');
-  if(!startVal||dur<1||dur>52){wrap.innerHTML='';return;}
-  const start=new Date(startVal);
-  const day=start.getDay();
-  start.setDate(start.getDate()+(day===0?-6:1-day));
-  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:6px">';
-  for(let i=0;i<dur;i++){
-    const d=new Date(start.getTime()+i*7*864e5);
-    const wk=wKey(d);
-    const[,w]=wk.split('-W');
-    const oldVal=(editingId&&allProjects.find(p=>p.id===editingId)?.weeklyCrews?.[wk])||'';
-    html+=`<div style="display:flex;flex-direction:column;gap:2px">
-      <label style="font-size:.71rem;color:#64748b;font-weight:600">Uke ${parseInt(w)}</label>
-      <input type="number" min="0" max="50" value="${oldVal||2}" data-wk="${wk}"
-        style="padding:5px 7px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:.85rem;text-align:center;width:100%;box-sizing:border-box"/>
-    </div>`;
-  }
-  wrap.innerHTML=html+'</div>';
-}
-
-function saveProject(){
-  const name=(document.getElementById('pName').value||'').trim();
-  const company=document.getElementById('pCo').value;
-  const kontraktssum=parseKrInput('pKontrakt');
-  if(!name){alert('Prosjektnavn er åkrevd.');return;}
-  if(!company){alert('Velg et selskap.');return;}
-  const weeklyCrews={};
-  document.querySelectorAll('#wTbl [data-wk]').forEach(inp=>{
-    const v=parseInt(inp.value)||0;
-    if(v>0) weeklyCrews[inp.dataset.wk]=v;
-  });
-  if(Object.keys(weeklyCrews).length===0){alert('Legg inn mannskap for minst én uke.');return;}
-  if(editingId){
-    const idx=allProjects.findIndex(p=>p.id===editingId);
-    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum};
-  } else {
-    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,created:new Date().toISOString()};
-    allProjects.push(nyP);
-    closeProjModal();
-    renderAll();
-    if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-    saveToSharePoint()
-      .then(()=>{ postBjelle(nyP); showToast('🔔 Kontrakt lagret og varslet!'); })
-      .catch(()=>showToast('Lagret lokalt',false));
-    return;
-  }
-  closeProjModal();
-  renderAll();
-  if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-  saveToSharePoint().then(()=>showToast('Kontrakt oppdatert ✓')).catch(()=>showToast('Lagret lokalt',false));
-}
-
-function editProj(id){
-  const p=allProjects.find(x=>x.id===id);
-  if(!p)return;
-  editingId=id;
-  document.getElementById('modalTitle').textContent='✏ Rediger kontrakt';
-  document.getElementById('saveBtn').textContent='\u{1F4BE} Oppdater kontrakt';
-  document.getElementById('pName').value=p.name;
-  document.getElementById('pKontrakt').value=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
-  const sel=document.getElementById('pCo');
-  sel.disabled=(currentCompany!=='__admin__');
-  sel.value=p.company||'';
-  const wks=Object.keys(p.weeklyCrews).sort();
-  if(wks.length>0){
-    const[y,w]=wks[0].split('-W').map(Number);
-    const mon=mondayOf(y,w);
-    document.getElementById('pStart').value=mon.toISOString().split('T')[0];
-    document.getElementById('pDur').value=wks.length;
-    genWTbl();
-    document.querySelectorAll('#wTbl [data-wk]').forEach(inp=>{
-      const v=p.weeklyCrews[inp.dataset.wk];
-      if(v!==undefined) inp.value=v;
-    });
-  }
-  document.getElementById('projOverlay').style.display='flex';
-}
-
-function delProj(id){
-  const p=allProjects.find(x=>x.id===id);
-  if(!p)return;
-  if(!confirm(`Slett kontrakt «${p.name}»?`))return;
-  allProjects=allProjects.filter(x=>x.id!==id);
-  renderAll();
-  saveToSharePoint().then(()=>showToast('Kontrakt slettet')).catch(()=>showToast('Slettet lokalt',false));
-}
-
-// ════════════════════════════════════════════
-// EXPORT CSV
-// ════════════════════════════════════════════
-function exportCSV(){
-  const{weeks,byCo}=buildTotals();
-  const rows=[['Selskap','Uke','Planlagte oppdrag (OS)','Interntid','Fravær','Ledig']];
-  companies.forEach(co=>{
-    weeks.forEach(w=>{
-      const d=byCo[co.navn]?.[w]||{};
-      rows.push([co.navn,w,d.oppdrag||0,d.intern||0,d.fravaer||0,d.ledig||0]);
-    });
-  });
-  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
-  a.download=`kapasitet_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-}
-
-// ════════════════════════════════════════════
-// REFRESH (hent fra Ordrestyring)
-// ════════════════════════════════════════════
-async function refreshAll(){
-  const btn=document.getElementById('refreshBtn'),icon=document.getElementById('refreshIcon');
-  btn.disabled=true;icon.className='spin';icon.textContent='⟳';
-  document.getElementById('lastUpdated').textContent='Henter data fra alle selskaper...';
-  companies.forEach(co=>coData[co.navn]={status:'loading',items:[]});
-  renderAll();
-  const results=await Promise.allSettled(companies.map(co=>fetchSelskap(co)));
-  let ok=0,demo=0,err=0;
-  results.forEach((res,i)=>{
-    const co=companies[i];
-    if(res.status==='fulfilled'){const {real,items,totalUsers}=res.value;const st=real?'ok':'demo';coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};real?ok++:demo++}
-    else{coData[co.navn]={status:'err',items:[]};err++;console.error(co.navn,res.reason)}
-  });
-  document.getElementById('lastUpdated').textContent=`${new Date().toLocaleString('no-NO')} · ${ok} live, ${demo} demo${err?`, ${err} feil`:''}`;
-  renderAll();icon.className='';icon.textContent='🔄';btn.disabled=false;
-}
-
-// JUSTER VARIGHET på kontrakt (fra drawer)
-// ════════════════════════════════════════════
-function oreAdjustWeeks(id){
-  const p=allProjects.find(x=>x.id===id);
-  if(!p) return;
-  const wks=Object.keys(p.weeklyCrews).sort();
-  const cur=wks.length;
-  const newDur=parseInt(prompt('Juster varighet for: '+p.name+'\nNåværende: '+cur+' uke'+(cur!==1?'r':'')+'\nNy varighet (1–52):',cur));
-  if(!newDur||isNaN(newDur)||newDur<1||newDur>52||newDur===cur) return;
-  if(newDur<cur){
-    const keep=wks.slice(0,newDur);
-    const nc={};keep.forEach(w=>nc[w]=p.weeklyCrews[w]);p.weeklyCrews=nc;
-  } else {
-    const lastWk=wks[wks.length-1]||wKey(new Date());
-    const[ly,lw]=lastWk.split('-W').map(Number);
-    const lastMon=mondayOf(ly,lw);
-    const avg=wks.length?Math.round(Object.values(p.weeklyCrews).reduce((s,v)=>s+(parseInt(v)||0),0)/wks.length):2;
-    for(let i=1;i<=newDur-cur;i++){
-      const d=new Date(lastMon.getTime()+i*7*864e5);
-      p.weeklyCrews[wKey(d)]=avg;
-    }
-  }
-  scheduleSave();
-  renderOreDrawer();
-  updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
-}
-
-// ════════════════════════════════════════════
-// SLAG I BJELLA — varsling ved ny kontrakt
-// ════════════════════════════════════════════
-async function postBjelle(p){
-  const tasks=[];
-  if(CONFIG.teamsWebhook)            tasks.push(postToTeams(p));
-  if(CONFIG.spKunngjøringer)         tasks.push(postToSharePointList(p));
-  if(tasks.length===0) return;
-  await Promise.allSettled(tasks);
-}
-
-async function postToTeams(p){
-  const wks=Object.keys(p.weeklyCrews||{}).sort();
-  const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
-  const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'--');
-  const tc=Object.values(p.weeklyCrews||{}).reduce((s,v)=>s+(parseInt(v)||0),0);
-  const avg=wks.length?Math.round(tc/wks.length):0;
-  const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
-  const card={
-    '@type':'MessageCard',
-    '@context':'https://schema.org/extensions',
-    themeColor:'0d9488',
-    summary:`Ny kontrakt registrert: ${p.name}`,
-    sections:[{
-      activityTitle:`🔔 Ny kontrakt registrert — ${p.company}`,
-      activitySubtitle:p.name,
-      facts:[
-        {name:'Selskap',    value:p.company},
-        {name:'Kontraktssum', value:sumTxt},
-        {name:'Periode',    value:period},
-        {name:'Mannskap',   value:`snitt ${avg} mann/uke`},
-        {name:'Registrert av', value:currentCompany==='__admin__'?'Konsern':currentCompany}
-      ],
-      markdown:true
-    }],
-    potentialAction:[{
-      '@type':'OpenUri',
-      name:'🔗 Åpne Kapasitetsprognose',
-      targets:[{os:'default',uri:location.href}]
-    }]
-  };
-  try{
-    const r=await fetch(CONFIG.teamsWebhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(card)});
-    console.log('[Teams]',r.ok?'✅ Sendt':'[!] status '+r.status);
-  }catch(e){console.warn('[Teams] feilet:',e.message);}
-}
-
-async function postToSharePointList(p){
-  try{
-    const ctx=await fetch(`${location.origin}/_api/contextinfo`,{
-      method:'POST',headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
-    });
-    if(!ctx.ok) return;
-    const digest=(await ctx.json()).FormDigestValue;
-    const wks=Object.keys(p.weeklyCrews||{}).sort();
-    const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
-    const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'--');
-    const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
-    const listUrl=`${location.origin}/sites/IntranettMinel/_api/web/lists/getbytitle('${CONFIG.spKunngjøringer}')/items`;
-    const body=JSON.stringify({
-      Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,
-      Body:`<p><strong>${p.company}</strong> har registrert en ny kontrakt: <strong>${p.name}</strong></p>`+
-           `<ul><li><strong>Kontraktssum:</strong> ${sumTxt}</li><li><strong>Periode:</strong> ${period}</li></ul>`,
-      Expires:new Date(Date.now()+90*864e5).toISOString()
-    });
-    const r=await fetch(listUrl,{
-      method:'POST',
-      headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json;odata=nometadata','X-RequestDigest':digest},
-      body
-    });
-    console.log('[SP kunngjøringer]',r.ok?'✅ Sendt':'[!] status '+r.status);
-  }catch(e){console.warn('[SP] feilet:',e.message);}
-}
-
-// STARTUP
-// ════════════════════════════════════════════
-buildLoginGrid();
-const _saved=localStorage.getItem('minel_company');
-if(_saved){ selectCompany(_saved); }
-else { document.getElementById('loginScreen').style.display='flex'; }
-
 </script>
 </body>
 </html>
