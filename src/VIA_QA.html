@@ -194,6 +194,14 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 
 <!-- START PANEL -->
 <div id="startPanel">
+  <div id="resume-banner" style="display:none;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:10px;padding:14px 20px;margin-bottom:20px;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <strong style="color:#1D4ED8;">↩ Gjenoppta siste økt</strong><br>
+      <span id="resume-info" style="font-size:.83rem;color:#444;"></span>
+    </div>
+    <button onclick="resumeSession()" style="background:#1D4ED8;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.88rem;">Gjenoppta</button>
+    <button onclick="clearSession()" style="background:transparent;color:#666;border:1px solid #ccc;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.85rem;">Forkast</button>
+  </div>
   <div class="sp-grid">
 
     <!-- PL CARD: Prosjektleder -->
@@ -665,6 +673,7 @@ var GRP_MODE = {};        // base ordreNr → 'samlet' | 'individuelt'
 var GRP_KEY = 'minel_via_grpmode_v1';
 var HIST_KEY = 'minel_via_history_v2';
 var STATUS_KEY = 'minel_via_status_v1';
+var SESSION_KEY = 'minel_via_session_v1';
 var HIDE_SETTLED = false, HIDE_SMALL = false, HIDE_SMALL_POC = false;
 var QS = {col:6,asc:false}, RS = {col:8,asc:false};
 var POCS = {col:4,asc:false}, DGS = {col:5,asc:false};
@@ -1201,7 +1210,7 @@ function parseRows(rows,src,prd){
   document.getElementById('startPanel').style.display='none';
   document.getElementById('app').style.display='block';
   window.scrollTo(0,0);
-  rDash();rQA();rRisk();rPOC();rHist();rStatus();if(_currentPeriod)spLoadAssessments(_currentPeriod,_currentEntity).then(function(ok){if(ok){rPOC();rStatus();}});
+  rDash();rQA();rRisk();rPOC();rHist();rStatus();if(_currentPeriod)spLoadAssessments(_currentPeriod,_currentEntity).then(function(ok){if(ok){rPOC();rStatus();saveSession();}});else saveSession();
 }
 
 /* ============================================================
@@ -1628,6 +1637,7 @@ function doLock(){
   saveSnap(name,entity,period);
   LOCKED=true;
   closeLock();
+  saveSession();
   document.getElementById('btnlock').textContent='✅ Låst: '+period;
   document.getElementById('btnlock').disabled=true;
   rPOC(); rHist(); ST('hist');
@@ -1759,6 +1769,63 @@ function clearHist(){
 }
 
 /* ============================================================
+   SESSION PERSIST
+   ============================================================ */
+function saveSession(){
+  if(!ACTIVE.length)return;
+  try{
+    localStorage.setItem(SESSION_KEY,JSON.stringify({
+      savedAt:new Date().toISOString(),
+      period:_currentPeriod,entity:_currentEntity,locked:LOCKED,
+      rows:ACTIVE,poi:POC,dgi:DGI
+    }));
+  }catch(e){console.warn('[Session] Save failed:',e);}
+}
+function resumeSession(){
+  var raw=localStorage.getItem(SESSION_KEY);if(!raw)return;
+  try{
+    var s=JSON.parse(raw);
+    ACTIVE=s.rows||[];POC=s.poi||{};DGI=s.dgi||{};
+    _currentPeriod=s.period||'';_currentEntity=s.entity||'';LOCKED=s.locked||false;
+    document.getElementById('atitle').textContent=s.entity||'';
+    document.getElementById('aperiod').textContent=s.period||'';
+    document.getElementById('lperiod').value=s.period||'';
+    if(LOCKED){document.getElementById('btnlock').textContent='✅ Låst: '+s.period;document.getElementById('btnlock').disabled=true;}
+    else{document.getElementById('btnlock').textContent='🔒 Lås periode';document.getElementById('btnlock').disabled=false;}
+    // Repopulate PL/type selects
+    var pls=[...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(Boolean).sort();
+    var types=[...new Set(ACTIVE.map(function(r){return r.type;}))].filter(Boolean).sort();
+    ['qp','pp'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);pls.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});});
+    var qt=document.getElementById('qt');while(qt.options.length>1)qt.remove(1);types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;qt.appendChild(o);});
+    detectGroups();
+    document.getElementById('startPanel').style.display='none';
+    document.getElementById('progressWrap').style.display='none';
+    document.getElementById('app').style.display='block';
+    window.scrollTo(0,0);
+    rDash();rQA();rRisk();rPOC();rHist();rStatus();
+    // Refresh DG/POC from SharePoint in background
+    if(_currentPeriod&&_currentEntity)spLoadAssessments(_currentPeriod,_currentEntity).then(function(ok){if(ok){rPOC();rStatus();}});
+    document.getElementById('resume-banner').style.display='none';
+  }catch(e){console.warn('[Session] Resume failed:',e);}
+}
+function clearSession(){
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById('resume-banner').style.display='none';
+}
+function checkResumeSession(){
+  var raw=localStorage.getItem(SESSION_KEY);
+  var banner=document.getElementById('resume-banner');
+  if(!raw||!banner)return;
+  try{
+    var s=JSON.parse(raw);
+    var ts=new Date(s.savedAt).toLocaleString('no-NO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    var lck=s.locked?' ✅ Låst':'';
+    document.getElementById('resume-info').textContent=s.entity+' · '+s.period+lck+' · lagret '+ts;
+    banner.style.display='flex';
+  }catch(e){}
+}
+
+/* ============================================================
    NAV & RESET
    ============================================================ */
 function ST(n){
@@ -1773,12 +1840,14 @@ function resetApp(){
   _currentPeriod='';_currentEntity='';
   QS={col:6,asc:false};RS={col:8,asc:false};POCS={col:4,asc:false};DGS={col:5,asc:false};
   HIDE_SETTLED=false;HIDE_SMALL=false;HIDE_SMALL_POC=false;
+  localStorage.removeItem(SESSION_KEY);
   document.getElementById('btnlock').textContent='🔒 Lås periode';
   document.getElementById('btnlock').disabled=false;
   document.getElementById('app').style.display='none';
   document.getElementById('startPanel').style.display='block';
   window.scrollTo(0,0);
 }
+document.addEventListener('DOMContentLoaded',function(){checkResumeSession();});
 </script>
 <div id="report-overlay">
   <div id="report-wrap">
