@@ -144,25 +144,37 @@ input.ci:disabled{background:#f0f0f0;color:#666;}
 .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
 footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20px;}
 /* ── Print / PDF rapport ── */
-#print-report{display:none;}
+#report-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:32px 20px;}
+#report-overlay.open{display:flex;flex-direction:column;align-items:center;}
+#report-wrap{background:#fff;border-radius:10px;width:100%;max-width:960px;box-shadow:0 8px 40px rgba(0,0,0,.3);overflow:hidden;}
+#report-toolbar{background:#1A2B4A;color:#fff;display:flex;align-items:center;gap:12px;padding:14px 20px;}
+#report-toolbar h2{font-size:1rem;font-weight:700;flex:1;margin:0;}
+#report-toolbar .btn-print{background:#C8102E;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:.88rem;font-weight:700;cursor:pointer;}
+#report-toolbar .btn-close-rpt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:7px 14px;font-size:.88rem;cursor:pointer;}
+#print-report{padding:28px 32px;font-family:Arial,sans-serif;font-size:.84rem;color:#222;}
+#print-report h1{font-size:1.2rem;font-weight:700;margin:0 0 6px;}
+#print-report h2{font-size:.95rem;font-weight:700;margin:20px 0 6px;padding-bottom:4px;border-bottom:2px solid #1A2B4A;color:#1A2B4A;}
+#print-report .pr-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-size:.82rem;color:#444;margin-bottom:16px;}
+#print-report .pr-kpi{display:flex;gap:0;margin-bottom:20px;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;}
+#print-report .pr-kpi div{flex:1;text-align:center;padding:14px 8px;border-right:1px solid #e5e5e5;}
+#print-report .pr-kpi div:last-child{border-right:none;}
+#print-report .k-val{font-size:1.3rem;font-weight:700;color:#1A2B4A;}
+#print-report .k-lbl{font-size:.72rem;color:#666;margin-top:2px;}
+#print-report table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:.8rem;}
+#print-report th{background:#1A2B4A;color:#fff;padding:6px 10px;text-align:left;font-size:.78rem;}
+#print-report td{padding:5px 10px;border-bottom:1px solid #e5e5e5;}
+#print-report tr:nth-child(even) td{background:#f8f8f8;}
+#print-report .r{text-align:right;}
+#print-report .c{text-align:center;}
+#print-report .neg{color:#c0392b;font-weight:600;}
+#print-report .pr-footer{margin-top:20px;font-size:.73rem;color:#999;text-align:center;padding-top:12px;border-top:1px solid #eee;}
 @media print{
-  body>*{display:none!important;}
-  #print-report{display:block!important;font-family:Arial,sans-serif;font-size:9pt;color:#000;padding:16mm 18mm;}
-  #print-report h1{font-size:14pt;margin:0 0 2mm;}
-  #print-report h2{font-size:11pt;margin:6mm 0 2mm;border-bottom:1px solid #bbb;padding-bottom:1mm;}
-  #print-report .pr-meta{font-size:9pt;color:#333;margin-bottom:4mm;display:grid;grid-template-columns:1fr 1fr;gap:2mm;}
-  #print-report .pr-kpi{display:flex;gap:12mm;margin-bottom:6mm;}
-  #print-report .pr-kpi div{text-align:center;}
-  #print-report .pr-kpi .k-val{font-size:16pt;font-weight:700;}
-  #print-report .pr-kpi .k-lbl{font-size:8pt;color:#555;}
-  #print-report table{width:100%;border-collapse:collapse;margin-bottom:5mm;}
-  #print-report th{background:#1A2B4A;color:#fff;font-size:8pt;padding:2mm 2.5mm;text-align:left;}
-  #print-report td{font-size:8pt;padding:1.5mm 2.5mm;border-bottom:1px solid #e5e5e5;}
-  #print-report tr:nth-child(even) td{background:#f7f7f7;}
-  #print-report .r{text-align:right;}
-  #print-report .c{text-align:center;}
-  #print-report .neg{color:#c0392b;}
-  #print-report .pr-footer{margin-top:8mm;font-size:7.5pt;color:#888;text-align:center;}
+  #report-overlay,#report-wrap,#report-toolbar{display:block!important;position:static!important;box-shadow:none!important;background:transparent!important;padding:0!important;border-radius:0!important;}
+  #report-toolbar .btn-print,#report-toolbar .btn-close-rpt,#report-toolbar h2{display:none!important;}
+  body>*:not(#report-overlay){display:none!important;}
+  #print-report{padding:0;font-size:9pt;}
+  #print-report .pr-kpi div{border:1px solid #ccc;}
+  #print-report .k-val{font-size:14pt;}
 }
 </style>
 </head>
@@ -1669,7 +1681,8 @@ function printLockReport(lockedBy,entity,period){
     '<h2>Regningsordrer (DG%)</h2>'+
     '<table><thead><tr><th>OrdreNr</th><th>Beskrivelse</th><th>PL</th><th class="r">Kostnad</th><th class="r">DG%</th><th class="r">VIA</th><th>Begrunnelse</th></tr></thead><tbody>'+dgRows+'</tbody></table>'+
     '<div class="pr-footer">Generert av VIA QA-verktøyet · '+tsNow+'</div>';
-  setTimeout(function(){window.print();},200);
+  document.getElementById('report-overlay').classList.add('open');
+  window.scrollTo(0,0);
 }
 function saveSnap(name,entity,period){
   var hist=getHist(), pv=0, dv=0;
@@ -1768,6 +1781,15 @@ function resetApp(){
   window.scrollTo(0,0);
 }
 </script>
-<div id="print-report"></div>
+<div id="report-overlay">
+  <div id="report-wrap">
+    <div id="report-toolbar">
+      <h2>📄 Perioderapport — kontroller før sending til regnskap</h2>
+      <button class="btn-print" onclick="window.print()">🖨️ Skriv ut / PDF</button>
+      <button class="btn-close-rpt" onclick="document.getElementById('report-overlay').classList.remove('open')">✕ Lukk</button>
+    </div>
+    <div id="print-report"></div>
+  </div>
+</div>
 </body>
 </html>
