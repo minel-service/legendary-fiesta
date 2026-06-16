@@ -477,7 +477,7 @@ async function fetchUserCompany() {
 
     <div class="sl" style="display:flex;align-items:center;justify-content:space-between">
       <span>Historikk</span>
-      <button onclick="saveHistorySnapshot()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit">📸 Lagre snapshot nå</button>
+      <button id="snapBtn" onclick="saveHistorySnapshot()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit">📸 Lagre snapshot nå</button>
     </div>
     <div class="card">
       <div class="tbw" id="historyContent"><div class="empty-msg">Laster historikk…</div></div>
@@ -1862,6 +1862,7 @@ function openOreDrawerNewProj(){
 // ════════════════════════════════════════════
 function renderAll(){
   updateStrip();updateStats();updateTabs();updateChart();updateMonthlyChart();updateOrdrereserve();updateTable();
+  const sb=document.getElementById('snapBtn');if(sb)sb.style.display=currentCompany==='__admin__'?'':'none';
   if(selectedWeek)showWkDet(selectedWeek);
   // Re-render open drawer if visible
   if(oreDrawerCo) renderOreDrawer();
