@@ -159,73 +159,72 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 
 <!-- START PANEL -->
 <div id="startPanel">
-  <div class="api-card">
-    <div class="api-card-header">
-      <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-      Hent perioderegnskap fra Ordrestyring
-      <span style="margin-left:auto;font-size:.74rem;opacity:.65;font-weight:400;">Datobegrenset direkte fra API</span>
-    </div>
-    <div class="api-card-body">
-      <div class="api-row">
-        <div class="api-field" style="flex:2;">
-          <label>Selskap</label>
-          <select id="co-sel">
-            <option value="">— Velg selskap —</option>
-            <option value="0">Minel Kreativ Elektro Ski AS</option>
-            <option value="1">Minel Skogvang Installasjon AS</option>
-            <option value="2">Minel Land Elektriske AS</option>
-            <option value="3">Minel Gjøvik AS</option>
-            <option value="4">Minel Elmontasje AS</option>
-            <option value="5">Minel Elmontasje Elverum AS</option>
-            <option value="6">Minel Ainstall AS</option>
-            <option value="7">Minel Drøbak Elektriske AS</option>
-            <option value="8">Minel Gudbrandsdal AS</option>
-          </select>
-        </div>
-        <div class="api-field" style="flex:1;">
-          <label>Periodeslutt</label>
-          <input type="date" id="period-date">
-        </div>
-        <button class="btn" id="api-btn" onclick="startApiLoad()" style="align-self:flex-end;white-space:nowrap;">
-          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-          Last data
-        </button>
+  <!-- PL LOGIN: shown for everyone by default; DL section below for those who need it -->
+  <div style="max-width:480px;margin:0 auto 32px;">
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.15);text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">🔐</div>
+      <h2 style="color:#fff;margin:0 0 8px;font-size:1.3rem;">VIA / Fakturareserve QA</h2>
+      <p style="color:#aaa;font-size:.88rem;margin:0 0 24px;">Logg inn med din Minel-konto for å hente datasettet</p>
+      <div id="pl-login-box">
+        <button class="btn btn-grn" style="font-size:1rem;padding:14px 32px;width:100%;" onclick="getSpToken()">🔑 Logg inn med Microsoft</button>
       </div>
-      <div id="api-err" class="err-box"></div>
+      <div id="pl-co-picker" style="display:none;margin-top:20px;">
+        <p style="color:#aaa;font-size:.84rem;margin:0 0 10px;">Velg ditt selskap — huskes til neste gang:</p>
+        <select id="pl-co-sel" style="width:100%;padding:10px 12px;border-radius:8px;border:none;font-size:.95rem;margin-bottom:10px;">
+          <option value="">— Velg selskap —</option><option value="Minel Elmontasje Elverum AS">Minel Elmontasje Elverum AS</option><option value="Minel Elmontasje AS">Minel Elmontasje AS</option><option value="Minel Gjøvik Installasjon AS">Minel Gjøvik Installasjon AS</option><option value="Minel Gudbrandsdal AS">Minel Gudbrandsdal AS</option><option value="Minel Kreativ Elektro Ski AS">Minel Kreativ Elektro Ski AS</option><option value="Minel Land Elektriske AS">Minel Land Elektriske AS</option><option value="Minel Skogvang Installasjon AS">Minel Skogvang Installasjon AS</option><option value="Minel Ainstall AS">Minel Ainstall AS</option><option value="Minel Drøbak Elektriske AS">Minel Drøbak Elektriske AS</option>
+        </select>
+        <button class="btn btn-grn" style="width:100%;padding:12px;" onclick="var v=document.getElementById('pl-co-sel').value;if(!v)return;plLoadDataset(v)">📂 Hent datasett</button>
+      </div>
+      <div id="pl-no-data" style="display:none;margin-top:16px;background:#fff3cd;color:#856404;border-radius:8px;padding:12px 16px;font-size:.85rem;text-align:left;"></div>
+    </div>
+    <p style="text-align:center;margin-top:10px;color:#888;font-size:.75rem;">Bruker du appen for første gang? Velg ditt selskap etter innlogging.</p>
+  </div>
+  <!-- DL SECTION: collapsed by default, toggled via link -->
+  <div style="max-width:580px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:12px;">
+      <a href="#" id="dl-toggle-link" style="color:#888;font-size:.8rem;" onclick="event.preventDefault();var s=document.getElementById('dl-section');var open=s.style.display==='block';s.style.display=open?'none':'block';this.textContent=open?'Daglig leder? Last data fra API ▾':'Skjul ▲';">Daglig leder? Last data fra API ▾</a>
+    </div>
+    <div id="dl-section" style="display:none;">
+      <div class="api-card">
+        <div class="api-card-header">
+          <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+          Hent perioderegnskap fra Ordrestyring
+          <span style="margin-left:auto;font-size:.74rem;opacity:.65;font-weight:400;">Datobegrenset direkte fra API</span>
+        </div>
+        <div class="api-card-body">
+          <div class="api-row">
+            <div class="api-field" style="flex:2;">
+              <label>Selskap</label>
+              <select id="co-sel">
+                <option value="">— Velg selskap —</option>
+                <option value="0">Minel Kreativ Elektro Ski AS</option>
+                <option value="1">Minel Skogvang Installasjon AS</option>
+                <option value="2">Minel Land Elektriske AS</option>
+                <option value="3">Minel Gjøvik AS</option>
+                <option value="4">Minel Elmontasje AS</option>
+                <option value="5">Minel Elmontasje Elverum AS</option>
+                <option value="6">Minel Ainstall AS</option>
+                <option value="7">Minel Drøbak Elektriske AS</option>
+                <option value="8">Minel Gudbrandsdal AS</option>
+              </select>
+            </div>
+            <div class="api-field" style="flex:1;">
+              <label>Periodeslutt</label>
+              <input type="date" id="period-date">
+            </div>
+            <button class="btn" id="api-btn" onclick="startApiLoad()" style="align-self:flex-end;white-space:nowrap;">
+              <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Last data
+            </button>
+          </div>
+          <div id="api-err" class="err-box"></div>
+        </div>
+      </div>
+      <p style="margin-top:8px;color:#888;font-size:.75rem;text-align:center;">Data behandles kun lokalt i nettleseren — ingenting sendes til server.</p>
     </div>
   </div>
-  <div class="divider"><div></div><span>eller importer fra Excel</span><div></div></div>
-  <div id="dz" onclick="document.getElementById('fi').click()">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-    <h2>Dra og slipp Excel-rapporten her</h2>
-    <p>«Forventet dekningsgradsmetode» fra Ordrestyring</p>
-    <button class="btn" style="margin-top:14px" onclick="event.stopPropagation();document.getElementById('fi').click()">Velg fil</button>
-  </div>
-  <input type="file" id="fi" accept=".xlsx,.xls">
-  <p style="margin-top:10px;color:#888;font-size:.78rem;">Data behandles kun lokalt i nettleseren — ingenting sendes til server.</p>
-  <p style="margin-top:6px;font-size:.78rem;"><a href="#" style="color:var(--red);" onclick="event.preventDefault();document.getElementById('startPanel').style.display='none';document.getElementById('plPanel').style.display='block'">Prosjektleder? Logg inn her →</a></p>
 </div>
 
-<!-- PL LOGIN PANEL (separate, shown instead of startPanel for PLs) -->
-<div id="plPanel" style="display:none;max-width:480px;margin:60px auto;text-align:center;">
-  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.15);">
-    <div style="font-size:3rem;margin-bottom:12px;">🔐</div>
-    <h2 style="color:#fff;margin:0 0 8px;font-size:1.3rem;">VIA / Fakturareserve QA</h2>
-    <p style="color:#aaa;font-size:.88rem;margin:0 0 24px;">Logg inn med din Minel-konto for å hente datasettet</p>
-    <div id="pl-login-box">
-      <button class="btn btn-grn" style="font-size:1rem;padding:12px 32px;width:100%;" onclick="getSpToken()">🔑 Logg inn med Microsoft</button>
-    </div>
-    <div id="pl-co-picker" style="display:none;margin-top:20px;">
-      <p style="color:#aaa;font-size:.84rem;margin:0 0 10px;">Velg ditt selskap — huskes til neste gang:</p>
-      <select id="pl-co-sel" style="width:100%;padding:10px 12px;border-radius:8px;border:none;font-size:.95rem;margin-bottom:10px;">
-        <option value="">— Velg selskap —</option><option value="Minel Elmontasje Elverum AS">Minel Elmontasje Elverum AS</option><option value="Minel Elmontasje AS">Minel Elmontasje AS</option><option value="Minel Gjøvik Installasjon AS">Minel Gjøvik Installasjon AS</option><option value="Minel Gudbrandsdal AS">Minel Gudbrandsdal AS</option><option value="Minel Kreativ Elektro Ski AS">Minel Kreativ Elektro Ski AS</option><option value="Minel Land Elektriske AS">Minel Land Elektriske AS</option><option value="Minel Skogvang Installasjon AS">Minel Skogvang Installasjon AS</option><option value="Minel Ainstall AS">Minel Ainstall AS</option><option value="Minel Drøbak Elektriske AS">Minel Drøbak Elektriske AS</option>
-      </select>
-      <button class="btn btn-grn" style="width:100%;padding:12px;" onclick="var v=document.getElementById('pl-co-sel').value;if(!v)return;plLoadDataset(v)">📂 Hent datasett</button>
-    </div>
-    <div id="pl-no-data" style="display:none;margin-top:16px;background:#fff3cd;color:#856404;border-radius:8px;padding:12px 16px;font-size:.85rem;text-align:left;"></div>
-  </div>
-  <p style="margin-top:12px;color:#888;font-size:.75rem;">Bruker du appen for første gang? Velg ditt selskap etter innlogging.</p>
-</div>
 
 <!-- PROGRESS -->
 <div id="progressWrap">
@@ -426,6 +425,7 @@ var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
 var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
 var _currentUser=null;
 var DL_LIST={
+  'oyvind.saethersmoen@minel.no':'__SUPER__',
   'anthoni.hulthin@minel.no':'Minel Elmontasje Elverum AS',
   'bjornar.sleppen@minel.no':'Minel Elmontasje AS',
   'geitatle.sangnaes@minel.no':'Minel Gjøvik Installasjon AS',
@@ -450,12 +450,14 @@ function detectUser(account){
     if(savedCo){
       plLoadDataset(savedCo);
     } else {
-      document.getElementById('startPanel').style.display='none';
-      document.getElementById('plPanel').style.display='block';
+      // Show company picker (already in startPanel)
       var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='block';
       var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
     }
   } else {
+    // DL: auto-expand the DL section
+    var dlSec=document.getElementById('dl-section');if(dlSec)dlSec.style.display='block';
+    var dlLink=document.getElementById('dl-toggle-link');if(dlLink)dlLink.textContent='Skjul ▲';
     rPOC();
   }
 }
@@ -561,13 +563,15 @@ async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar)
 function plLoadDataset(company){
   localStorage.setItem('VIA_PL_COMPANY',company);
   document.getElementById('startPanel').style.display='none';
-  document.getElementById('plPanel').style.display='none';
   setP(0,'Henter datasett for '+company+'…','');
   document.getElementById('progressWrap').style.display='block';
   spLoadDataset(company).then(function(res){
     document.getElementById('progressWrap').style.display='none';
     if(!res){
-      document.getElementById('plPanel').style.display='block';
+      document.getElementById('startPanel').style.display='block';
+      var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='block';
+      var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
+      var nd=document.getElementById('pl-no-data');if(nd){nd.style.display='block';nd.textContent='⚠️ Ingen datasett er delt ennå for dette selskapet. Kontakt din daglig leder.';}
       var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='none';
       var nm=document.getElementById('pl-no-data');if(nm){nm.style.display='block';nm.innerHTML='⚠️ Ingen datasett for <strong>'+company+'</strong> ennå. Kontakt din daglig leder, eller <a href="#" onclick="localStorage.removeItem(\'VIA_PL_COMPANY\');location.reload()">velg annet selskap</a>.';}
     }
@@ -614,6 +618,9 @@ async function spMarkDone(period,company,pl){
    GLOBALS
    ============================================================ */
 var ACTIVE = [], POC = {}, DGI = {}, LOCKED = false, BENCH = {};
+var GROUPS = {};          // base ordreNr → [list of sub-ordreNr]
+var GRP_MODE = {};        // base ordreNr → 'samlet' | 'individuelt'
+var GRP_KEY = 'minel_via_grpmode_v1';
 var HIST_KEY = 'minel_via_history_v2';
 var STATUS_KEY = 'minel_via_status_v1';
 var HIDE_SETTLED = false, HIDE_SMALL = false, HIDE_SMALL_POC = false;
@@ -1068,9 +1075,30 @@ function parseExcel(raw,fname){
 /* ============================================================
    PARSE ROWS (shared)
    ============================================================ */
+function detectGroups(){
+  GROUPS = {};
+  ACTIVE.forEach(function(r){
+    var m=r.ordreNr.match(/^(.+?)-[^-]+$/);
+    if(!m) return;
+    var base=m[1];
+    if(!GROUPS[base]) GROUPS[base]=[];
+    if(GROUPS[base].indexOf(r.ordreNr)<0) GROUPS[base].push(r.ordreNr);
+  });
+  // Only keep real groups (2+ sub-orders)
+  Object.keys(GROUPS).forEach(function(b){ if(GROUPS[b].length<2) delete GROUPS[b]; });
+  // Load saved preferences
+  try{ var s=localStorage.getItem(GRP_KEY); if(s) GRP_MODE=JSON.parse(s); }catch(e){}
+}
+function saveGrpMode(){ try{ localStorage.setItem(GRP_KEY,JSON.stringify(GRP_MODE)); }catch(e){} }
+function toggleGrpMode(base){
+  GRP_MODE[base]=(GRP_MODE[base]==='samlet')?'individuelt':'samlet';
+  saveGrpMode(); rPOC();
+}
+
 function parseRows(rows,src,prd){
   localStorage.setItem('VIA_LOAD_TS',new Date().toISOString());
   ACTIVE = rows;
+  detectGroups();
   // Build type averages
   var ts={},tc={};
   ACTIVE.forEach(function(r){if(r.dg!=null){ts[r.type]=(ts[r.type]||0)+r.dg;tc[r.type]=(tc[r.type]||0)+1;}});
@@ -1126,7 +1154,6 @@ function parseRows(rows,src,prd){
   document.getElementById('aperiod').textContent=prd;
   document.getElementById('lperiod').value=prd;
   document.getElementById('startPanel').style.display='none';
-  document.getElementById('plPanel').style.display='none';
   document.getElementById('app').style.display='block';
   window.scrollTo(0,0);
   rDash();rQA();rRisk();rPOC();rHist();rStatus();var _per=document.getElementById('aperiod').textContent,_co=document.getElementById('lentity').value||'';if(_per)spLoadAssessments(_per,_co).then(function(ok){if(ok){rPOC();rStatus();}});
@@ -1371,35 +1398,88 @@ function rPOC(){
       return '<th '+style+prevTip+'>'+n+'</th>';
     }).join('')+
     '</tr></thead><tbody>'+
-    pocR.map(function(r){
-      var dis=isEditable(r);
-      var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
-      inp.tk=inp.tk||stk;
-      var c=calcPOC(r);
-      if(c.via!=null) pv+=c.via;
-      var warn=c.via!=null&&Math.abs(c.via)>50000&&!inp.k;
-      var bs=r.beskr?r.beskr.substring(0,40)+(r.beskr.length>40?'…':''):'–';
-      return '<tr class="'+(warn?'rwarn':'')+'">'+
-        '<td><strong>'+r.ordreNr+'</strong>'+newBadge(r.ordreNr)+'</td>'+
-        '<td style="white-space:nowrap">'+r.pl+'</td>'+
-        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+bs+'</td>'+
-        '<td class="r">'+NK(r.tilbud)+'</td>'+
-        '<td class="r">'+NK(r.totOmk)+'</td>'+
-        '<td><input class="pi" type="text" value="'+fmtI(inp.timer||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'timer\',this)" style="width:74px"></td>'+
-        '<td><input class="pi" type="text" value="'+fmtI(inp.tk)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'tk\',this)" style="width:74px"></td>'+
-        '<td><input class="pi" type="text" value="'+fmtI(inp.mat||0)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'mat\',this)" style="width:96px"></td>'+
-        '<td class="r calc">'+NR(c.gk)+'</td>'+
-        '<td class="r calc">'+NR(c.esk)+'</td>'+
-        '<td class="r calc">'+(c.fg!=null?PC(c.fg):'–')+'</td>'+
-        '<td class="r calc">'+NK(c.innt)+'</td>'+
-        '<td class="r calc">'+(c.estDG!=null?PC(c.estDG):'–')+'</td>'+
-        '<td class="r">'+NK(r.fakt)+'</td>'+
-        '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
-        '<td class="c">'+prevFG(r.ordreNr)+'</td>'+
-        '<td class="c">'+prevDGp(r.ordreNr)+'</td>'+
-        '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sP(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
-        '</tr>';
-    }).join('')+'</tbody>';
+    (function(){
+      var seenBases={};
+      var pocHtml='';
+      function pocRow(r,indent){
+        var d=isEditable(r);
+        var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
+        inp.tk=inp.tk||stk;
+        var c=calcPOC(r);
+        if(c.via!=null) pv+=c.via;
+        var warn=c.via!=null&&Math.abs(c.via)>50000&&!inp.k;
+        var bs=r.beskr?r.beskr.substring(0,40)+(r.beskr.length>40?'…':''):'–';
+        return '<tr class="'+(warn?'rwarn':'')+'"'+(indent?' style="border-left:3px solid #3b82f6;"':'')+'>'+
+          '<td style="'+(indent?'padding-left:22px;':'')+'">'+(indent?'↳ ':'')+
+            '<strong>'+r.ordreNr+'</strong>'+newBadge(r.ordreNr)+'</td>'+
+          '<td style="white-space:nowrap">'+r.pl+'</td>'+
+          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+bs+'</td>'+
+          '<td class="r">'+NK(r.tilbud)+'</td>'+
+          '<td class="r">'+NK(r.totOmk)+'</td>'+
+          '<td><input class="pi" type="text" value="'+fmtI(inp.timer||0)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','timer',this)" style="width:74px"></td>'+
+          '<td><input class="pi" type="text" value="'+fmtI(inp.tk)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','tk',this)" style="width:74px"></td>'+
+          '<td><input class="pi" type="text" value="'+fmtI(inp.mat||0)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','mat',this)" style="width:96px"></td>'+
+          '<td class="r calc">'+NR(c.gk)+'</td>'+
+          '<td class="r calc">'+NR(c.esk)+'</td>'+
+          '<td class="r calc">'+(c.fg!=null?PC(c.fg):'–')+'</td>'+
+          '<td class="r calc">'+NK(c.innt)+'</td>'+
+          '<td class="r calc">'+(c.estDG!=null?PC(c.estDG):'–')+'</td>'+
+          '<td class="r">'+NK(r.fakt)+'</td>'+
+          '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
+          '<td class="c">'+prevFG(r.ordreNr)+'</td>'+
+          '<td class="c">'+prevDGp(r.ordreNr)+'</td>'+
+          '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+d+' onchange="sP(''+r.ordreNr+'','k',this.value)"></td>'+
+          '</tr>';
+      }
+      pocR.forEach(function(r){
+        var m=r.ordreNr.match(/^(.+?)-[^-]+$/);
+        var base=m?m[1]:null;
+        var inGrp=base&&GROUPS[base]&&GROUPS[base].length>=2;
+        if(inGrp&&seenBases[base]) return;
+        if(!inGrp){ pocHtml+=pocRow(r,false); return; }
+        seenBases[base]=true;
+        var gRows=pocR.filter(function(x){var bm=x.ordreNr.match(/^(.+?)-[^-]+$/);return bm&&bm[1]===base;});
+        var mode=GRP_MODE[base]||'individuelt';
+        var aggT=0,aggO=0,aggF=0;
+        gRows.forEach(function(x){aggT+=x.tilbud||0;aggO+=x.totOmk||0;aggF+=x.fakt||0;});
+        var btn='<button onclick="toggleGrpMode(''+base+'')" style="margin-left:8px;padding:1px 7px;font-size:.7rem;background:'+(mode==='samlet'?'#1d8348':'#2563eb')+';color:#fff;border:none;border-radius:4px;cursor:pointer;">'+(mode==='samlet'?'📋 Individuelt':'🔗 Samlet')+'</button>';
+        if(mode==='samlet'){
+          var rAgg={ordreNr:base,tilbud:aggT,totOmk:aggO,fakt:aggF,hasTilbud:true,beskr:gRows[0].beskr,pl:gRows[0].pl};
+          var inpA=POC[base]||{timer:0,tk:stk,mat:0,k:''};
+          inpA.tk=inpA.tk||stk;
+          var cA=calcPOC(rAgg);
+          if(cA.via!=null) pv+=cA.via;
+          var warnA=cA.via!=null&&Math.abs(cA.via)>50000&&!inpA.k;
+          var bsA=gRows[0].beskr?gRows[0].beskr.substring(0,40)+(gRows[0].beskr.length>40?'…':''):'–';
+          var disA=LOCKED?'disabled':'';
+          pocHtml+='<tr class="'+(warnA?'rwarn':'')+'" style="background:#eff6ff;">'+
+            '<td><strong>'+base+'</strong>'+
+              '<span style="color:#555;font-size:.72rem;font-weight:400;"> ('+gRows.length+'×)</span>'+btn+'</td>'+
+            '<td style="white-space:nowrap">'+gRows[0].pl+'</td>'+
+            '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+gRows[0].beskr+'">'+bsA+'</td>'+
+            '<td class="r">'+NK(aggT)+'</td>'+
+            '<td class="r">'+NK(aggO)+'</td>'+
+            '<td><input class="pi" type="text" value="'+fmtI(inpA.timer||0)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','timer',this)" style="width:74px"></td>'+
+            '<td><input class="pi" type="text" value="'+fmtI(inpA.tk)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','tk',this)" style="width:74px"></td>'+
+            '<td><input class="pi" type="text" value="'+fmtI(inpA.mat||0)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','mat',this)" style="width:96px"></td>'+
+            '<td class="r calc">'+NR(cA.gk)+'</td>'+
+            '<td class="r calc">'+NR(cA.esk)+'</td>'+
+            '<td class="r calc">'+(cA.fg!=null?PC(cA.fg):'–')+'</td>'+
+            '<td class="r calc">'+NK(cA.innt)+'</td>'+
+            '<td class="r calc">'+(cA.estDG!=null?PC(cA.estDG):'–')+'</td>'+
+            '<td class="r">'+NK(aggF)+'</td>'+
+            '<td class="r '+(cA.via==null?'':(cA.via<0?'vneg':'vpos'))+'">'+NK(cA.via)+'</td>'+
+            '<td class="c">–</td><td class="c">–</td>'+
+            '<td><input class="ci'+(warnA?' req':'')+'" placeholder="'+(warnA?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inpA.k||'')+'" '+disA+' onchange="sP(''+base+'','k',this.value)"></td>'+
+            '</tr>';
+        } else {
+          pocHtml+='<tr style="background:#dbeafe;"><td colspan="18" style="padding:5px 12px;font-size:.8rem;color:#1e3a8a;">'+
+            '📁 <strong>Ordre '+base+'</strong> — '+gRows.length+' underordre · Sum kontrakt: '+NK(aggT)+' · Sum kostnader: '+NK(aggO)+btn+'</td></tr>';
+          gRows.forEach(function(gr){ pocHtml+=pocRow(gr,true); });
+        }
+      });
+      return pocHtml;
+    })()+'</tbody>';
 
   document.getElementById('poctot').innerHTML=
     '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
@@ -1663,7 +1743,6 @@ function resetApp(){
   document.getElementById('app').style.display='none';
   document.getElementById('progressWrap').style.display='none';
   document.getElementById('startPanel').style.display='block';
-  document.getElementById('plPanel').style.display='none';
   document.getElementById('api-btn').disabled=false;
   document.getElementById('btnlock').textContent='🔒 Lås periode';
   document.getElementById('btnlock').disabled=false;
