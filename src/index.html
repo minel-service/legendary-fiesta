@@ -794,7 +794,7 @@ function updateStats(){
   document.getElementById('s0sub').textContent=`aktive på jobb denne uken`;
   document.getElementById('s3').textContent=ledig;
   document.getElementById('s3sub').textContent=totalAnsatte>0?`av ${totalAnsatte} totalt`:`ikke registrert`;
-  document.getElementById('peakBadge').style.display='none';
+  document.getElementById('peakBadge')?.style.display='none';
 }
 
 function updateTabs(){
