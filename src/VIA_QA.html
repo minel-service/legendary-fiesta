@@ -238,6 +238,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-grn" id="btnlock" onclick="openLock()">🔒 Lås periode</button>
       <button class="btn btn-dark" id="share-btn" onclick="exportDataset()" title="Last opp datasett til SharePoint — PLer henter det automatisk">📤 Del datasett</button>
+      <button class="btn btn-dark" id="snap-btn" style="display:none;" onclick="doSnap()" title="Ta øyeblikksbilde av periodens data">📸 Snapshot</button>
       <button class="btn btn-dark" onclick="expPOC()">📥 Eksporter Excel</button>
       <button class="btn btn-dark" onclick="resetApp()">↩ Ny periode</button>
     </div>
@@ -460,6 +461,7 @@ function detectUser(account){
       dlConf.style.display='block';
       dlConf.innerHTML='✅ Innlogget som <strong>'+name+'</strong>';
     }
+    var snapBtn=document.getElementById('snap-btn');if(snapBtn)snapBtn.style.display='';
     rPOC();
   }
 }
@@ -1621,6 +1623,16 @@ function saveSnap(name,entity,period){
   localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
 }
 
+function doSnap(){
+  if(!ACTIVE||!ACTIVE.length){alert('Ingen data lastet inn ennå.');return;}
+  var name=_currentUser?_currentUser.name:'Ukjent';
+  var period=document.getElementById('aperiod').textContent||'?';
+  var lentity=document.getElementById('lentity');
+  var entity=lentity?lentity.value:'?';
+  saveSnap(name,entity,period);
+  alert('📸 Snapshot lagret for '+period+' ('+entity+').');
+}
+
 /* ============================================================
    EXPORT
    ============================================================ */
@@ -1769,4 +1781,4 @@ function resetApp(){
 }
 </script>
 </body>
-</html>
+</html>                                                                                                                                                                             
