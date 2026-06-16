@@ -1508,7 +1508,7 @@ function showToast(msg,ok=true){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-anync function initApp(){
+async function initApp(){
   updateWhoBar();
   await loadProjects();
   const sel=document.getElementById('pCo');
