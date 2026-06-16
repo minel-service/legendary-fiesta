@@ -3,18 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
   <title>Kapasitetsprognose — Minel Konsern</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
+    :root{color-scheme:light}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f3f8;color:#1C2344;min-height:100vh}
 
     /* ── Login screen ── */
-    #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#7f1d1d,#991b1b);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+    #loginScreen{position:fixed;inset:0;background:#1C2344;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
     .login-box{background:white;border-radius:20px;padding:36px 40px;width:700px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:popIn .3s ease}
     @keyframes popIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
     .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-    .login-logo .mark{width:44px;height:44px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+    .login-logo .mark{width:44px;height:44px;background:#C8102E;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
     .login-logo h1{font-size:1.3rem;font-weight:800;color:#1e293b}
     .login-sub{font-size:.85rem;color:#64748b;margin-bottom:28px}
     .login-label{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:12px}
@@ -26,23 +29,23 @@
     .co-card .c-name{font-size:.82rem;font-weight:700;color:#1e293b;line-height:1.3}
     .admin-card{border:2px solid #e2e8f0;border-radius:12px;padding:14px 16px;cursor:pointer;background:#f8fafc;display:flex;align-items:center;gap:12px;margin-bottom:20px;transition:all .15s}
     .admin-card:hover{background:#f1f5f9;border-color:#94a3b8}
-    .admin-card.selected{border-color:#991b1b;background:#fef2f2}
-    .login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .admin-card.selected{border-color:#C8102E;background:#fff0f3}
+    .login-btn{width:100%;padding:13px;background:#C8102E;color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s}
     .login-btn:hover{opacity:.9}
     .login-btn:disabled{opacity:.4;cursor:not-allowed}
 
     /* ── Header ── */
-    header{background:linear-gradient(135deg,#7f1d1d,#991b1b);color:white;padding:15px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);gap:12px;flex-wrap:wrap}
+    header{background:#C8102E;color:white;padding:15px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);gap:12px;flex-wrap:wrap}
     .logo{display:flex;align-items:center;gap:12px}
     .logo-mark{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
     header h1{font-size:1.15rem;font-weight:800}
     header .sub{font-size:.73rem;opacity:.7;margin-top:2px}
     .hactions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px;transition:background .2s;white-space:nowrap}
-    .hbtn:hover{background:rgba(255,255,255,.27)}
+    .hbtn{background:#ffffff;border:none;color:#C8102E;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+    .hbtn:hover{background:#fff0f0;transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.15)}
     .hbtn:disabled{opacity:.5;cursor:not-allowed}
-    .hbtn.green{background:rgba(16,185,129,.3);border-color:rgba(16,185,129,.5)}
-    .who-pill{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:5px 12px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer}
+    .hbtn.green{background:#ffffff;color:#10b981}
+    .who-pill{background:#ffffff;border:none;border-radius:99px;padding:5px 12px;font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;color:#C8102E;box-shadow:0 1px 4px rgba(0,0,0,.12)}
     .who-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
     /* ── Demo banner ── */
@@ -50,7 +53,7 @@
     .demo-bar.show{display:flex}
 
     /* ── Restricted banner ── */
-    .restrict-bar{background:linear-gradient(90deg,#fef2f2,#fee2e2);color:#b91c1c;padding:7px 28px;font-size:.78rem;font-weight:600;display:none;align-items:center;gap:8px;border-bottom:1px solid #fecaca}
+    .restrict-bar{background:#e8ecf5;color:#1C2344;padding:7px 28px;font-size:.78rem;font-weight:600;display:none;align-items:center;gap:8px;border-bottom:1px solid #b0bbd4}
     .restrict-bar.show{display:flex}
 
     /* ── Container ── */
@@ -60,17 +63,17 @@
 
     /* ── Company status strip ── */
     .co-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
-    .co-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.73rem;font-weight:600;border:1.5px solid transparent;white-space:nowrap}
+    .co-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.73rem;font-weight:600;border:1.5px solid #1A2744;background:#1A2744;color:#ffffff;cursor:default;white-space:nowrap}
     .co-pill .pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-    .co-pill.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
-    .co-pill.demo{background:#fffbeb;border-color:#fde68a;color:#92400e}
-    .co-pill.err{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
-    .co-pill.loading{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+    .co-pill.ok{background:#1A2744;border-color:#1A2744;color:#ffffff}
+    .co-pill.demo{background:#2d3d6b;border-color:#2d3d6b;color:#fde68a}
+    .co-pill.err{background:#C8102E;border-color:#C8102E;color:#ffffff}
+    .co-pill.loading{background:#8394b8;border-color:#8394b8;color:#ffffff}
 
     /* ── Stats ── */
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
     .scard{background:white;border-radius:12px;padding:17px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-top:3px solid #e2e8f0;position:relative;overflow:hidden}
-    .scard.c0{border-top-color:#3b82f6}.scard.c3{border-top-color:#10b981}
+    .scard.c0{border-top-color:#3b82f6}.scard.c1{border-top-color:#6366f1}.scard.c2{border-top-color:#f59e0b}.scard.c3{border-top-color:#10b981}
     .scard .lbl{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
     .scard .val{font-size:1.95rem;font-weight:800;color:#1e293b;margin:3px 0 1px;line-height:1}
     .scard .sub{font-size:.71rem;color:#94a3b8}
@@ -78,7 +81,7 @@
 
     /* ── Tabs ── */
     .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
-    .tab{padding:5px 13px;border-radius:99px;font-size:.77rem;font-weight:600;cursor:pointer;border:2px solid #e2e8f0;background:white;color:#64748b;transition:all .15s;display:flex;align-items:center;gap:5px}
+    .tab{padding:5px 13px;border-radius:99px;font-size:.77rem;font-weight:600;cursor:pointer;border:2px solid #e2e8f0;background:white;color:#1A2744;transition:all .15s;display:flex;align-items:center;gap:5px}.tab:hover:not(.active){background:#f0f4ff;border-color:#1A2744}
     .tab:hover{border-color:#94a3b8;color:#374151}
     .tab.active{color:white;border-color:transparent}
     .tab .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
@@ -103,7 +106,7 @@
     .wdt-color{width:11px;height:34px;border-radius:3px;flex-shrink:0}
     .wdt-name{font-size:.76rem;color:#64748b;font-weight:500;line-height:1.3;margin-bottom:1px}
     .wdt-num{font-size:1.3rem;font-weight:800;color:#1e293b;line-height:1}
-    .wdt-total{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:white;border-radius:9px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+    .wdt-total{background:#1C2344;color:white;border-radius:9px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
     .wdt-tl{font-size:.76rem;opacity:.8;font-weight:600}
     .wdt-tn{font-size:1.4rem;font-weight:800;line-height:1}
 
@@ -126,7 +129,7 @@
     /* ── Action buttons in table ── */
     .act-btns{display:flex;gap:4px}
     .act-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;cursor:pointer;color:#64748b;font-size:.82rem;padding:5px 9px;border-radius:7px;transition:all .15s;line-height:1;font-weight:500}
-    .act-btn.edit:hover{color:#dc2626;background:#fef2f2;border-color:#fecaca}
+    .act-btn.edit:hover{color:#C8102E;background:#fff0f3;border-color:#fca5a5}
     .act-btn.del:hover{color:#ef4444;background:#fee2e2;border-color:#fecaca}
 
     /* ── Badge ── */
@@ -135,54 +138,64 @@
     .badge-man{background:#f1f5f9;color:#475569}
 
     /* ── FAB ── */
-    .fab{position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:56px;padding:13px 22px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(153,27,27,.45);display:flex;align-items:center;gap:7px;transition:transform .2s,box-shadow .2s;z-index:50}
-    .fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(30,64,175,.55)}
+    .fab{position:fixed;bottom:28px;right:28px;background:#C8102E;color:white;border:none;border-radius:56px;padding:13px 22px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(200,16,46,.45);display:flex;align-items:center;gap:7px;transition:transform .2s,box-shadow .2s;z-index:50}
+    .fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(200,16,46,.55)}
     .fab:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
     /* ── Overlay / Modal ── */
-    .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(3px);z-index:200;align-items:center;justify-content:center}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(3px);z-index:400;align-items:center;justify-content:center}
     .overlay.open{display:flex}
     .modal{background:white;border-radius:18px;padding:28px;width:620px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);animation:slideUp .2s ease}
     @keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
     .mtitle{font-size:1.05rem;font-weight:800;color:#1e293b;margin-bottom:18px;display:flex;align-items:center;gap:8px}
     .fg{margin-bottom:13px}
     .fl{display:block;font-size:.8rem;font-weight:600;color:#374151;margin-bottom:4px}
-    .fi{width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.87rem;outline:none;transition:border-color .2s,box-shadow .2s;color:#1e293b;background:white}
-    .fi:focus{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
-    .fi:disabled{background:#f8fafc;color:#94a3b8;cursor:not-allowed}
+    .fi{width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.87rem;outline:none;transition:border-color .2s,box-shadow .2s;color:#1e293b;background:#ffffff!important;-webkit-appearance:none;appearance:none}
+    .fi:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    .fi:disabled{background:#f8fafc;color:#1e293b;cursor:default;border-color:#e2e8f0}
+    select.fi:disabled{-webkit-appearance:none;-moz-appearance:none;appearance:none}
     .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .wtbl{width:100%;border-collapse:collapse;margin-top:5px;font-size:.82rem}
     .wtbl th{background:#f8fafc;padding:7px 10px;text-align:left;color:#64748b;font-weight:600;font-size:.71rem;border:1px solid #e2e8f0}
     .wtbl td{padding:5px 10px;border:1px solid #e2e8f0}
     .wtbl input{width:65px;padding:4px 8px;border:1.5px solid #d1d5db;border-radius:6px;text-align:center;font-size:.85rem;outline:none}
-    .wtbl input:focus{border-color:#dc2626}
+    .wtbl input:focus{border-color:#3b82f6}
     .mfooter{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f1f5f9}
     .bsec{padding:8px 18px;border:1.5px solid #d1d5db;background:white;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:500;color:#374151}
     .bsec:hover{background:#f8fafc}
-    .bpri{padding:8px 22px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700}
+    .bpri{padding:8px 22px;background:#C8102E;color:white;border:none;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700}
     .bpri:hover{opacity:.9}
     .hint{font-size:.72rem;color:#94a3b8;margin-top:4px}
 
     /* ── Ordrereserve ── */
-    .ore-total{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:white;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .ore-total{background:#1C2344;color:white;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
     .ore-total-lbl{font-size:.78rem;opacity:.8;font-weight:600}
     .ore-total-val{font-size:1.9rem;font-weight:800;line-height:1}
     .ore-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
     .ore-item{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .18s;user-select:none}
-    .ore-item:hover{background:#f0f9ff;border-color:#fca5a5;transform:translateY(-2px);box-shadow:0 4px 14px rgba(220,38,38,.12)}
-    .ore-item.active{background:#fef2f2;border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
+    .ore-item:hover{background:#f0f9ff;border-color:#93c5fd;transform:translateY(-2px);box-shadow:0 4px 14px rgba(59,130,246,.12)}
+    .ore-item.active{background:#fff0f3;border-color:#C8102E;box-shadow:0 0 0 3px rgba(200,16,46,.15)}
     .ore-co{font-size:.76rem;font-weight:700;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:6px}
     .ore-val{font-size:1.1rem;font-weight:800;color:#1e293b}
     .ore-sub{font-size:.7rem;color:#94a3b8;margin-top:2px}
     .ore-bar{height:5px;background:#e2e8f0;border-radius:3px;margin-top:7px;overflow:hidden}
     .ore-bar-fill{height:100%;border-radius:3px;transition:width .5s}
-    .ore-hint{font-size:.67rem;color:#fca5a5;margin-top:5px;font-weight:600;display:flex;align-items:center;gap:3px}
+    .ore-hint{font-size:.67rem;color:#93c5fd;margin-top:5px;font-weight:600;display:flex;align-items:center;gap:3px}
 
     /* ── Ordrereserve Drawer ── */
     #oreDrawerBackdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(2px);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
     #oreDrawerBackdrop.open{opacity:1;pointer-events:auto}
-    #oreDrawerPanel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:96vw;background:white;z-index:301;box-shadow:-6px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+    #oreDrawerPanel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:96vw;background:white;z-index:301;box-shadow:-6px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1),width .28s cubic-bezier(.4,0,.2,1)}
     #oreDrawerPanel.open{transform:translateX(0)}
+    #oreDrawerPanel.expanded{width:100vw;box-shadow:none}
+    #oreDrawerPanel.expanded .od-body{padding:16px 28px;overflow-y:auto}
+    #oreDrawerPanel.expanded .od-co-section{display:flex;align-items:center;gap:10px;padding:14px 0 8px;border-bottom:2px solid #f1f5f9;margin-bottom:10px}
+    #oreDrawerPanel.expanded .od-co-section-name{font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#1C2344;flex:1}
+    #oreDrawerPanel.expanded .od-co-section-sum{font-size:.8rem;font-weight:700;color:#0d9488}
+    #oreDrawerPanel.expanded .od-co-group{margin-bottom:24px}
+    #oreDrawerPanel.expanded .od-co-cards{display:flex;flex-wrap:wrap;gap:14px}
+    .od-expand{background:none;border:none;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#94a3b8;transition:all .15s;flex-shrink:0}
+    .od-expand:hover{background:#f1f5f9;color:#374151}
     .od-header{padding:20px 22px 16px;border-bottom:1px solid #f1f5f9;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px}
     .od-co-badge{display:flex;align-items:center;gap:10px}
     .od-dot{width:14px;height:14px;border-radius:5px;flex-shrink:0}
@@ -202,14 +215,14 @@
     .od-c-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:11px}
     .od-c-name{font-size:.9rem;font-weight:700;color:#1e293b;flex:1;line-height:1.3;cursor:text;border-radius:6px;padding:2px 5px;margin:-2px -5px;transition:background .15s;outline:none}
     .od-c-name:hover{background:#f1f5f9}
-    .od-c-name:focus{background:#fef2f2;box-shadow:0 0 0 2px rgba(220,38,38,.25)}
+    .od-c-name:focus{background:#eff6ff;box-shadow:0 0 0 2px rgba(59,130,246,.25)}
     .od-del-btn{background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:.9rem;padding:2px 5px;border-radius:5px;transition:all .15s;flex-shrink:0;line-height:1}
     .od-del-btn:hover{color:#ef4444;background:#fee2e2}
     .od-c-sum-wrap{margin-bottom:10px}
     .od-c-sum-lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:4px}
     .od-c-sum-row{display:flex;align-items:center;gap:8px}
     .od-c-sum-val{font-size:1.45rem;font-weight:800;color:#0d9488;cursor:pointer;border-radius:7px;padding:2px 8px;margin:-2px -8px;transition:background .15s;line-height:1.2}
-    .od-c-sum-val:hover{background:#f0fdfa}
+    .od-c-sum-val:hover{background:#fff0f3}
     .od-c-sum-inp{display:none;padding:6px 10px;border:2px solid #0d9488;border-radius:8px;font-size:1rem;font-weight:700;color:#0d9488;width:180px;outline:none;background:#f0fdfa}
     .od-c-sum-inp.active{display:block}
     .od-c-sum-hint{font-size:.7rem;color:#94a3b8;margin-top:3px}
@@ -224,7 +237,7 @@
     .od-wk-cell{display:flex;flex-direction:column;gap:2px;align-items:center}
     .od-wk-lbl{font-size:.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase}
     .od-wk-inp{width:100%;padding:5px 4px;border:1.5px solid #e2e8f0;border-radius:7px;text-align:center;font-size:.88rem;font-weight:700;color:#1e293b;outline:none;transition:border-color .15s,box-shadow .15s;background:white}
-    .od-wk-inp:focus{border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.15)}
+    .od-wk-inp:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
 
     /* ── Saving indicator ── */
     .save-toast{position:fixed;bottom:90px;right:28px;background:#1e293b;color:white;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;z-index:100;display:none;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
@@ -233,7 +246,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{display:inline-block;animation:spin 1s linear infinite}
 
-    @media print{.fab,.hactions,.hbtn,#loginScreen{display:none}body{background:white}.card{box-shadow:none;border:1px solid #e2e8f0}}
+    @media print{.fab,.hactions,.hbtn,#loginScreen,#oreDrawerBackdrop,#oreDrawerPanel,.filter-strip{display:none!important}body{background:white!important}body *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{box-shadow:none;border:1px solid #e2e8f0;break-inside:avoid}.chart-wrap{height:340px!important}}
     @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.frow{grid-template-columns:1fr}.co-grid{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -244,25 +257,95 @@
      ══════════════════════════════════════════ -->
 <script>
 const CONFIG = {
-  // API-nøkler håndteres av Azure Function proxy (/api/ordrestyring-proxy)
+  // API-base URL for Ordrestyring
+  apiBase: 'https://elkonor.ordrestyring.no/api',
 
   // ── SharePoint ─────────────────────────────
+  // Sti til JSON-fil som lagrer delte prosjekter.
   sharepointFil: '/sites/IntranettMinel/SiteAssets/kapasitet_prosjekter.json',
+  // ──────────────────────────────────────────
 
   // ── Selskaper ──────────────────────────────
-  // maxAnsatte: totalt antall ansatte (0 = tell automatisk fra API-data)
+  // maxAnsatte: totalt antall ansatte i selskapet (brukes til «Ledig»-beregning).
+  // Sett til 0 for å la dashbordet telle automatisk fra API-data.
   selskaper: [
-    { navn: 'Minel Drøbak Elektriske AS',     maxAnsatte: 15 },
-    { navn: 'Minel Kreativ Elektro Ski AS',   maxAnsatte: 0  },
-    { navn: 'Minel Elmontasje AS',            maxAnsatte: 37 },
-    { navn: 'Minel Elmontasje Elverum AS',    maxAnsatte: 0  },
-    { navn: 'Minel Gjøvik AS',                maxAnsatte: 40 },
-    { navn: 'Minel Ainstall AS',              maxAnsatte: 0  },
-    { navn: 'Minel Land Elektriske AS',       maxAnsatte: 0  },
-    { navn: 'Minel Skogvang Installasjon AS', maxAnsatte: 30 },
-    { navn: 'Minel Gudbrandsdal AS',          maxAnsatte: 45 },
+    { navn: 'Minel Drøbak Elektriske AS',     apiKey: 'FzmySlRzW72gOBAb', maxAnsatte: 0 },
+    { navn: 'Minel Kreativ Elektro Ski AS',   apiKey: 'qYtkWAowUUo2PbaE', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje AS',            apiKey: 'rPuAsfNqjpyoeBdV', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje Elverum AS',    apiKey: 'CmJHRiMNdn68RWZM', maxAnsatte: 0 },
+    { navn: 'Minel Gjøvik AS',                apiKey: 'edewj6APD4wb8uD5', maxAnsatte: 0 },
+    { navn: 'Minel Ainstall AS',              apiKey: 'OhCnVeTrqWU7dOK7', maxAnsatte: 0 },
+    { navn: 'Minel Land Elektriske AS',       apiKey: 'yOVFmYixo35RnY6l', maxAnsatte: 0 },
+    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 0 },
+    { navn: 'Minel Gudbrandsdal AS',          apiKey: 'yEEdLNDUCssPuhOl', maxAnsatte: 0 },
   ],
+
+  // ── Varsler ────────────────────────────────
+  teamsWebhook: '',
+  spKunngjøringer: 'Kunngjøringer',
+  // Ønsket utnyttelsesgrad (0–100) — grønn stiplet linje i grafen.
+  // ──────────────────────────────────────────
 };
+
+const GRAPH='https://graph.microsoft.com/v1.0';
+const SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
+let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected','User.Read'];
+try{msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});console.log('[MSAL] OK');}catch(e){console.warn('[MSAL]:',e.message);}
+async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
+async function gFetch(url,opts={}){const tok=await getToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
+function auditUser(){const accs=msalApp?msalApp.getAllAccounts():[];if(!accs.length)return'ukjent';const acc=accs[0];if(acc.name&&acc.name!=='unknown'&&!acc.name.includes('#'))return acc.name;const local=(acc.username||'').split('@')[0];return local.split('.').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ');}
+function auditNow(){return new Date().toISOString();}
+
+// ── TILGANGSSTYRING: officeLocation → selskap ──
+let _userCompany = null; // satt etter innlogging
+let _isAdmin = false;
+const OFFICE_MAP = {
+  '372 minel as': '__admin__',
+  '374 minel skogvang installasjon as': 'Minel Skogvang Installasjon AS',
+  '374 minel skogvang installasjon': 'Minel Skogvang Installasjon AS',
+  '374 minel skogvang teledata øst': 'Minel Skogvang Installasjon AS',
+  '375 minel elmontasje as': 'Minel Elmontasje AS',
+  '375 minel elmontasje hamar': 'Minel Elmontasje AS',
+  '376 minel gjøvik as': 'Minel Gjøvik AS',
+  '376 minel gjøvik': 'Minel Gjøvik AS',
+  '377 minel land elektriske as': 'Minel Land Elektriske AS',
+  '377 minel land elektrisk as': 'Minel Land Elektriske AS',
+  '377 minel land elektriske': 'Minel Land Elektriske AS',
+  '377 minel land elektrisk': 'Minel Land Elektriske AS',
+  '378 minel elmontasje elverum as': 'Minel Elmontasje Elverum AS',
+  '378 minel elmontasje elverum': 'Minel Elmontasje Elverum AS',
+  '379 minel gudbrandsdal as': 'Minel Gudbrandsdal AS',
+  '379 minel gudbrandsdal': 'Minel Gudbrandsdal AS',
+  '381 minel ainstall as': 'Minel Ainstall AS',
+  '381 minel ainstall': 'Minel Ainstall AS',
+  '383 minel kreativ elektro ski as': 'Minel Kreativ Elektro Ski AS',
+  '383 minel kreativ elektro ski': 'Minel Kreativ Elektro Ski AS',
+  '383 minel kreativ ski': 'Minel Kreativ Elektro Ski AS',
+  '384 minel drøbak elektriske as': 'Minel Drøbak Elektriske AS',
+  '384 minel drøbak elektriske': 'Minel Drøbak Elektriske AS',
+};
+
+async function fetchUserCompany() {
+  try {
+    const tok = await getToken();
+    if (!tok) return null;
+    const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,officeLocation', {
+      headers: { 'Authorization': 'Bearer ' + tok }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const me = await r.json();
+    const loc = (me.officeLocation || '').trim().toLowerCase();
+    console.log('[Tilgang] officeLocation:', me.officeLocation, '→', OFFICE_MAP[loc] || 'ukjent');
+    const mapped = OFFICE_MAP[loc] || null;
+    _userCompany = mapped;
+    _isAdmin = (mapped === '__admin__');
+    return mapped;
+  } catch(e) {
+    console.warn('[Tilgang] feilet:', e.message);
+    return null;
+  }
+}
+
 </script>
 <!-- ══════════════════════════════════════════ -->
 
@@ -275,9 +358,14 @@ const CONFIG = {
     </div>
     <p class="login-sub">Velg ditt selskap for å logge inn. Du vil kun kunne registrere prosjekter for ditt eget selskap.</p>
 
+    <div id="msLoginBox" style="margin-bottom:16px;padding:14px;background:#f0f4ff;border-radius:12px;border:1.5px solid #c7d4f8;text-align:center">
+      <p style="margin-bottom:10px;color:#1C2344;font-weight:600;font-size:.92rem">Logg inn med Microsoft</p>
+      <button onclick="msLogin()" style="background:#1C2344;color:white;border:none;border-radius:9px;padding:10px 28px;font-size:.9rem;font-weight:700;cursor:pointer">🔑 Logg inn med Microsoft</button>
+    </div>
+    <div id="coSelBox" style="display:none">
     <div class="login-label">Konsernvisning</div>
     <div class="admin-card" id="adminCard" onclick="selectCompany('__admin__')">
-      <div style="width:36px;height:36px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏢</div>
+      <div style="width:36px;height:36px;background:#C8102E;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🏢</div>
       <div>
         <div style="font-size:.88rem;font-weight:700;color:#1e293b">Konsern / Full tilgang</div>
         <div style="font-size:.77rem;color:#64748b">Se og redigere alle selskaper — kun for konsernledelse</div>
@@ -288,6 +376,7 @@ const CONFIG = {
     <div class="co-grid" id="coGrid"></div>
 
     <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Logg inn</button>
+    </div><!-- /coSelBox -->
   </div>
 </div>
 
@@ -308,7 +397,7 @@ const CONFIG = {
         <span id="whoName"></span>
         <span style="opacity:.6;font-size:.7rem">✕ bytt</span>
       </div>
-      <button class="hbtn green" onclick="exportCSV()">⬇ CSV</button>
+      <button class="hbtn" onclick="window.print()" title="Skriv ut / lagre som PDF">🖨 PDF</button>
       <button class="hbtn" id="refreshBtn" onclick="refreshAll()">
         <span id="refreshIcon">🔄</span> Oppdater alle
       </button>
@@ -316,10 +405,10 @@ const CONFIG = {
   </header>
 
   <div class="demo-bar" id="demoBanner">
-    ⚠️ DEMO-MODUS — Simulerte data. Kontakt administrator dersom du ser dette på produksjons-URL.
+    ⚠️ DEMO-MODUS — Simulerte data. Fyll inn API-nøkler i CONFIG-blokken for å aktivere live-data.
   </div>
   <div class="restrict-bar" id="restrictBar">
-    🔒 Du er inllogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
+    🔒 Du er innlogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
   </div>
 
   <div class="wrap">
@@ -328,7 +417,8 @@ const CONFIG = {
 
     <div class="sl">Konsernoversikt</div>
     <div class="stats">
-      <div class="scard c0"><div class="lbl">🔵 På oppdrag</div><div class="val" id="s0">—</div><div class="sub" id="s0sub">aktive på jobb denne uken</div></div>
+      <div class="scard c0"><div class="lbl">🔵 Aktive i Ordrestyring</div><div class="val" id="s0">—</div><div class="sub" id="s0sub">registrert i OS denne uken</div></div>
+      <div class="scard c1"><div class="lbl">🟩 Kontraherte prosjekter</div><div class="val" id="s1">—</div><div class="sub" id="s1sub">manuelt registrerte kontrakter</div></div>
       <div class="scard c3"><div class="lbl">⚪ Ledig kapasitet</div><div class="val" id="s3">—</div><div class="sub" id="s3sub">ikke registrert denne uken</div></div>
     </div>
 
@@ -336,19 +426,35 @@ const CONFIG = {
     <div class="tabs" id="tabs"></div>
 
     <div class="card">
-      <div class="chdr">
-        <span class="ctitle">Mannskapsbehov per uke — neste 20 uker</span>
-        <div class="leg" id="leg"></div>
+      <!-- Kontrollpanel: toggle + datovelger -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
+        <div style="display:flex;gap:3px;background:#f1f5f9;border-radius:8px;padding:3px">
+          <button id="vbtnWeek" onclick="setViewMode('week')" style="padding:5px 14px;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;background:#fff;color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,.12);font-family:inherit">📊 Uker</button>
+          <button id="vbtnMonth" onclick="setViewMode('month')" style="padding:5px 14px;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;font-family:inherit">📅 Måneder</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#64748b">
+          <span>Fra:</span>
+          <select id="rangeFrom" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <span>Til:</span>
+          <select id="rangeTo" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 8px;font-size:.78rem;font-family:inherit;background:#fff;color:#1e293b;cursor:pointer"></select>
+          <button onclick="applyRange()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 14px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit">OK</button>
+          <button onclick="resetRange()" style="border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 10px;font-size:.75rem;font-weight:600;color:#94a3b8;background:#fff;cursor:pointer;font-family:inherit" title="Tilbakestill visning">↺ Tilbakestill</button>
+        </div>
+        <div class="leg" id="leg" style="margin-left:auto"></div>
       </div>
-      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      <!-- Ukentlig diagram -->
+      <div id="weekChartWrap">
+        <div style="font-size:.9rem;font-weight:700;color:#1e293b;margin-bottom:8px" id="weekChartTitle">Mannskapsbehov per uke</div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
       <div class="wkdet" id="wkdet">
         <div class="wdt-title"><span id="wdtTitle">Ukedetalj</span><button class="wdt-close" onclick="closeWkDet()">✕</button></div>
         <div class="wdt-grid" id="wdtGrid"></div>
       </div>
     </div>
 
-    <div class="sl">Månedlig konsernoversikt</div>
-    <div class="card">
+    <div class="sl" id="monthlySection" style="display:none">Månedlig konsernoversikt</div>
+    <div class="card" id="monthlyCard" style="display:none">
       <div class="chdr">
         <div>
           <span class="ctitle">Kapasitetsutnyttelse per måned — neste 12 måneder</span>
@@ -369,9 +475,28 @@ const CONFIG = {
       <div id="ordreBody"><div class="empty-msg" style="padding:18px">Ingen kontraherte prosjekter registrert ennå.</div></div>
     </div>
 
+    <div class="sl" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Historikk</span>
+      <button onclick="saveHistorySnapshot()" style="background:#1A2744;color:white;border:none;border-radius:7px;padding:4px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit">📸 Lagre snapshot nå</button>
+    </div>
+    <div class="card">
+      <div class="tbw" id="historyContent"><div class="empty-msg">Laster historikk…</div></div>
+    </div>
+
     <div class="sl">Detaljert oversikt</div>
     <div class="card">
-      <div class="chdr"><span class="ctitle" id="tblTitle">Alle oppdrag og prosjekter</span></div>
+      <div class="chdr" style="flex-wrap:wrap;gap:10px">
+        <span class="ctitle" id="tblTitle">Alle oppdrag og prosjekter</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <input type="text" id="tblSearch" placeholder="🔍 Søk i prosjekter…"
+            oninput="filterTable()"
+            style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 12px;font-size:.82rem;font-family:inherit;width:220px;color:#1e293b;outline:none"
+            onfocus="this.style.borderColor='#1A2744'"
+            onblur="this.style.borderColor='#e2e8f0'"/>
+          <button onclick="document.getElementById('tblSearch').value='';filterTable()"
+            style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:.78rem;color:#94a3b8;background:#fff;cursor:pointer;font-family:inherit" title="Nullstill søk">✕</button>
+        </div>
+      </div>
       <div class="tbw" id="tblWrap"></div>
     </div>
   </div>
@@ -410,6 +535,7 @@ const CONFIG = {
       <div id="wTbl"></div>
       <div class="hint">Skriv inn antall mannskap du trenger per uke.</div>
     </div>
+    <div class="fg"><label class="fl">📝 Kommentar (valgfritt)</label><textarea class="fi" id="pNotes" rows="2" placeholder="Notater, kontaktperson, spesielle avtaler..." style="resize:vertical;font-family:inherit"></textarea></div>
     <div class="mfooter">
       <button class="bsec" onclick="closeProjModal()">Avbryt</button>
       <button class="bpri" id="saveBtn" onclick="saveProject()">💾 Lagre kontrakt</button>
@@ -431,6 +557,7 @@ const CONFIG = {
         <div class="od-co-sum" id="odCoSum">—</div>
       </div>
     </div>
+    <button class="od-expand" id="odExpandBtn" onclick="toggleDrawerExpand()" title="Utvid til fullskjerm">⤢</button>
     <button class="od-close" onclick="closeOreDrawer()" title="Lukk">✕</button>
   </div>
   <div class="od-body" id="oreDrawerBody"></div>
@@ -443,7 +570,91 @@ const CONFIG = {
 // ════════════════════════════════════════════
 // FARGER
 // ════════════════════════════════════════════
-const COLORS=['#3b82f6','#10b981','#8b5cf6','#f97316','#ec4899','#06b6d4','#84cc16','#eab308','#ef4444'];
+// ════ LAGRING — ein fil per selskap ════
+const FILE_MAP = {
+  'Minel Drobak Elektriske AS':     'kapasitet_drobak.json',
+  'Minel Drøbak Elektriske AS':     'kapasitet_drobak.json',
+  'Minel Kreativ Elektro Ski AS':   'kapasitet_kreativ_ski.json',
+  'Minel Elmontasje AS':            'kapasitet_elmontasje.json',
+  'Minel Elmontasje Elverum AS':    'kapasitet_elmontasje_elverum.json',
+  'Minel Gjøvik AS':                'kapasitet_gjovik.json',
+  'Minel Ainstall AS':              'kapasitet_ainstall.json',
+  'Minel Land Elektriske AS':       'kapasitet_land_elektriske.json',
+  'Minel Skogvang Installasjon AS': 'kapasitet_skogvang.json',
+  'Minel Gudbrandsdal AS':          'kapasitet_gudbrandsdal.json',
+};
+function lsKey(fn){return 'minel_'+fn;}
+
+// ════ SKJEMAVERSJON OG MIGRERING ════
+// Øk SCHEMA_VERSION når du endrer datastrukturen
+// Legg til migrasjonssteg i migrateProject()
+const SCHEMA_VERSION = 1;
+
+function migrateProject(p){
+  // Fremtidssikker migrering — kjøres på hvert prosjekt ved lasting
+  // Sett standardverdier for felt som mangler (bakoverkompatibilitet)
+  if(!p.id)         p.id = Math.random().toString(36).slice(2,10);
+  if(!p.company)    p.company = '';
+  if(!p.name)       p.name = 'Ukjent';
+  if(!p.weeklyCrews) p.weeklyCrews = {};
+  if(p.kontraktssum === undefined) p.kontraktssum = 0;
+  if(p.dg === undefined)           p.dg = null;
+  if(p.notes === undefined)        p.notes = '';
+  if(p.inOS === undefined)         p.inOS = false;
+  if(p.warnDismissed === undefined) p.warnDismissed = false;
+  if(!p.created)    p.created = new Date().toISOString();
+  if(!p.createdBy)  p.createdBy = null;
+  if(!p.createdAt)  p.createdAt = p.created || null;
+  if(!p.lastEditedBy)  p.lastEditedBy = null;
+  if(!p.lastEditedAt)  p.lastEditedAt = null;
+  if(p._schemaVersion === undefined) p._schemaVersion = SCHEMA_VERSION;
+  // Fremtidige migrasjonssteg legges til her:
+  // if(p._schemaVersion < 2){ p.nyFelt = standardVerdi; p._schemaVersion = 2; }
+  return p;
+}
+
+function migrateAll(projects){
+  if(!Array.isArray(projects)) return [];
+  return projects.map(migrateProject).filter(p=>p.id && p.company);
+}
+async function loadCompanyProjects(company){
+  const fn=FILE_MAP[company];if(!fn)return[];
+  const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${fn}:/content`;
+  try{
+    const r=await gFetch(url);
+    if(!r||r.status===0)throw new Error('ingen token');
+    if(r.status===404)return[];
+    if(r.ok){const j=await r.json();if(Array.isArray(j)){const migrated=migrateAll(j);try{localStorage.setItem(lsKey(fn),JSON.stringify(migrated));}catch(_){}return migrated;}}
+    throw new Error('HTTP '+r.status);
+  }catch(e){
+    console.warn(`[Graph] load ${company}: ${e.message}`);
+    try{const ls=localStorage.getItem(lsKey(fn));if(ls)return migrateAll(JSON.parse(ls));}catch(_){}
+    return[];
+  }
+}
+async function loadAllProjects(){
+  const cos=Object.keys(FILE_MAP);
+  const res=await Promise.allSettled(cos.map(co=>loadCompanyProjects(co)));
+  let all=[];res.forEach((r,i)=>{if(r.status==='fulfilled')all=[...all,...r.value];else console.warn('[Graph] load feilet:',cos[i]);});
+  return all;
+}
+async function saveCompanyProjects(company,projects){
+  const fn=FILE_MAP[company];if(!fn){console.warn('[Graph] ukjent selskap:',company);return false;}
+  const url=`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${fn}:/content`;
+  const payload=JSON.stringify(projects);
+  try{localStorage.setItem(lsKey(fn),payload);}catch(_){}
+  for(let a=1;a<=3;a++){
+    try{
+      const r=await gFetch(url,{method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
+      if(!r||r.status===0){console.warn('[Graph] ingen token');return false;}
+      if(r.ok){console.log(`[Graph] ${company} OK (${projects.length})`);return true;}
+      console.warn(`[Graph] HTTP ${r.status}, forsøk ${a}/3`);
+    }catch(e){console.warn(`[Graph] save feil: ${e.message}`);}
+    if(a<3)await new Promise(res=>setTimeout(res,800*a));
+  }
+  console.warn(`[Graph] ${company} kun lokalt lagret`);return false;
+}
+const COLORS=['#1A2744','#C8102E','#2d5a9e','#a01020','#3d7abf','#8b1a28','#5a8fc2','#c43040','#1e3a6e'];
 const MANUAL_COLOR='#0d9488'; // teal — gjennomgående farge for kontraherte prosjekter
 const col=i=>COLORS[i%COLORS.length];
 
@@ -468,36 +679,11 @@ const ON_SP = CONFIG.sharepointFil &&
    window.location.hostname.includes('.sharepoint.') ||
    window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file'));
 
-async function spGetDigest(){
-  try{
-    const r=await fetch('/_api/contextinfo',{method:'POST',headers:{'Accept':'application/json;odata=verbose'}});
-    const d=await r.json();
-    return d.d.GetContextWebInformation.FormDigestValue;
-  }catch{return null}
-}
 
-async function spReadProjects(){
-  if(!ON_SP) return JSON.parse(localStorage.getItem('minel_projects')||'[]');
-  try{
-    const r=await fetch(CONFIG.sharepointFil+'?_='+Date.now(),{headers:{'Accept':'application/json'}});
-    if(r.status===404) return [];
-    return await r.json();
-  }catch(e){console.warn('SP les feil:',e);return JSON.parse(localStorage.getItem('minel_projects')||'[]')}
-}
 
-async function spWriteProjects(projects){
-  localStorage.setItem('minel_projects',JSON.stringify(projects)); // alltid cache lokalt
-  if(!ON_SP) return;
-  try{
-    const digest=await spGetDigest();
-    if(!digest) throw new Error('Fikk ikke form digest');
-    await fetch(CONFIG.sharepointFil,{
-      method:'POST',
-      headers:{'X-RequestDigest':digest,'X-HTTP-Method':'PUT','Content-Type':'application/json;charset=utf-8','Accept':'application/json;odata=verbose'},
-      body:JSON.stringify(projects,null,2)
-    });
-  }catch(e){console.error('SP skriv feil:',e);throw e}
-}
+
+
+
 
 // ════════════════════════════════════════════
 // KATEGORISERING AV TIMETYPE
@@ -517,32 +703,31 @@ function categorizeHourType(name) {
 // ════════════════════════════════════════════
 // ORDRESTYRING API
 // ════════════════════════════════════════════
-// Roller som telles som feltarbeidere i kapasitetsprognosen
-const FELTARBEIDER_ROLLER=['Elektriker','Lærling','Hjelpemontør','Fagarbeider','Montør','Svenn','Hjelpemontør'];
 async function fetchSelskap(co){
   try {
     const now = Date.now();
     const currentWkMonday = mondayOf(...wKey(new Date()).split('-W').map(Number));
     const fraInt = Math.floor(currentWkMonday.getTime() / 1000);
     const tilInt = Math.floor((now + 150*864e5) / 1000);
-    // API-nøkkel slås opp server-side av Azure Function proxy
+    // Bruk Azure Function proxy (API-nøkler server-side)
     const gqlUrl = '/api/ordrestyring-proxy';
-    const gqlHeaders = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
-
-    // Hent events via Azure Function proxy
+    // Hent events via Azure Function proxy (API-nøkler er server-side)
     const gqlQuery = `query KapPrognose($fra:Int!,$til:Int!){
       events(between:{field:startTime,from:$fra,to:$til}){
         identifier startTime stopTime header text
-        user{id fullName role}
+        user{id fullName}
         hourType{name}
       }
     }`;
     const resp = await fetch(gqlUrl, {
-      method: 'POST', headers: gqlHeaders,
-      body: JSON.stringify({company: co.navn, operationName:'KapPrognose', query:gqlQuery, variables:{fra:fraInt,til:tilInt}})
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        company: co.navn,
+        operationName: 'KapPrognose',
+        query: gqlQuery,
+        variables: {fra:fraInt, til:tilInt}
+      })
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
@@ -562,9 +747,6 @@ async function fetchSelskap(co){
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
-      // Filtrer til feltarbeidere (admin, økonomi, prosjektleder telles ikke)
-      const _role = o.user?.role || '';
-      if (_role && !FELTARBEIDER_ROLLER.includes(_role)) return;
       const cat = categorizeHourType(o.hourType?.name);
       const startMs = toMs(o.startTime);
       const stopMs  = toMs(o.stopTime || o.startTime);
@@ -598,10 +780,14 @@ async function fetchSelskap(co){
       };
     });
 
-    // Unike ansatte fra events (god tilnærming til faktisk ansatteantall)
-    const allUniqueFromEvents = new Set(j.filter(o=>{const r=o.user?.role||'';return !r||FELTARBEIDER_ROLLER.includes(r);}).map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
-    // Bruk CONFIG-verdi hvis satt (> 0), ellers bruk talt fra events
-    const finalTotal = (co.maxAnsatte > 0) ? co.maxAnsatte : allUniqueFromEvents;
+    // Maks unike ansatte sett i noen uke — brukes som kapasitetslinje
+    // Siden alle aktive ansatte har registrering (oppdrag/intern/fravaer) er max uketall riktig headcount
+    const maxWeeklyUsers = Math.max(0, ...Object.values(weekData).map(cats => {
+      const all = new Set([...cats.oppdrag, ...cats.intern, ...cats.fravaer]);
+      return all.size;
+    }));
+    const finalTotal = maxWeeklyUsers || new Set(j.map(o=>o.user?.id!=null?String(o.user.id):null).filter(Boolean)).size;
+    console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
     return { real: true, totalUsers: finalTotal, items: mapped };
@@ -690,6 +876,7 @@ function doLogin(){
 function selectCompany(name){
   currentCompany=name;
   localStorage.setItem('minel_company',name);
+  document.getElementById('app').style.display='block';
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   initApp();
@@ -708,7 +895,7 @@ function logout(){
 function updateWhoBar(){
   const isAdmin=currentCompany==='__admin__';
   const coIdx=companies.findIndex(c=>c.navn===currentCompany);
-  const dotColor=isAdmin?'#dc2626':col(coIdx);
+  const dotColor=isAdmin?'#3b82f6':col(coIdx);
   const label=isAdmin?'Konsern (full tilgang)':currentCompany;
   document.getElementById('whoDot').style.background=dotColor;
   document.getElementById('whoName').textContent=label;
@@ -730,7 +917,19 @@ function updateWhoBar(){
 // TOTALER
 // ════════════════════════════════════════════
 function buildTotals(){
-  const weeks=next20();
+  // Finn lengste horisont: 20 uker ELLER lengste registrerte kontrakt — hva som er størst
+  const contractWeeks = allProjects.filter(p=>!p.inOS).flatMap(p=>Object.keys(p.weeklyCrews||{}));
+  const maxContractWk = contractWeeks.length ? contractWeeks.sort().pop() : null;
+  const baseWeeks = next20();
+  const baseEnd = baseWeeks[baseWeeks.length-1];
+  const horizon = maxContractWk && maxContractWk > baseEnd ? maxContractWk : baseEnd;
+  // Bygg ukeliste fra i dag til horisont
+  const startMon = new Date(); startMon.setDate(startMon.getDate()-((startMon.getDay()+6)%7)); startMon.setHours(0,0,0,0);
+  const weeks = [];
+  const cur = new Date(startMon);
+  while(wKey(cur) <= horizon){ weeks.push(wKey(cur)); cur.setDate(cur.getDate()+7); }
+  if(weeks.length === 0) weeks.push(...baseWeeks);
+
   const byCo={};
   companies.forEach(co=>{
     byCo[co.navn]={};
@@ -756,6 +955,7 @@ function buildTotals(){
   });
   const manT={};weeks.forEach(w=>manT[w]=0);
   allProjects.forEach(p=>{
+    if(p.inOS) return;
     if(activeFilter!=='all'&&p.company&&p.company!==activeFilter)return;
     Object.entries(p.weeklyCrews).forEach(([wk,c])=>{if(manT[wk]!==undefined)manT[wk]+=parseInt(c)||0});
   });
@@ -770,72 +970,144 @@ function updateStrip(){
   companies.forEach((co,i)=>{
     const s=coData[co.navn]?.status||'loading';
     const cls=s==='ok'?'ok':s==='demo'?'demo':s==='err'?'err':'loading';
-    const pip=s==='ok'?col(i):s==='demo'?'#f59e0b':s==='err'?'#ef4444':'#fca5a5';
+    const pip=s==='ok'?col(i):s==='demo'?'#f59e0b':s==='err'?'#ef4444':'#93c5fd';
     const lbl=s==='ok'?'Live':s==='demo'?'Demo':s==='err'?'Feil':'…';
     html+=`<div class="co-pill ${cls}"><span class="pip" style="background:${pip}"></span>${co.navn} <span style="opacity:.7;font-weight:500">(${lbl})</span></div>`;
   });
   document.getElementById('coStrip').innerHTML=html;
   const anyDemo=companies.some(co=>coData[co.navn]?.status==='demo');
-  document.getElementById('demoBanner').classList.toggle('show', anyDemo);
+  document.getElementById('demoBanner').classList.toggle('show',anyDemo&&!companies.every(co=>co.apiKey));
 }
 
 function updateStats(){
   const{weeks,byCo,manT}=buildTotals();
   const tw=weeks[0];
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
-  let opp=manT[tw]||0, ledig=0;
+  let fraOS=0, kontr=manT[tw]||0, ledig=0;
   visCos.forEach(co=>{
     const d=byCo[co.navn]?.[tw]||{};
-    opp   += d.oppdrag||0;
-    ledig  += d.ledig  ||0;
+    fraOS += (d.oppdrag||0)+(d.intern||0)+(d.fravaer||0);
+    ledig += d.ledig||0;
   });
   const totalAnsatte = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
-  document.getElementById('s0').textContent=opp;
-  document.getElementById('s0sub').textContent=`aktive på jobb denne uken`;
+  document.getElementById('s0').textContent=fraOS;
+  document.getElementById('s0sub').textContent=`registrert i OS denne uken`;
+  document.getElementById('s1').textContent=kontr;
+  document.getElementById('s1sub').textContent=`manuelt registrerte kontrakter`;
   document.getElementById('s3').textContent=ledig;
   document.getElementById('s3sub').textContent=totalAnsatte>0?`av ${totalAnsatte} totalt`:`ikke registrert`;
-  const _pb=document.getElementById('peakBadge');if(_pb)_pb.style.display='none';
 }
 
 function updateTabs(){
   const el=document.getElementById('tabs');
   const mk=(lbl,filter,dc)=>{
     const isA=activeFilter===filter;
-    return`<div class="tab${isA?' active':''}" style="${isA?`background:${dc};border-color:${dc}`:''}" data-f="${filter}"><span class="dot" style="background:${isA?'rgba(255,255,255,.7)':dc}"></span>${lbl}</div>`;
+    const activeBg = filter==='all' ? '#C8102E' : '#1A2744';
+    return`<div class="tab${isA?' active':''}" style="${isA?`background:${activeBg};border-color:${activeBg}`:'border-color:'+dc}" data-f="${filter}"><span class="dot" style="background:${isA?'rgba(255,255,255,.85)':dc}"></span>${lbl}</div>`;
   };
-  let html=mk('Alle selskaper','all','#991b1b');
+  let html=mk('Alle selskaper','all','#C8102E');
   companies.forEach((co,i)=>html+=mk(co.navn,co.navn,col(i)));
   el.innerHTML=html;
   el.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{activeFilter=t.dataset.f;selectedWeek=null;renderAll()}));
 }
 
 // Kategorifarger
-const CAT_OPPDRAG = '#dc2626'; // Minel rød
+const CAT_OPPDRAG = '#1A2744'; // Minel-blå
+const MINEL_BLA = '#1A2744';
 const CAT_INTERN  = '#f59e0b'; // amber
-const CAT_FRAVAER = '#94a3b8'; // grå (fravær)
+const CAT_FRAVAER = '#ef4444'; // rød
 const CAT_LEDIG   = 'rgba(203,213,225,0.55)'; // lys grå
 
+
+// ════════════════════════════════════════════
+// VISNINGSKONTROLL — toggle uke/mnd + fra/til
+// ════════════════════════════════════════════
+let _viewMode = 'week';
+let _rangeFrom = null;
+let _rangeTo   = null;
+
+function setViewMode(mode){
+  _viewMode = mode;
+  document.getElementById('vbtnWeek').classList.toggle('active', mode==='week');
+  document.getElementById('vbtnMonth').classList.toggle('active', mode==='month');
+  document.getElementById('weekChartWrap').style.display = mode==='week' ? '' : 'none';
+  const ms = document.getElementById('monthlySection');
+  const mc = document.getElementById('monthlyCard');
+  if(ms) ms.style.display = mode==='month' ? '' : 'none';
+  if(mc) mc.style.display = mode==='month' ? '' : 'none';
+  const ms2=document.getElementById('monthlySection2');
+  const mc2=document.getElementById('monthlyCard2');
+  if(ms2) ms2.style.display = mode==='month' ? '' : 'none';
+  if(mc2) mc2.style.display = mode==='month' ? '' : 'none';
+  document.getElementById('leg').style.display = mode==='week' ? '' : 'none';
+  if(mode==='month') updateMonthlyChart();
+}
+
+function buildRangeSelectors(weeks){
+  const from = document.getElementById('rangeFrom');
+  const to   = document.getElementById('rangeTo');
+  if(!from||!to) return;
+  const savedFrom = _rangeFrom, savedTo = _rangeTo;
+  from.innerHTML = ''; to.innerHTML = '';
+  weeks.forEach(w=>{
+    const[y,wn]=w.split('-W'); const label=`Uke ${parseInt(wn)}, ${y}`;
+    const o1=document.createElement('option'); o1.value=w; o1.textContent=label; from.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=w; o2.textContent=label; to.appendChild(o2);
+  });
+  from.value = savedFrom && weeks.includes(savedFrom) ? savedFrom : weeks[0];
+  to.value   = savedTo   && weeks.includes(savedTo)   ? savedTo   : weeks[weeks.length-1];
+}
+
+function applyRange(){
+  _rangeFrom = document.getElementById('rangeFrom')?.value || null;
+  _rangeTo   = document.getElementById('rangeTo')?.value   || null;
+  if(_rangeFrom && _rangeTo && _rangeFrom > _rangeTo){
+    document.getElementById('rangeTo').value = _rangeFrom;
+    _rangeTo = _rangeFrom;
+  }
+  updateChart();
+}
+
+function resetRange(){
+  _rangeFrom = null; _rangeTo = null;
+  const from = document.getElementById('rangeFrom');
+  const to   = document.getElementById('rangeTo');
+  if(from?.options.length) from.value = from.options[0].value;
+  if(to?.options.length)   to.value   = to.options[to.options.length-1].value;
+  updateChart();
+}
+
 function updateChart(){
-  const{weeks,byCo,manT}=buildTotals();
+  const{weeks:allWeeks,byCo,manT}=buildTotals();
+  buildRangeSelectors(allWeeks);
+  const fromWk=_rangeFrom||allWeeks[0];
+  const toWk=_rangeTo||allWeeks[allWeeks.length-1];
+  const weeks=allWeeks.filter(w=>w>=fromWk&&w<=toWk);
+  if(!weeks.length) return;
+  const[fy,fw]=fromWk.split('-W');const[ty,tw]=toWk.split('-W');
+  const wtEl=document.getElementById('weekChartTitle');
+  if(wtEl) wtEl.textContent=`Mannskapsbehov per uke — Uke ${parseInt(fw)} ${fy} til Uke ${parseInt(tw)} ${ty}`;
   const labels=weeks.map(wLabel);
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
 
   // Summer kategorier på tvers av synlige selskaper per uke
-  const aggOpp   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.oppdrag||0); return t; });
-  const aggContr = weeks.map(w=>manT[w]||0); // Kontraherte prosjekter — egen farge
-  const aggInt   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.intern||0); return t; });
-  const aggFrav  = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.fravaer||0); return t; });
-  const aggLed   = weeks.map(w=>{ let t=0; visCos.forEach(co=>t+=byCo[co.navn]?.[w]?.ledig||0); return t; });
-
-  // Maks kapasitet = sum av totalUsers for synlige selskaper
+  // Slå sammen oppdrag+intern+fravær til én blå bar ("Fra Ordrestyring")
+  const aggFraOS = weeks.map(w=>{ let t=0; visCos.forEach(co=>{ const d=byCo[co.navn]?.[w]||{}; t+=(d.oppdrag||0)+(d.intern||0)+(d.fravaer||0); }); return t; });
+  const aggOpp   = aggFraOS; // alias for bakoverkompatibilitet
+  const aggContr = weeks.map(w=>manT[w]||0);
+  const aggInt   = weeks.map(()=>0); // fjernet
+  const aggFrav  = weeks.map(()=>0); // fjernet
+  // Ledig = maxKap - Fra OS - Kontrakter (stopper på 0, aldri negativt)
+  // Maks kapasitet = sum av totalUsers for synlige selskaper (må defineres FØR aggLed)
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
+  const aggLed = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
   const datasets=[
-    {label:'Planlagte oppdrag (OS)',           data:aggOpp,   backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
+    {label:'Fra Ordrestyring',      data:aggFraOS, backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
     {label:'Kontraherte prosjekter',data:aggContr, backgroundColor:MANUAL_COLOR, borderRadius:0, borderSkipped:false, stack:'main'},
-    {label:'Ledig',                data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
+    {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
-  if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
+  if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -850,14 +1122,14 @@ function updateChart(){
           title:items=>wLong(weeks[items[0].dataIndex]),
           afterBody:items=>{
             const wk=weeks[items[0].dataIndex];
-            const opp=aggOpp[items[0].dataIndex];
+            const fraOS=aggFraOS[items[0].dataIndex];
             const contr=aggContr[items[0].dataIndex];
             const led=aggLed[items[0].dataIndex];
-            const aktive=opp+contr;
+            const aktive=fraOS+contr;
             const lines=['───────────────'];
-            if(opp>0)   lines.push(`🔵 Oppdrag:     ${opp}`);
-            if(contr>0) lines.push(`🟩 Kontrahert:  ${contr}`);
-            if(led>0)   lines.push(`⚪ Ledig:       ${led}`);
+            if(fraOS>0)  lines.push(`🔵 Fra OS: ${fraOS}`);
+            if(contr>0)  lines.push(`🟩 Kontrahert: ${contr}`);
+            if(led>0)    lines.push(`⚪ Ledig: ${led}`);
             lines.push('───────────────');
             const tot=aktive+led;
             lines.push(`Aktive: ${aktive}${tot>0?` / ${tot}`:''}${tot>0?` (${Math.round(aktive/tot*100)}%)`:''}`);
@@ -872,14 +1144,14 @@ function updateChart(){
     }
   });
 
-  let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Oppdrag</span>`;
+  let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Fra Ordrestyring</span>`;
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
-  if(maxKap>0) lh+=`<span><span class="ldot" style="background:#6366f1;border-radius:0"></span>Maks kap. (${maxKap})</span>`;
+  if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
-// ════════════════════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // MÅNEDLIG KONSERNOVERSIKT
 // ════════════════════════════════════════════
 function next12Months(){
@@ -1003,7 +1275,7 @@ function updateMonthlyChart(){
 
   // Legend
   let lh='';
-  visCos.forEach(co=>{const gi=companies.indexOf(co);lh+=`<span><span class="ldot" style="background:${col(gi)}"></span>${co.navn.replace('Minel ','').replace(' AS','')}</span>`});
+  visCos.forEach(co=>{const gi=companies.indexOf(co);lh+=`<span><span class="ldot" style="background:${col(gi)}"></span>${co.navn.replace(' AS','')}</span>`});
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#6366f1;border-radius:0"></span>Maks (${maxKap})</span>`;
   document.getElementById('mleg').innerHTML=lh;
 
@@ -1042,7 +1314,7 @@ function showWkDet(wk){
     html+=`<div class="wdt-item">
       <div class="wdt-color" style="background:${col(gi)}"></div>
       <div style="flex:1;min-width:0">
-        <div class="wdt-name" style="white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${co.navn}</div>
+        <div class="wdt-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${co.navn}</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;font-size:.7rem">${cats.join('')}</div>
         <div class="wdt-num" style="font-size:1rem;margin-top:2px">${active}</div>
       </div>
@@ -1069,7 +1341,7 @@ function showWkDet(wk){
 }
 function closeWkDet(){selectedWeek=null;document.getElementById('wkdet').classList.remove('open')}
 
-function formatKr(v){if(!v)return'—';return'kr\u202f'+Math.round(v).toLocaleString('no-NO')}
+function formatKr(v){if(!v)return'—';return'kr '+Math.round(v).toLocaleString('no-NO')}
 
 // Tusenvis-formatering i input-felt (type=text)
 function fmtKrInput(inp){
@@ -1079,6 +1351,88 @@ function fmtKrInput(inp){
 }
 function parseKrInput(id){return parseInt((document.getElementById(id).value||'').replace(/\D/g,''))||0;}
 
+
+// ════ SØK I TABELLEN ════
+let _tblSearchTerm = '';
+function filterTable(){
+  _tblSearchTerm = (document.getElementById('tblSearch')?.value||'').toLowerCase().trim();
+  updateTable();
+}
+
+// ════ HISTORIKK — ukentlig snapshot ════
+const HIST_FILE = 'kapasitet_historikk.json';
+
+async function saveHistorySnapshot(){
+  try{
+    const weekStr = wKey(new Date());
+    // Last eksisterende historikk
+    let history = [];
+    try{
+      const r = await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`);
+      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) history=j; }
+    }catch(_){}
+    // Ikke lagre ny snapshot om det allerede finnes én for denne uken
+    if(history.some(h=>h.week===weekStr)){
+      console.log('[Historikk] Snapshot for',weekStr,'finnes allerede');
+      return;
+    }
+    // Bygg snapshot
+    const snapshot = {
+      week: weekStr,
+      savedAt: new Date().toISOString(),
+      savedBy: auditUser(),
+      projects: allProjects.map(p=>({
+        id:p.id, name:p.name, company:p.company,
+        kontraktssum:p.kontraktssum||0, weeklyCrews:p.weeklyCrews, inOS:p.inOS||false
+      })),
+      capacityByCompany: Object.fromEntries(
+        companies.map(co=>[ co.navn, coData[co.navn]?.totalUsers||0 ])
+      )
+    };
+    history.unshift(snapshot); // nyeste først
+    if(history.length>52) history=history.slice(0,52); // maks 1 år
+    const payload=JSON.stringify(history);
+    try{localStorage.setItem('minel_historikk',payload);}catch(_){}
+    await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`,
+      {method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
+    console.log('[Historikk] Snapshot lagret for',weekStr);
+    renderHistoryTab();
+  }catch(e){console.warn('[Historikk] feilet:',e.message);}
+}
+
+async function loadHistory(){
+  try{
+    const r=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/${HIST_FILE}:/content`);
+    if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) return j; }
+  }catch(_){}
+  try{const ls=localStorage.getItem('minel_historikk');if(ls)return JSON.parse(ls);}catch(_){}
+  return[];
+}
+
+function renderHistoryTab(){
+  const el=document.getElementById('historyContent');
+  if(!el)return;
+  loadHistory().then(history=>{
+    if(!history.length){
+      el.innerHTML='<div class="empty-msg">Ingen historikk ennå. Historikk lagres automatisk én gang per uke.</div>';
+      return;
+    }
+    let html='<table><thead><tr><th>Uke</th><th>Lagret</th><th>Av</th><th>Kontrakter</th><th>Kapasitet</th></tr></thead><tbody>';
+    history.forEach(h=>{
+      const [y,w]=h.week.split('-W');
+      const dt=new Date(h.savedAt).toLocaleDateString('no-NO');
+      const totKap=Object.values(h.capacityByCompany||{}).reduce((s,v)=>s+v,0);
+      html+=`<tr>
+        <td><strong>Uke ${parseInt(w)}, ${y}</strong></td>
+        <td style="color:#64748b;font-size:.82rem">${dt}</td>
+        <td style="font-size:.82rem">${h.savedBy||'—'}</td>
+        <td>${h.projects?.length||0} stk</td>
+        <td>${totKap} ansatte</td>
+      </tr>`;
+    });
+    el.innerHTML=html+'</tbody></table>';
+  });
+}
 function updateTable(){
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
   document.getElementById('tblTitle').textContent=activeFilter==='all'?'Alle oppdrag og prosjekter':`Oppdrag — ${activeFilter}`;
@@ -1107,7 +1461,13 @@ function updateTable(){
     });
   });
 
-  const visMp=allProjects.filter(p=>activeFilter==='all'||!p.company||p.company===activeFilter);
+  const visMp=allProjects.filter(p=>{
+    if(activeFilter!=='all'&&p.company&&p.company!==activeFilter) return false;
+    if(!_tblSearchTerm) return true;
+    return (p.name||'').toLowerCase().includes(_tblSearchTerm)
+        || (p.company||'').toLowerCase().includes(_tblSearchTerm)
+        || (p.notes||'').toLowerCase().includes(_tblSearchTerm);
+  });
   if(visMp.length>0){
     if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
     html+=`<tr class="sec-row"><td colspan="6">📝 Kontraherte prosjekter</td></tr>`;
@@ -1192,11 +1552,7 @@ function updateOrdrereserve(){
       <div class="ore-total-val">${formatKr(grandTotal)}</div>
       <div style="font-size:.73rem;opacity:.75;margin-top:3px">${visMp.length} kontrakt${visMp.length!==1?'er':''}</div>
     </div>
-    <div style="text-align:right">
-      <div class="ore-total-lbl">Snitt per selskap</div>
-      <div style="font-size:1.15rem;font-weight:800">${formatKr(grandTotal/Math.max(1,companies.filter(co=>byCo[co.navn]>0).length))}</div>
       ${isAdmin?'<div style="font-size:.68rem;opacity:.65;margin-top:5px">▶ Klikk for å se alle kontrakter</div>':''}
-    </div>
   </div><div class="ore-grid">`;
 
   companies.forEach((co,i)=>{
@@ -1205,7 +1561,7 @@ function updateOrdrereserve(){
     const pct=maxCo>0?Math.round(v/maxCo*100):0;
     if(v===0&&n===0&&!isAdmin) return; // skjul tomme for selskapbruker
     const hint=n>0?`<div class="ore-hint">▶ Se og rediger kontraktene</div>`:'';
-    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${ i})" data-co="${co.navn}">
+    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${i})" data-co="${co.navn}">
       <div class="ore-co"><span style="width:10px;height:10px;border-radius:3px;background:${col(i)};display:inline-block;flex-shrink:0"></span>${co.navn}</div>
       <div class="ore-val">${formatKr(v)}</div>
       <div class="ore-sub">${n} kontrakt${n!==1?'er':''}</div>
@@ -1229,7 +1585,7 @@ function openOreDrawer(coNavn,coIdx){
   const isAll=coNavn==='__all__';
   if(isAll){
     const dot=document.getElementById('odDot');
-    dot.style.background='linear-gradient(135deg,#7f1d1d,#dc2626)';
+    dot.style.background='#C8102E';
     dot.style.borderRadius='50%';
     document.getElementById('odCoName').textContent='Minel Konsern';
     document.querySelectorAll('.ore-item').forEach(el=>el.classList.remove('active'));
@@ -1248,8 +1604,20 @@ function openOreDrawer(coNavn,coIdx){
   document.getElementById('oreDrawerPanel').classList.add('open');
 }
 
+function toggleDrawerExpand(){
+  const panel=document.getElementById('oreDrawerPanel');
+  const btn=document.getElementById('odExpandBtn');
+  const expanded=panel.classList.toggle('expanded');
+  btn.textContent=expanded?'⤡':'⤢';
+  btn.title=expanded?'Minimer':'Utvid til fullskjerm';
+  document.getElementById('oreDrawerBackdrop').style.display=expanded?'none':'';
+}
 function closeOreDrawer(){
   oreDrawerCo=null;
+  const panel=document.getElementById('oreDrawerPanel');
+  panel.classList.remove('expanded');
+  const btn=document.getElementById('odExpandBtn');
+  if(btn){btn.textContent='⤢';btn.title='Utvid til fullskjerm';}
   document.getElementById('oreDrawerBackdrop').classList.remove('open');
   document.getElementById('oreDrawerPanel').classList.remove('open');
   document.querySelectorAll('.ore-item').forEach(el=>el.classList.remove('active'));
@@ -1271,22 +1639,23 @@ function renderOreDrawer(){
     return;
   }
   if(isAll){
-    // Gruppér per selskap med seksjonshoder
     let html='';
     companies.forEach((co,ci)=>{
       const coProjects=allProjects.filter(p=>p.company===co.navn);
       if(coProjects.length===0) return;
       const coTotal=coProjects.reduce((s,p)=>s+(p.kontraktssum||0),0);
-      html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 2px 4px;margin-top:6px;border-top:1.5px solid #f1f5f9">
-        <span style="width:9px;height:9px;border-radius:3px;background:${col(ci)};display:inline-block;flex-shrink:0"></span>
-        <span style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#475569;flex:1">${co.navn}</span>
-        <span style="font-size:.72rem;font-weight:700;color:#0d9488">${formatKr(coTotal)}</span>
-      </div>`;
-      html+=coProjects.map(p=>buildOreCard(p)).join('');
+      html+=`<div class="od-co-group">`;
+      html+=`<div class="od-co-section">`;
+      html+=`<span style="width:10px;height:10px;border-radius:3px;background:${col(ci)};display:inline-block;flex-shrink:0"></span>`;
+      html+=`<span class="od-co-section-name">${co.navn}</span>`;
+      html+=`<span class="od-co-section-sum">${formatKr(coTotal)} · ${coProjects.length} kontrakt${coProjects.length!==1?'er':''}</span>`;
+      html+=`</div>`;
+      html+=`<div class="od-co-cards">${coProjects.map(p=>buildOreCard(p)).join('')}</div>`;
+      html+=`</div>`;
     });
     body.innerHTML=html;
   } else {
-    body.innerHTML=projects.map(p=>buildOreCard(p)).join('');
+    body.innerHTML=`<div class="od-co-cards" style="display:flex;flex-wrap:wrap;gap:14px">${projects.map(p=>buildOreCard(p)).join('')}</div>`;
   }
   // Attach listeners
   body.querySelectorAll('.od-c-name').forEach(el=>{
@@ -1337,9 +1706,16 @@ function buildOreCard(p){
   }).join('');
   const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'— klikk for å sette';
   const sumVal=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
-  return `<div class="od-card" id="odc-${p.id}">
+  const curWk=wKey(new Date());
+  const startWk=wks.length?wks[0]:'';
+  const passedStart=startWk&&startWk<curWk&&!p.inOS&&!p.warnDismissed;
+  return `<div class="od-card${p.inOS?' in-os':''}" id="odc-${p.id}">
+    ${passedStart?`<div class="start-warn"><div style="flex:1"><strong>⚠️ Oppstartsdato passert</strong>Er prosjektet nå i Ordrestyring? Sett det til OS for å unngå dobbelttelling.</div><div style="display:flex;gap:6px;margin-top:5px"><button class="warn-btn-yes" onclick="setInOS('${p.id}',true)">Ja, i OS</button><button class="warn-btn-no" onclick="dismissWarn('${p.id}')">Nei, behold</button></div></div>`:''}
     <div class="od-c-head">
-      <div class="od-c-name" contenteditable="true" spellcheck="false" data-id="${p.id}">${p.name}</div>
+      <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">
+        <div class="od-c-name" contenteditable="${p.inOS?'false':'true'}" spellcheck="false" data-id="${p.id}" style="${p.inOS?'text-decoration:line-through;color:#94a3b8':''}">${p.name}</div>
+        ${p.inOS?'<span class="os-badge">I OS</span>':''}
+      </div>
       <button class="od-del-btn" data-id="${p.id}" title="Slett kontrakt">\u{1F5D1}</button>
     </div>
     <div class="od-c-sum-wrap">
@@ -1355,15 +1731,21 @@ function buildOreCard(p){
       <span>\u{1F477} snitt ${avgCrew} mann/uke</span>
       <span>\u{1F4CA} ${wks.length} uke${wks.length!==1?'r':''}</span>
     </div>
+    <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">${p.createdBy?`<span>✍️ ${p.createdBy}${p.createdAt?' '+new Date(p.createdAt).toLocaleDateString('no-NO'):''}</span>`:''  }${p.lastEditedBy?`<span>✏️ Endret: ${p.lastEditedBy}${p.lastEditedAt?' '+new Date(p.lastEditedAt).toLocaleDateString('no-NO'):''}</span>`:''}</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px">
       <div class="od-crew-toggle" data-id="${p.id}" style="flex:1">
         <span class="arr">&#9658;</span> Juster mannskap per uke
       </div>
-      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
-        ⚺ ${wks.length} uke${wks.length!==1?'r':''}
+      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fff0f3';this.style.borderColor='#fca5a5';this.style.color='#C8102E'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
+        ⧺ ${wks.length} uke${wks.length!==1?'r':''}
       </button>
     </div>
     <div class="od-crew-grid" id="odcrew-${p.id}">${crewCells}</div>
+    <div class="os-toggle-row">
+      <span class="os-toggle-lbl">🔄 I Ordrestyring${p.inOS?' — ekskludert fra prognose':''}</span>
+      <label class="os-toggle"><input type="checkbox" ${p.inOS?'checked':''} onchange="setInOS('${p.id}',this.checked)"><span class="os-slider"></span></label>
+    </div>
+    <div style="margin-top:10px"><div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px">📝 Kommentar</div><textarea class="od-notes-inp" data-id="${p.id}" placeholder="Notater, spesielle avtaler, kontaktperson..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.78rem;color:#334155;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#C8102E'" onblur="this.style.borderColor='#e2e8f0';oreUpdateNotes(this.dataset.id,this.value)">${p.notes||''}</textarea></div>
   </div>`;
 }
 
@@ -1374,6 +1756,30 @@ function oreUpdateName(id,name){
   p.name=name;
   scheduleSave();
   updateTable();
+}
+function oreUpdateNotes(id,notes){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p||(p.notes||'')===(notes||'')) return;
+  p.notes=notes;
+  scheduleSave();
+}
+function setInOS(id,val){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p||p.inOS===val) return;
+  p.inOS=val;
+  p.lastEditedBy=auditUser();p.lastEditedAt=auditNow();
+  if(val) p.warnDismissed=true;
+  scheduleSave();
+  renderOreDrawer();
+  updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
+  showToast(val?'✅ Satt til OS — ekskludert fra prognose':'↩️ Tilbake i manuell prognose');
+}
+function dismissWarn(id){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p) return;
+  p.warnDismissed=true;
+  scheduleSave();
+  renderOreDrawer();
 }
 
 function oreSumEditStart(id){
@@ -1436,10 +1842,8 @@ function oreUpdateCrew(id,wk,val){
 }
 
 function scheduleSave(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{
-    saveToSharePoint().then(()=>showToast('Lagret ✓')).catch(()=>showToast('Lagret lokalt',false));
-  },600);
+  const cos=[...new Set(allProjects.map(p=>p.company).filter(Boolean))];
+  cos.forEach(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co)));
 }
 
 function openOreDrawerNewProj(){
@@ -1467,37 +1871,47 @@ function renderAll(){
 // ════════════════════════════════════════════
 async function loadProjects(){
   try{
-    const url=`${location.origin}${CONFIG.sharepointFil}?_=${Date.now()}`;
-    const q=await fetch(url,{headers:{'Accept':'application/json'}});
-    if(r.ok){ const j=await r.json(); if(Array.isArray(j)) allProjects=j; }
-  } catch(e){
-    try{const ls=localStorage.getItem('minel_projects');if(ls)allProjects=JSON.parse(ls);}catch(_){}
-  }
-  // Rydd bort ev. testdata fra utvikling
-  const _testNames=['Test','Test prosjekt 1','Test prosjekt 2','Test prosjekt'];
-  const _before=allProjects.length;
-  allProjects=allProjects.filter(p=>!_testNames.includes((p.name||'').trim()));
-  if(allProjects.length<_before){
-    try{localStorage.setItem('minel_projects',JSON.stringify(allProjects));}catch(_){}
+    allProjects = await loadAllProjects();
+    // Migrasjon: sjekk gammel felles fil og flett inn det som mangler
+    try{
+      const oldR=await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`);
+      if(oldR&&oldR.ok){
+        const oldData=await oldR.json();
+        if(Array.isArray(oldData)&&oldData.length>0){
+          // Tøm alltid gammel fil for å stoppe gjentatt migrasjon
+          try{await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,{method:'PUT',body:'[]',headers:{'Content-Type':'application/octet-stream'}});}catch(_){}
+          const existingIds=new Set(allProjects.map(p=>p.id));
+          const migrants=migrateAll(oldData).filter(p=>!existingIds.has(p.id)&&FILE_MAP[p.company]);
+          if(migrants.length>0){
+            console.log('[Migrasjon]',migrants.length,'prosjekter fra gammel fil');
+            allProjects=[...allProjects,...migrants];
+            const byCo={};
+            migrants.forEach(p=>{if(!byCo[p.company])byCo[p.company]=[];byCo[p.company].push(p);});
+            for(const co of Object.keys(byCo)){
+              await saveCompanyProjects(co,allProjects.filter(p=>p.company===co));
+            }
+          }
+          // Tøm gammel fil etter migrasjon — hindrer gjentatt re-import
+          try{
+            await gFetch(`${GRAPH}/sites/${SP_SITE}/drive/root:/SiteAssets/kapasitet_prosjekter.json:/content`,
+              {method:'PUT',body:'[]',headers:{'Content-Type':'application/octet-stream'}});
+            console.log('[Migrasjon] Gammel fil tømt');
+          }catch(_){}
+        }
+      }
+    }catch(_){}
+  }catch(e){
+    console.warn('[Graph] loadProjects feilet:',e.message);
+    allProjects=[];
+    for(const [,fn] of Object.entries(FILE_MAP)){
+      try{const ls=localStorage.getItem(lsKey(fn));if(ls)allProjects=[...allProjects,...JSON.parse(ls)];}catch(_){}
+    }
   }
 }
 
 async function saveToSharePoint(){
-  const payload=JSON.stringify(allProjects);
-  try{localStorage.setItem('minel_projects',payload);}catch(_){}
-  try{
-    const ctx=await fetch(`${location.origin}/_api/contextinfo`,{
-      method:'POST',headers:{'Accept':'application/json;odata=nometadata','Content-Type':'application/json'}
-    });
-    if(!ctx.ok) return;
-    const digest=(await ctx.json()).FormDigestValue;
-    await fetch(`${location.origin}${CONFIG.sharepointFil}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-RequestDigest':digest,
-               'IF-MATCH':'*','X-HTTP-Method':'PUT','Accept':'application/json;odata=nometadata'},
-      body:payload
-    });
-  } catch(e){ /* localStorage er backup */ }
+  const cos=[...new Set(allProjects.map(p=>p.company).filter(Boolean))];
+  await Promise.allSettled(cos.map(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co))));
 }
 
 function showToast(msg,ok=true){
@@ -1508,95 +1922,298 @@ function showToast(msg,ok=true){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
+// ════════════════════════════════════════════
+// INIT APP (etter login)
+// ════════════════════════════════════════════
 async function initApp(){
   updateWhoBar();
   await loadProjects();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
-    const opt=document.createElement('option');
-    opt.value=co.navn;
-    opt.textContent=co.navn;
-    sel.append(opt);
+    const o=document.createElement('option');
+    o.value=co.navn;o.textContent=co.navn;
+    if(currentCompany!=='__admin__'&&co.navn===currentCompany) o.selected=true;
+    sel.appendChild(o);
   });
-  await loadOSData();
+  sel.disabled=(currentCompany!=='__admin__');
   renderAll();
-}
-async function loadOSData(){
-  companies.forEach(co=>{coData[co.navn]={status:'loading',totalUsers:co.maxAnsatte||0,items:[]};});
-  updateStrip();
-  await Promise.all(companies.map(async co=>{
-    try{
-      const result=await fetchSelskap(co);
-      coData[co.navn]={status:result.real?'ok':'demo',totalUsers:result.totalUsers,items:expandWeeks(result.items)};
-    }catch(e){
-      coData[co.navn]={status:'err',totalUsers:co.maxAnsatte||0,items:[]};
-    }
-  }));
+  await refreshAll();
 }
 
-function refreshAll(){
-  const btn=document.getElementById('refreshBtn'),icon=document.getElementById('refreshIcon');
-  if(btn)btn.disabled=true;
-  if(icon){icon.className='spin';icon.textContent='⟳';}
-  const lu=document.getElementById('lastUpdated');
-  if(lu)lu.textContent='Henter data fra alle selskaper...';
-  loadOSData().then(()=>{
+// ════════════════════════════════════════════
+// PROSJEKTMODAL
+// ════════════════════════════════════════════
+function openProjModal(){
+  editingId=null;
+  document.getElementById('modalTitle').textContent='\u{1F4CB} Legg til kontrakt';
+  document.getElementById('saveBtn').textContent='\u{1F4BE} Lagre kontrakt';
+  document.getElementById('pName').value='';
+  document.getElementById('pKontrakt').value='';
+  // Standard startdato = nærmeste kommende mandag
+  const _today=new Date();
+  const _day=_today.getDay();
+  const _diff=_day===0?1:_day===1?0:8-_day;
+  _today.setDate(_today.getDate()+_diff);
+  document.getElementById('pStart').value=_today.toISOString().split('T')[0];
+  document.getElementById('pDur').value='4';
+  if(document.getElementById('pNotes')) document.getElementById('pNotes').value='';
+  const sel=document.getElementById('pCo');
+  sel.disabled=(currentCompany!=='__admin__');
+  if(currentCompany!=='__admin__'){
+    for(const o of sel.options) if(o.value===currentCompany) o.selected=true;
+  } else { sel.value=''; }
+  genWTbl();
+  closeOreDrawer();
+  document.getElementById('projOverlay').style.display='flex';
+}
+
+function closeProjModal(){
+  document.getElementById('projOverlay').style.display='none';
+  editingId=null;
+}
+
+function ovcClick(e){if(e.target===document.getElementById('projOverlay'))closeProjModal();}
+
+function genWTbl(){
+  const startVal=document.getElementById('pStart').value;
+  const dur=parseInt(document.getElementById('pDur').value)||4;
+  const wrap=document.getElementById('wTbl');
+  if(!startVal||dur<1||dur>52){wrap.innerHTML='';return;}
+  const start=new Date(startVal);
+  const day=start.getDay();
+  start.setDate(start.getDate()+(day===0?-6:1-day));
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:6px">';
+  for(let i=0;i<dur;i++){
+    const d=new Date(start.getTime()+i*7*864e5);
+    const wk=wKey(d);
+    const[,w]=wk.split('-W');
+    const oldVal=(editingId&&allProjects.find(p=>p.id===editingId)?.weeklyCrews?.[wk])||'';
+    html+=`<div style="display:flex;flex-direction:column;gap:2px">
+      <label style="font-size:.71rem;color:#64748b;font-weight:600">Uke ${parseInt(w)}</label>
+      <input type="number" min="0" max="50" value="${oldVal||2}" data-wk="${wk}"
+        style="padding:5px 7px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:.85rem;text-align:center;width:100%;box-sizing:border-box"/>
+    </div>`;
+  }
+  wrap.innerHTML=html+'</div>';
+}
+
+function saveProject(){
+  const name=(document.getElementById('pName').value||'').trim();
+  const company=document.getElementById('pCo').value;
+  const kontraktssum=parseKrInput('pKontrakt');
+  const notes=(document.getElementById('pNotes')?.value||'').trim();
+  if(!name){alert('Prosjektnavn er åkrevd.');return;}
+  if(!company){alert('Velg et selskap.');return;}
+  // Tilgangskontroll: blokkér hvis brukeren prøver å lagre til annet selskap
+  if(_userCompany && _userCompany !== '__admin__' && company !== _userCompany){
+    alert('Du kan kun registrere kontrakter for '+_userCompany+'.');
+    return;
+  }
+  const weeklyCrews={};
+  document.querySelectorAll('#wTbl [data-wk]').forEach(inp=>{
+    const v=parseInt(inp.value)||0;
+    if(v>0) weeklyCrews[inp.dataset.wk]=v;
+  });
+  if(Object.keys(weeklyCrews).length===0){alert('Legg inn mannskap for minst én uke.');return;}
+  const _u=auditUser(),_t=auditNow();
+  if(editingId){
+    const idx=allProjects.findIndex(p=>p.id===editingId);
+    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,lastEditedBy:_u,lastEditedAt:_t};
+  } else {
+    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
+    allProjects.push(nyP);
+    closeProjModal();
     renderAll();
-    if(btn)btn.disabled=false;
-    if(icon){icon.className='';icon.textContent='🔄';}
-    const ts=new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
-    if(lu)lu.textContent='Oppdatert '+ts;
-  });
+    if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
+    saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
+      .then(ok=>{postBjelle(nyP);showToast(ok?'🔔 Kontrakt lagret og varslet!':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok);})
+      .catch(()=>showToast('Lagret lokalt',false));
+    return;
+  }
+  closeProjModal();
+  renderAll();
+  if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
+  {const _co2=allProjects.find(p=>p.id===editingId)?.company;if(_co2)saveCompanyProjects(_co2,allProjects.filter(p=>p.company===_co2)).then(ok=>showToast(ok?'Kontrakt oppdatert ✓':'⚠️ Lokalt lagret',ok));}
 }
 
-function exportCSV(){
-  const{weeks,byCo,manT}=buildTotals();
-  const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
-  let csv='Uke;'+visCos.map(c=>c.navn).join(';')+';Kontrahert\n';
-  weeks.forEach(w=>{
-    csv+=wLabel(w)+';'+visCos.map(co=>(byCo[co.navn]?.[w]?.oppdrag||0)).join(';')+';'+(manT[w]||0)+'\n';
-  });
-  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='kapasitetsprognose.csv';document.body.appendChild(a);a.click();
-  document.body.removeChild(a);URL.revokeObjectURL(url);
-}
-
-function oreAdjustWeeks(id){
+function editProj(id){
   const p=allProjects.find(x=>x.id===id);
   if(!p)return;
-  const curWks=Object.keys(p.weeklyCrews||{}).sort();
-  const curLen=curWks.length;
-  const raw=prompt('Antall uker for «'+p.name+'» (nå: '+curLen+'):',curLen);
-  const n=parseInt(raw);
-  if(!n||isNaN(n)||n<1||n>52)return;
-  const startWk=curWks.length>0?curWks[0]:wKey(new Date());
-  const[y,w]=startWk.split('-W').map(Number);
-  const newWks=weeksFrom(mondayOf(y,w),n);
-  const newCrews={};
-  newWks.forEach(wk=>{newCrews[wk]=p.weeklyCrews[wk]!==undefined?p.weeklyCrews[wk]:1;});
-  p.weeklyCrews=newCrews;
-  scheduleSave();
-  renderOreDrawer();
-  updateChart();updateMonthlyChart();updateTable();updateOrdrereserve();
+  editingId=id;
+  document.getElementById('modalTitle').textContent='✏ Rediger kontrakt';
+  document.getElementById('saveBtn').textContent='\u{1F4BE} Oppdater kontrakt';
+  document.getElementById('pName').value=p.name;
+  document.getElementById('pKontrakt').value=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
+  if(document.getElementById('pNotes')) document.getElementById('pNotes').value=p.notes||'';
+  const sel=document.getElementById('pCo');
+  sel.disabled=(currentCompany!=='__admin__');
+  sel.value=p.company||'';
+  const wks=Object.keys(p.weeklyCrews).sort();
+  if(wks.length>0){
+    const[y,w]=wks[0].split('-W').map(Number);
+    const mon=mondayOf(y,w);
+    document.getElementById('pStart').value=mon.toISOString().split('T')[0];
+    document.getElementById('pDur').value=wks.length;
+    genWTbl();
+    document.querySelectorAll('#wTbl [data-wk]').forEach(inp=>{
+      const v=p.weeklyCrews[inp.dataset.wk];
+      if(v!==undefined) inp.value=v;
+    });
+  }
+  document.getElementById('projOverlay').style.display='flex';
+}
+
+function delProj(id){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p)return;
+  if(!confirm(`Slett kontrakt «${p.name}»?`))return;
+  allProjects=allProjects.filter(x=>x.id!==id);
+  renderAll();
+  if(p.company)saveCompanyProjects(p.company,allProjects.filter(x=>x.company===p.company)).then(ok=>showToast(ok?'Kontrakt slettet':'⚠️ Slettet lokalt',ok));
 }
 
 // ════════════════════════════════════════════
-// INIT APP (etter login)
-// ════════════════════════════════════════════
+
 
 // ════════════════════════════════════════════
-// SIDE-INIT
+// REFRESH (hent fra Ordrestyring)
 // ════════════════════════════════════════════
-buildLoginGrid();
-(function(){
-  const saved=localStorage.getItem('minel_company');
-  if(saved&&(CONFIG.selskaper.some(c=>c.navn===saved)||saved==='__admin__')){
-    selectCompany(saved);
+async function refreshAll(){
+  const btn=document.getElementById('refreshBtn'),icon=document.getElementById('refreshIcon');
+  btn.disabled=true;icon.className='spin';icon.textContent='⟳';
+  document.getElementById('lastUpdated').textContent='Henter data fra alle selskaper...';
+  companies.forEach(co=>coData[co.navn]={status:'loading',items:[]});
+  renderAll();
+  const results=await Promise.allSettled(companies.map(co=>fetchSelskap(co)));
+  let ok=0,demo=0,err=0;
+  results.forEach((res,i)=>{
+    const co=companies[i];
+    if(res.status==='fulfilled'){const {real,items,totalUsers}=res.value;const st=real?'ok':'demo';coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};real?ok++:demo++}
+    else{coData[co.navn]={status:'err',items:[]};err++;console.error(co.navn,res.reason)}
+  });
+  document.getElementById('lastUpdated').textContent=`${new Date().toLocaleString('no-NO')} · ${ok} live, ${demo} demo${err?`, ${err} feil`:''}`;
+  renderAll();icon.className='';icon.textContent='🔄';btn.disabled=false;
+}
+
+// JUSTER VARIGHET på kontrakt (fra drawer)
+// ════════════════════════════════════════════
+function oreAdjustWeeks(id){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p) return;
+  const wks=Object.keys(p.weeklyCrews).sort();
+  const cur=wks.length;
+  const newDur=parseInt(prompt('Juster varighet for: '+p.name+'\nNåværende: '+cur+' uke'+(cur!==1?'r':'')+'\nNy varighet (1–52):',cur));
+  if(!newDur||isNaN(newDur)||newDur<1||newDur>52||newDur===cur) return;
+  if(newDur<cur){
+    const keep=wks.slice(0,newDur);
+    const nc={};keep.forEach(w=>nc[w]=p.weeklyCrews[w]);p.weeklyCrews=nc;
+  } else {
+    const lastWk=wks[wks.length-1]||wKey(new Date());
+    const[ly,lw]=lastWk.split('-W').map(Number);
+    const lastMon=mondayOf(ly,lw);
+    const avg=wks.length?Math.round(Object.values(p.weeklyCrews).reduce((s,v)=>s+(parseInt(v)||0),0)/wks.length):2;
+    for(let i=1;i<=newDur-cur;i++){
+      const d=new Date(lastMon.getTime()+i*7*864e5);
+      p.weeklyCrews[wKey(d)]=avg;
+    }
+  }
+  scheduleSave();
+  renderOreDrawer();
+  updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
+}
+
+// ════════════════════════════════════════════
+// SLAG I BJELLA — varsling ved ny kontrakt
+// ════════════════════════════════════════════
+async function postBjelle(p){
+  const tasks=[];
+  if(CONFIG.teamsWebhook)            tasks.push(postToTeams(p));
+  if(CONFIG.spKunngjøringer)         tasks.push(postToSharePointList(p));
+  if(tasks.length===0) return;
+  await Promise.allSettled(tasks);
+}
+
+async function postToTeams(p){
+  const wks=Object.keys(p.weeklyCrews||{}).sort();
+  const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
+  const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'--');
+  const tc=Object.values(p.weeklyCrews||{}).reduce((s,v)=>s+(parseInt(v)||0),0);
+  const avg=wks.length?Math.round(tc/wks.length):0;
+  const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
+  const card={
+    '@type':'MessageCard',
+    '@context':'https://schema.org/extensions',
+    themeColor:'0d9488',
+    summary:`Ny kontrakt registrert: ${p.name}`,
+    sections:[{
+      activityTitle:`🔔 Ny kontrakt registrert — ${p.company}`,
+      activitySubtitle:p.name,
+      facts:[
+        {name:'Selskap',    value:p.company},
+        {name:'Kontraktssum', value:sumTxt},
+        {name:'Periode',    value:period},
+        {name:'Mannskap',   value:`snitt ${avg} mann/uke`},
+        {name:'Registrert av', value:currentCompany==='__admin__'?'Konsern':currentCompany}
+      ],
+      markdown:true
+    }],
+    potentialAction:[{
+      '@type':'OpenUri',
+      name:'🔗 Åpne Kapasitetsprognose',
+      targets:[{os:'default',uri:location.href}]
+    }]
+  };
+  try{
+    const r=await fetch(CONFIG.teamsWebhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(card)});
+    console.log('[Teams]',r.ok?'✅ Sendt':'[!] status '+r.status);
+  }catch(e){console.warn('[Teams] feilet:',e.message);}
+}
+
+async function postToSharePointList(p){
+  try{
+    const wks=Object.keys(p.weeklyCrews||{}).sort();
+    const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
+    const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'--');
+    const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
+    const url=`${GRAPH}/sites/${SP_SITE}/lists/${CONFIG.spKunngjøringer}/items`;
+    const r=await gFetch(url,{method:'POST',body:JSON.stringify({fields:{Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,Tekst:`${p.company} har vunnet et nytt prosjekt: ${p.name}. Kontraktssum: ${sumTxt}. Periode: ${period}.`}})});
+    console.log('[Graph kunngjøringer]',r&&r.ok?'✅ Sendt':'[!] '+(r?.status||'?'));
+  }catch(e){console.warn('[Graph] Kunngjøringer:',e.message);}
+}
+
+// STARTUP
+// ════════════════════════════════════════════
+(async()=>{
+  if(msalApp){try{const resp=await msalApp.handleRedirectPromise();if(resp)console.log('[MSAL] OK:',resp.account?.username);}catch(e){console.warn('[MSAL]',e);}}
+  buildLoginGrid();
+  const accs=msalApp?msalApp.getAllAccounts():[];
+  if(msalApp&&accs.length===0){
+    document.getElementById('msLoginBox').style.display='block';
+    document.getElementById('coSelBox').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+  }else{
+    document.getElementById('msLoginBox').style.display='none';
+    document.getElementById('coSelBox').style.display='block';
+    const _post=sessionStorage.getItem('msal_post_login');
+    sessionStorage.removeItem('msal_post_login');
+    // Hent brukerens selskap fra officeLocation
+    const _mapped = await fetchUserCompany();
+    if(_mapped && _mapped !== '__admin__'){
+      // Vanlig ansatt — velg selskap automatisk, hopp over login-skjerm
+      selectCompany(_mapped);
+    } else if(_mapped === '__admin__'){
+      // Admin — vis konsernvisning direkte
+      selectCompany('__admin__');
+    } else {
+      // Ukjent officeLocation — vis login-skjerm for manuelt valg
+      const _saved=_post||localStorage.getItem('minel_company');
+      if(_saved){selectCompany(_saved);}else{document.getElementById('loginScreen').style.display='flex';}
+    }
   }
 })();
+async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
+
 </script>
 </body>
 </html>
