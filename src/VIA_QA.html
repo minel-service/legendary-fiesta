@@ -181,6 +181,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
   <!-- DL SECTION: collapsed by default, toggled via link -->
   <div style="max-width:580px;margin:0 auto;">
+    <div id="dl-login-confirm" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;font-size:.85rem;margin-bottom:12px;text-align:center;"></div>
     <div style="text-align:center;margin-bottom:12px;">
       <a href="#" id="dl-toggle-link" style="color:#888;font-size:.8rem;" onclick="event.preventDefault();var s=document.getElementById('dl-section');var open=s.style.display==='block';s.style.display=open?'none':'block';this.textContent=open?'Daglig leder? Last data fra API ▾':'Skjul ▲';">Daglig leder? Last data fra API ▾</a>
     </div>
@@ -409,7 +410,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v8.8 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.2 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -426,6 +427,7 @@ var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
 var _currentUser=null;
 var DL_LIST={
   'oyvind.saethersmoen@minel.no':'__SUPER__',
+  'oyvind.saethersmoen@elkonor.no':'__SUPER__',
   'anthoni.hulthin@minel.no':'Minel Elmontasje Elverum AS',
   'bjornar.sleppen@minel.no':'Minel Elmontasje AS',
   'geitatle.sangnaes@minel.no':'Minel Gjøvik Installasjon AS',
@@ -455,13 +457,22 @@ function detectUser(account){
       var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
     }
   } else {
-    // DL: auto-expand the DL section
+    // DL: hide PL login box, expand DL section, show confirmation
+    var loginBox2=document.getElementById('pl-login-box');if(loginBox2)loginBox2.style.display='none';
     var dlSec=document.getElementById('dl-section');if(dlSec)dlSec.style.display='block';
-    var dlLink=document.getElementById('dl-toggle-link');if(dlLink)dlLink.textContent='Skjul ▲';
+    var dlLink=document.getElementById('dl-toggle-link');if(dlLink)dlLink.style.display='none';
+    var dlConf=document.getElementById('dl-login-confirm');
+    if(dlConf){dlConf.style.display='block';dlConf.textContent='';}
+    if(dlConf){
+      dlConf.style.display='block';
+      dlConf.innerHTML='✅ Innlogget som <strong>'+name+'</strong> — velg selskap og klikk Last data';
+    }
+    if(dlSec) setTimeout(function(){dlSec.scrollIntoView({behavior:'smooth',block:'center'});},100);
     rPOC();
   }
 }
 function isEditable(r){
+  if(_currentUser&&_currentUser.company==='__SUPER__') return ''; // super-admin bypasses all locks
   if(LOCKED) return 'disabled';
   if(!_currentUser) return '';
   if(_currentUser.isDL) return '';
