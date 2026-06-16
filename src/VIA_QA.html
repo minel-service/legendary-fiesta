@@ -1412,6 +1412,19 @@ function rPOC(){
     (function(){
       var seenBases={};
       var pocHtml='';
+      // Use data attributes to avoid quote-escaping issues
+      function piInp(oid,field,val,d,w){
+        return '<input class="pi" type="text" value="'+val+'" '+d+
+          ' data-o="'+oid+'" data-f="'+field+'"'+
+          ' onfocus="piFocus(this)" onblur="piBlur(this)"'+
+          ' onchange="piChange(this.dataset.o,this.dataset.f,this)"'+
+          (field==='timer'?' style="width:74px"':field==='tk'?' style="width:74px"':' style="width:96px"')+'>';
+      }
+      function cmtInp(oid,val,d,w){
+        return '<input class="ci'+(w?' req':'')+'" placeholder="'+(w?'⚠️ Påkrevet':'Kommentar…')+'"'+
+          ' value="'+(val||'')+'" '+d+
+          ' data-o="'+oid+'" onchange="sP(this.dataset.o,\'k\',this.value)">';
+      }
       function pocRow(r,indent){
         var d=isEditable(r);
         var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
@@ -1427,9 +1440,9 @@ function rPOC(){
           '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+bs+'</td>'+
           '<td class="r">'+NK(r.tilbud)+'</td>'+
           '<td class="r">'+NK(r.totOmk)+'</td>'+
-          '<td><input class="pi" type="text" value="'+fmtI(inp.timer||0)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','timer',this)" style="width:74px"></td>'+
-          '<td><input class="pi" type="text" value="'+fmtI(inp.tk)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','tk',this)" style="width:74px"></td>'+
-          '<td><input class="pi" type="text" value="'+fmtI(inp.mat||0)+'" '+d+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+r.ordreNr+'','mat',this)" style="width:96px"></td>'+
+          '<td>'+piInp(r.ordreNr,'timer',fmtI(inp.timer||0),d,warn)+'</td>'+
+          '<td>'+piInp(r.ordreNr,'tk',fmtI(inp.tk),d,warn)+'</td>'+
+          '<td>'+piInp(r.ordreNr,'mat',fmtI(inp.mat||0),d,warn)+'</td>'+
           '<td class="r calc">'+NR(c.gk)+'</td>'+
           '<td class="r calc">'+NR(c.esk)+'</td>'+
           '<td class="r calc">'+(c.fg!=null?PC(c.fg):'–')+'</td>'+
@@ -1439,7 +1452,7 @@ function rPOC(){
           '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
           '<td class="c">'+prevFG(r.ordreNr)+'</td>'+
           '<td class="c">'+prevDGp(r.ordreNr)+'</td>'+
-          '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inp.k||'')+'" '+d+' onchange="sP(''+r.ordreNr+'','k',this.value)"></td>'+
+          '<td>'+cmtInp(r.ordreNr,inp.k,d,warn)+'</td>'+
           '</tr>';
       }
       pocR.forEach(function(r){
@@ -1453,26 +1466,28 @@ function rPOC(){
         var mode=GRP_MODE[base]||'individuelt';
         var aggT=0,aggO=0,aggF=0;
         gRows.forEach(function(x){aggT+=x.tilbud||0;aggO+=x.totOmk||0;aggF+=x.fakt||0;});
-        var btn='<button onclick="toggleGrpMode(''+base+'')" style="margin-left:8px;padding:1px 7px;font-size:.7rem;background:'+(mode==='samlet'?'#1d8348':'#2563eb')+';color:#fff;border:none;border-radius:4px;cursor:pointer;">'+(mode==='samlet'?'📋 Individuelt':'🔗 Samlet')+'</button>';
+        var btnBg=mode==='samlet'?'#1d8348':'#2563eb';
+        var btnLabel=mode==='samlet'?'📋 Individuelt':'🔗 Samlet';
+        var btn='<button data-base="'+base+'" onclick="toggleGrpMode(this.dataset.base)"'+
+          ' style="margin-left:8px;padding:1px 7px;font-size:.7rem;background:'+btnBg+';color:#fff;border:none;border-radius:4px;cursor:pointer;">'+btnLabel+'</button>';
         if(mode==='samlet'){
           var rAgg={ordreNr:base,tilbud:aggT,totOmk:aggO,fakt:aggF,hasTilbud:true,beskr:gRows[0].beskr,pl:gRows[0].pl};
           var inpA=POC[base]||{timer:0,tk:stk,mat:0,k:''};
           inpA.tk=inpA.tk||stk;
           var cA=calcPOC(rAgg);
           if(cA.via!=null) pv+=cA.via;
-          var warnA=cA.via!=null&&Math.abs(cA.via)>50000&&!inpA.k;
+          var wA=cA.via!=null&&Math.abs(cA.via)>50000&&!inpA.k;
           var bsA=gRows[0].beskr?gRows[0].beskr.substring(0,40)+(gRows[0].beskr.length>40?'…':''):'–';
           var disA=LOCKED?'disabled':'';
-          pocHtml+='<tr class="'+(warnA?'rwarn':'')+'" style="background:#eff6ff;">'+
-            '<td><strong>'+base+'</strong>'+
-              '<span style="color:#555;font-size:.72rem;font-weight:400;"> ('+gRows.length+'×)</span>'+btn+'</td>'+
+          pocHtml+='<tr class="'+(wA?'rwarn':'')+'" style="background:#eff6ff;">'+
+            '<td><strong>'+base+'</strong><span style="color:#555;font-size:.72rem;font-weight:400;"> ('+gRows.length+'×)</span>'+btn+'</td>'+
             '<td style="white-space:nowrap">'+gRows[0].pl+'</td>'+
             '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+gRows[0].beskr+'">'+bsA+'</td>'+
             '<td class="r">'+NK(aggT)+'</td>'+
             '<td class="r">'+NK(aggO)+'</td>'+
-            '<td><input class="pi" type="text" value="'+fmtI(inpA.timer||0)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','timer',this)" style="width:74px"></td>'+
-            '<td><input class="pi" type="text" value="'+fmtI(inpA.tk)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','tk',this)" style="width:74px"></td>'+
-            '<td><input class="pi" type="text" value="'+fmtI(inpA.mat||0)+'" '+disA+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(''+base+'','mat',this)" style="width:96px"></td>'+
+            '<td>'+piInp(base,'timer',fmtI(inpA.timer||0),disA,wA)+'</td>'+
+            '<td>'+piInp(base,'tk',fmtI(inpA.tk),disA,wA)+'</td>'+
+            '<td>'+piInp(base,'mat',fmtI(inpA.mat||0),disA,wA)+'</td>'+
             '<td class="r calc">'+NR(cA.gk)+'</td>'+
             '<td class="r calc">'+NR(cA.esk)+'</td>'+
             '<td class="r calc">'+(cA.fg!=null?PC(cA.fg):'–')+'</td>'+
@@ -1481,7 +1496,7 @@ function rPOC(){
             '<td class="r">'+NK(aggF)+'</td>'+
             '<td class="r '+(cA.via==null?'':(cA.via<0?'vneg':'vpos'))+'">'+NK(cA.via)+'</td>'+
             '<td class="c">–</td><td class="c">–</td>'+
-            '<td><input class="ci'+(warnA?' req':'')+'" placeholder="'+(warnA?'⚠️ Påkrevet':'Kommentar…')+'" value="'+(inpA.k||'')+'" '+disA+' onchange="sP(''+base+'','k',this.value)"></td>'+
+            '<td>'+cmtInp(base,inpA.k,disA,wA)+'</td>'+
             '</tr>';
         } else {
           pocHtml+='<tr style="background:#dbeafe;"><td colspan="18" style="padding:5px 12px;font-size:.8rem;color:#1e3a8a;">'+
