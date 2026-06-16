@@ -657,6 +657,9 @@ async function spMarkDone(period,company,pl){
    ============================================================ */
 var ACTIVE = [], POC = {}, DGI = {}, LOCKED = false, BENCH = {};
 var _currentPeriod = '', _currentEntity = '';
+window.addEventListener('beforeunload', function(e){
+  if(ACTIVE.length){ e.preventDefault(); e.returnValue=''; }
+});
 var GROUPS = {};          // base ordreNr → [list of sub-ordreNr]
 var GRP_MODE = {};        // base ordreNr → 'samlet' | 'individuelt'
 var GRP_KEY = 'minel_via_grpmode_v1';
@@ -1676,10 +1679,6 @@ function printLockReport(lockedBy,entity,period){
     '</div>'+
     '<h2>Prosjektledere</h2>'+
     '<table><thead><tr><th>Prosjektleder</th><th class="c">Ordrer</th><th class="c">Fastpris</th><th class="c">Regning</th><th class="r">VIA</th><th class="c">Ferdig</th></tr></thead><tbody>'+plRows+'</tbody></table>'+
-    '<h2>Fastprisordrer (POC)</h2>'+
-    '<table><thead><tr><th>OrdreNr</th><th>Beskrivelse</th><th>PL</th><th class="r">Kontraktssum</th><th class="r">Ferdiggrad</th><th class="r">VIA</th></tr></thead><tbody>'+pocRows+'</tbody></table>'+
-    '<h2>Regningsordrer (DG%)</h2>'+
-    '<table><thead><tr><th>OrdreNr</th><th>Beskrivelse</th><th>PL</th><th class="r">Kostnad</th><th class="r">DG%</th><th class="r">VIA</th><th>Begrunnelse</th></tr></thead><tbody>'+dgRows+'</tbody></table>'+
     '<div class="pr-footer">Generert av VIA QA-verktøyet · '+tsNow+'</div>';
   document.getElementById('report-overlay').classList.add('open');
   window.scrollTo(0,0);
