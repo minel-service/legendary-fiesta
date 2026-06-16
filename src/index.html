@@ -983,7 +983,7 @@ function updateStats(){
   const{weeks,byCo,manT}=buildTotals();
   const tw=weeks[0];
   const visCos=activeFilter==='all'?companies:companies.filter(c=>c.navn===activeFilter);
-  let fraOS=0, kontr=allProjects.filter(p=>!p.inOS).length, ledig=0;
+  let fraOS=0, kontr=(activeFilter==='all'?allProjects.filter(p=>!p.inOS):allProjects.filter(p=>!p.inOS&&p.company===activeFilter)).length, ledig=0;
   visCos.forEach(co=>{
     const d=byCo[co.navn]?.[tw]||{};
     fraOS += (d.oppdrag||0)+(d.intern||0)+(d.fravaer||0);
