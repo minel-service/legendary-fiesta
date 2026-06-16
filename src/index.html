@@ -319,7 +319,7 @@ const CONFIG = {
     ⚠️ DEMO-MODUS — Simulerte data. Kontakt administrator dersom du ser dette på produksjons-URL.
   </div>
   <div class="restrict-bar" id="restrictBar">
-    🔒 Du er innlogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
+    🔒 Du er inllogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
   </div>
 
   <div class="wrap">
@@ -440,16 +440,16 @@ const CONFIG = {
 </div>
 
 <script>
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // FARGER
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 const COLORS=['#3b82f6','#10b981','#8b5cf6','#f97316','#ec4899','#06b6d4','#84cc16','#eab308','#ef4444'];
 const MANUAL_COLOR='#0d9488'; // teal — gjennomgående farge for kontraherte prosjekter
 const col=i=>COLORS[i%COLORS.length];
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // UKE-HJELPERE
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function isoWeek(d){const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);const w1=new Date(dt.getFullYear(),0,4);return[dt.getFullYear(),1+Math.round(((dt-w1)/864e5-3+(w1.getDay()+6)%7)/7)]}
 const wKey=d=>{const[y,w]=isoWeek(d);return`${y}-W${String(w).padStart(2,'0')}`};
 const wLabel=k=>`U${parseInt(k.split('-W')[1])}`;
@@ -460,9 +460,9 @@ function weeksFrom(startDate,count){const keys=[],d=new Date(startDate);d.setDat
 const next20=()=>weeksFrom(new Date(),20);
 const uid=()=>Math.random().toString(36).slice(2,10);
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // SHAREPOINT
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 const ON_SP = CONFIG.sharepointFil &&
   (window.location.hostname.includes('sharepoint.com') ||
    window.location.hostname.includes('.sharepoint.') ||
@@ -499,9 +499,9 @@ async function spWriteProjects(projects){
   }catch(e){console.error('SP skriv feil:',e);throw e}
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // KATEGORISERING AV TIMETYPE
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // Returnerer 'oppdrag', 'intern' eller 'fravaer'
 function categorizeHourType(name) {
   if (!name) return 'oppdrag';
@@ -514,9 +514,9 @@ function categorizeHourType(name) {
   return 'oppdrag';
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // ORDRESTYRING API
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // Roller som telles som feltarbeidere i kapasitetsprognosen
 const FELTARBEIDER_ROLLER=['Elektriker','Lærling','Hjelpemontør','Fagarbeider','Montør','Svenn','Hjelpemontør'];
 async function fetchSelskap(co){
@@ -638,9 +638,9 @@ async function fetchSelskap(co){
 }
 function expandWeeks(items){const out=[];items.forEach(it=>{const[y,w]=it.week.split('-W').map(Number);weeksFrom(mondayOf(y,w),it.weeks||1).forEach(wk=>out.push({...it,week:wk}))});return out}
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // STATE
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 const companies=CONFIG.selskaper;
 let coData={};
 let allProjects=[];
@@ -651,9 +651,9 @@ let monthlyChartInst=null;
 let selectedWeek=null;
 let editingId=null; // for redigering
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // LOGIN
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function buildLoginGrid(){
   const grid=document.getElementById('coGrid');
   grid.innerHTML='';
@@ -726,9 +726,9 @@ function updateWhoBar(){
   document.getElementById('fab').disabled=false;
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // TOTALER
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function buildTotals(){
   const weeks=next20();
   const byCo={};
@@ -762,9 +762,9 @@ function buildTotals(){
   return{weeks,byCo,manT};
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // RENDER
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function updateStrip(){
   let html='';
   companies.forEach((co,i)=>{
@@ -879,9 +879,9 @@ function updateChart(){
   document.getElementById('leg').innerHTML=lh;
 }
 
-// ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════════════════
 // MÅNEDLIG KONSERNOVERSIKT
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function next12Months(){
   const out=[];
   const now=new Date();
@@ -1042,7 +1042,7 @@ function showWkDet(wk){
     html+=`<div class="wdt-item">
       <div class="wdt-color" style="background:${col(gi)}"></div>
       <div style="flex:1;min-width:0">
-        <div class="wdt-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${co.navn}</div>
+        <div class="wdt-name" style="white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${co.navn}</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;font-size:.7rem">${cats.join('')}</div>
         <div class="wdt-num" style="font-size:1rem;margin-top:2px">${active}</div>
       </div>
@@ -1157,9 +1157,9 @@ function updateTable(){
   };
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // ORDRERESERVE
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function updateOrdrereserve(){
   const isAdmin=currentCompany==='__admin__';
   // Filtrer til aktuelle prosjekter (vis alle selskaper alltid — konsernperspektiv)
@@ -1205,7 +1205,7 @@ function updateOrdrereserve(){
     const pct=maxCo>0?Math.round(v/maxCo*100):0;
     if(v===0&&n===0&&!isAdmin) return; // skjul tomme for selskapbruker
     const hint=n>0?`<div class="ore-hint">▶ Se og rediger kontraktene</div>`:'';
-    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'\/g,"\\'")}',${ i})" data-co="${co.navn}">
+    html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${ i})" data-co="${co.navn}">
       <div class="ore-co"><span style="width:10px;height:10px;border-radius:3px;background:${col(i)};display:inline-block;flex-shrink:0"></span>${co.navn}</div>
       <div class="ore-val">${formatKr(v)}</div>
       <div class="ore-sub">${n} kontrakt${n!==1?'er':''}</div>
@@ -1218,9 +1218,9 @@ function updateOrdrereserve(){
   document.getElementById('ordreBody').innerHTML=html;
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // ORDRERESERVE DRAWER
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 let oreDrawerCo=null; // nåværende selskapsnavn i drawer
 let saveTimer=null;
 
@@ -1335,7 +1335,7 @@ function buildOreCard(p){
         value="${p.weeklyCrews[wk]||0}" data-id="${p.id}" data-wk="${wk}"/>
     </div>`;
   }).join('');
-  const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'— klikk for å sette';
+  const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'— klikk for å sette';
   const sumVal=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
   return `<div class="od-card" id="odc-${p.id}">
     <div class="od-c-head">
@@ -1359,8 +1359,8 @@ function buildOreCard(p){
       <div class="od-crew-toggle" data-id="${p.id}" style="flex:1">
         <span class="arr">&#9658;</span> Juster mannskap per uke
       </div>
-      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe';this.style.color='#3b82f6'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
-        ⺺ ${wks.length} uke${wks.length!==1?'r':''}
+      <button onclick="oreAdjustWeeks('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:4px 9px;font-size:.72rem;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">
+        ⚺ ${wks.length} uke${wks.length!==1?'r':''}
       </button>
     </div>
     <div class="od-crew-grid" id="odcrew-${p.id}">${crewCells}</div>
@@ -1452,9 +1452,9 @@ function openOreDrawerNewProj(){
   // __all__: la admin velge selskap fritt i modal
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // RENDER ALL
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 function renderAll(){
   updateStrip();updateStats();updateTabs();updateChart();updateMonthlyChart();updateOrdrereserve();updateTable();
   if(selectedWeek)showWkDet(selectedWeek);
@@ -1462,13 +1462,13 @@ function renderAll(){
   if(oreDrawerCo) renderOreDrawer();
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 // SHAREPOINT — last/lagre prosjekter
-// ══════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════
 async function loadProjects(){
   try{
     const url=`${location.origin}${CONFIG.sharepointFil}?_=${Date.now()}`;
-    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    const q=await fetch(url,{headers:{'Accept':'application/json'}});
     if(r.ok){ const j=await r.json(); if(Array.isArray(j)) allProjects=j; }
   } catch(e){
     try{const ls=localStorage.getItem('minel_projects');if(ls)allProjects=JSON.parse(ls);}catch(_){}
@@ -1508,7 +1508,7 @@ function showToast(msg,ok=true){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-async function initApp(){
+anync function initApp(){
   updateWhoBar();
   await loadProjects();
   const sel=document.getElementById('pCo');
@@ -1557,7 +1557,7 @@ function exportCSV(){
   weeks.forEach(w=>{
     csv+=wLabel(w)+';'+visCos.map(co=>(byCo[co.navn]?.[w]?.oppdrag||0)).join(';')+';'+(manT[w]||0)+'\n';
   });
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;a.download='kapasitetsprognose.csv';document.body.appendChild(a);a.click();
@@ -1583,9 +1583,14 @@ function oreAdjustWeeks(id){
   updateChart();updateMonthlyChart();updateTable();updateOrdrereserve();
 }
 
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
+// INIT APP (etter login)
+// ════════════════════════════════════════════
+async
+
+// ════════════════════════════════════════════
 // SIDE-INIT
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════
 buildLoginGrid();
 (function(){
   const saved=localStorage.getItem('minel_company');
