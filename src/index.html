@@ -1680,8 +1680,9 @@ function renderOreDrawer(){
     el.addEventListener('click',()=>{
       const p=allProjects.find(x=>x.id===el.dataset.id);
       if(p&&confirm(`Slett kontrakt «${p.name}»?`)){
+        const co=p.company;
         allProjects=allProjects.filter(x=>x.id!==el.dataset.id);
-        scheduleSave();
+        if(co)saveCompanyProjects(co,allProjects.filter(x=>x.company===co)).then(ok=>showToast(ok?'Kontrakt slettet':'⚠️ Slettet lokalt',ok));
         renderOreDrawer();
         updateOrdrereserve();
         updateChart();updateMonthlyChart();updateTable();
