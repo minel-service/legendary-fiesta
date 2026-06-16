@@ -27,7 +27,9 @@ header{background:var(--navy);display:flex;align-items:center;}
 .hd-main p{font-size:.78rem;color:#8fa4cc;margin-top:2px;}
 .hd-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 12px;font-size:.73rem;font-weight:700;margin-left:auto;margin-right:18px;}
 /* Start panel */
-#startPanel{max-width:640px;margin:60px auto;text-align:center;}
+#startPanel{max-width:1000px;margin:48px auto;padding:0 16px;}
+#startPanel .sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+@media(max-width:700px){#startPanel .sp-grid{grid-template-columns:1fr;}}
 .api-card{background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);overflow:hidden;margin-bottom:20px;}
 .api-card-header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;font-weight:700;font-size:.95rem;}
 .api-card-body{padding:24px;}
@@ -159,70 +161,64 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
 
 <!-- START PANEL -->
 <div id="startPanel">
-  <!-- PL LOGIN: shown for everyone by default; DL section below for those who need it -->
-  <div style="max-width:480px;margin:0 auto 32px;">
-    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.15);text-align:center;">
-      <div style="font-size:3rem;margin-bottom:12px;">🔐</div>
-      <h2 style="color:#fff;margin:0 0 8px;font-size:1.3rem;">VIA / Fakturareserve QA</h2>
-      <p style="color:#aaa;font-size:.88rem;margin:0 0 24px;">Logg inn med din Minel-konto for å hente datasettet</p>
+  <div class="sp-grid">
+
+    <!-- PL CARD: Prosjektleder -->
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.18);text-align:center;">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:#8892b0;text-transform:uppercase;margin-bottom:10px;">Prosjektleder</div>
+      <div style="font-size:2.5rem;margin-bottom:12px;">👔</div>
+      <h2 style="color:#fff;margin:0 0 6px;font-size:1.2rem;">Logg inn med Microsoft</h2>
+      <p style="color:#8892b0;font-size:.84rem;margin:0 0 24px;">Hent datasettet delt av daglig leder</p>
       <div id="pl-login-box">
         <button class="btn btn-grn" style="font-size:1rem;padding:14px 32px;width:100%;" onclick="getSpToken()">🔑 Logg inn med Microsoft</button>
       </div>
       <div id="pl-co-picker" style="display:none;margin-top:20px;">
         <p style="color:#aaa;font-size:.84rem;margin:0 0 10px;">Velg ditt selskap — huskes til neste gang:</p>
-        <select id="pl-co-sel" style="width:100%;padding:10px 12px;border-radius:8px;border:none;font-size:.95rem;margin-bottom:10px;">
+        <select id="pl-co-sel" style="width:100%;padding:10px 12px;border-radius:8px;border:none;font-size:.95rem;margin-bottom:10px;color:#222;">
           <option value="">— Velg selskap —</option><option value="Minel Elmontasje Elverum AS">Minel Elmontasje Elverum AS</option><option value="Minel Elmontasje AS">Minel Elmontasje AS</option><option value="Minel Gjøvik Installasjon AS">Minel Gjøvik Installasjon AS</option><option value="Minel Gudbrandsdal AS">Minel Gudbrandsdal AS</option><option value="Minel Kreativ Elektro Ski AS">Minel Kreativ Elektro Ski AS</option><option value="Minel Land Elektriske AS">Minel Land Elektriske AS</option><option value="Minel Skogvang Installasjon AS">Minel Skogvang Installasjon AS</option><option value="Minel Ainstall AS">Minel Ainstall AS</option><option value="Minel Drøbak Elektriske AS">Minel Drøbak Elektriske AS</option>
         </select>
         <button class="btn btn-grn" style="width:100%;padding:12px;" onclick="var v=document.getElementById('pl-co-sel').value;if(!v)return;plLoadDataset(v)">📂 Hent datasett</button>
       </div>
       <div id="pl-no-data" style="display:none;margin-top:16px;background:#fff3cd;color:#856404;border-radius:8px;padding:12px 16px;font-size:.85rem;text-align:left;"></div>
+      <p style="margin-top:16px;color:#8892b0;font-size:.74rem;">Første gang? Velg selskap etter innlogging.</p>
     </div>
-    <p style="text-align:center;margin-top:10px;color:#888;font-size:.75rem;">Bruker du appen for første gang? Velg ditt selskap etter innlogging.</p>
-  </div>
-  <!-- DL SECTION: collapsed by default, toggled via link -->
-  <div style="max-width:580px;margin:0 auto;">
-    <div id="dl-login-confirm" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;font-size:.85rem;margin-bottom:12px;text-align:center;"></div>
-    <div style="text-align:center;margin-bottom:12px;">
-      <a href="#" id="dl-toggle-link" style="color:#888;font-size:.8rem;" onclick="event.preventDefault();var s=document.getElementById('dl-section');var open=s.style.display==='block';s.style.display=open?'none':'block';this.textContent=open?'Daglig leder? Last data fra API ▾':'Skjul ▲';">Daglig leder? Last data fra API ▾</a>
-    </div>
-    <div id="dl-section" style="display:none;">
-      <div class="api-card">
-        <div class="api-card-header">
-          <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-          Hent perioderegnskap fra Ordrestyring
-          <span style="margin-left:auto;font-size:.74rem;opacity:.65;font-weight:400;">Datobegrenset direkte fra API</span>
+
+    <!-- DL CARD: Daglig leder -->
+    <div style="background:#fff;border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.10);text-align:center;">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:10px;">Daglig leder</div>
+      <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
+      <h2 style="color:#1a1a2e;margin:0 0 6px;font-size:1.2rem;">Hent perioderegnskap</h2>
+      <p style="color:#666;font-size:.84rem;margin:0 0 20px;">Direkte fra Ordrestyring via API</p>
+      <div id="dl-login-confirm" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-bottom:16px;text-align:center;"></div>
+      <div id="dl-section" style="text-align:left;">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:.78rem;font-weight:600;color:#555;display:block;margin-bottom:4px;">Selskap</label>
+          <select id="co-sel" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:.9rem;color:#222;">
+            <option value="">— Velg selskap —</option>
+            <option value="0">Minel Kreativ Elektro Ski AS</option>
+            <option value="1">Minel Skogvang Installasjon AS</option>
+            <option value="2">Minel Land Elektriske AS</option>
+            <option value="3">Minel Gjøvik AS</option>
+            <option value="4">Minel Elmontasje AS</option>
+            <option value="5">Minel Elmontasje Elverum AS</option>
+            <option value="6">Minel Ainstall AS</option>
+            <option value="7">Minel Drøbak Elektriske AS</option>
+            <option value="8">Minel Gudbrandsdal AS</option>
+          </select>
         </div>
-        <div class="api-card-body">
-          <div class="api-row">
-            <div class="api-field" style="flex:2;">
-              <label>Selskap</label>
-              <select id="co-sel">
-                <option value="">— Velg selskap —</option>
-                <option value="0">Minel Kreativ Elektro Ski AS</option>
-                <option value="1">Minel Skogvang Installasjon AS</option>
-                <option value="2">Minel Land Elektriske AS</option>
-                <option value="3">Minel Gjøvik AS</option>
-                <option value="4">Minel Elmontasje AS</option>
-                <option value="5">Minel Elmontasje Elverum AS</option>
-                <option value="6">Minel Ainstall AS</option>
-                <option value="7">Minel Drøbak Elektriske AS</option>
-                <option value="8">Minel Gudbrandsdal AS</option>
-              </select>
-            </div>
-            <div class="api-field" style="flex:1;">
-              <label>Periodeslutt</label>
-              <input type="date" id="period-date">
-            </div>
-            <button class="btn" id="api-btn" onclick="startApiLoad()" style="align-self:flex-end;white-space:nowrap;">
-              <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-              Last data
-            </button>
-          </div>
-          <div id="api-err" class="err-box"></div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:.78rem;font-weight:600;color:#555;display:block;margin-bottom:4px;">Periodeslutt</label>
+          <input type="date" id="period-date" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:.9rem;color:#222;box-sizing:border-box;">
         </div>
+        <button class="btn" id="api-btn" onclick="startApiLoad()" style="width:100%;padding:13px;font-size:.95rem;">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Last data fra Ordrestyring
+        </button>
+        <div id="api-err" class="err-box" style="margin-top:10px;"></div>
       </div>
-      <p style="margin-top:8px;color:#888;font-size:.75rem;text-align:center;">Data behandles kun lokalt i nettleseren — ingenting sendes til server.</p>
+      <p style="margin-top:14px;color:#aaa;font-size:.74rem;">Data behandles lokalt — ingenting sendes til server.</p>
     </div>
+
   </div>
 </div>
 
@@ -457,17 +453,13 @@ function detectUser(account){
       var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
     }
   } else {
-    // DL: hide PL login box, expand DL section, show confirmation
+    // DL: hide PL card login button, show confirmation in DL card
     var loginBox2=document.getElementById('pl-login-box');if(loginBox2)loginBox2.style.display='none';
-    var dlSec=document.getElementById('dl-section');if(dlSec)dlSec.style.display='block';
-    var dlLink=document.getElementById('dl-toggle-link');if(dlLink)dlLink.style.display='none';
     var dlConf=document.getElementById('dl-login-confirm');
-    if(dlConf){dlConf.style.display='block';dlConf.textContent='';}
     if(dlConf){
       dlConf.style.display='block';
-      dlConf.innerHTML='✅ Innlogget som <strong>'+name+'</strong> — velg selskap og klikk Last data';
+      dlConf.innerHTML='✅ Innlogget som <strong>'+name+'</strong>';
     }
-    if(dlSec) setTimeout(function(){dlSec.scrollIntoView({behavior:'smooth',block:'center'});},100);
     rPOC();
   }
 }
