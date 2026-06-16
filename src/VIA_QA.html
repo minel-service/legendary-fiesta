@@ -584,7 +584,8 @@ async function spLoadAssessments(period,company){
       } else {
         _spIds[f.OrdreNr]=item.id;
         if(f.DG!=null){if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:parseFloat(f.DG)||35,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=parseFloat(f.DG)||35;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
-        if(f.Kommentar){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:650,mat:0,k:f.Kommentar};else POC[f.OrdreNr].k=f.Kommentar;}
+        var _hasPoc=f.Kommentar||f.Timer!=null||f.Timekost!=null||f.Material!=null;
+        if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:650,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||650;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
       }
     });
     console.log('[SP] Lastet',j.value&&j.value.length,'vurderinger for',period);
@@ -592,10 +593,11 @@ async function spLoadAssessments(period,company){
   }catch(e){console.warn('[SP] Load feilet:',e);return false;}
 }
 
-async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar){
+async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar,poc){
   try{
     var tok=await getSpToken();if(!tok)return;
     var fields={Periode:period,Selskap:company,OrdreNr:ordreNr,DG:dg!=null?dg:null,Begrunnelse:begrunnelse||'',Kommentar:kommentar||'',UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
+    if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:650;fields.Material=poc.mat!=null?poc.mat:0;}
     var existId=_spIds[ordreNr];
     if(existId){
       await fetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(fields)});
@@ -646,9 +648,9 @@ async function spLoadDataset(company){
     return {period:data.period,exported:data.exported,exportedBy:data.exportedBy||''};
   }catch(e){console.warn('[SP] Dataset load:',e);return false;}
 }
-function spSaveDebounced(period,company,ordreNr,dg,k,kommentar){
+function spSaveDebounced(period,company,ordreNr,dg,k,kommentar,poc){
   clearTimeout(_spDebounce[ordreNr]);
-  _spDebounce[ordreNr]=setTimeout(function(){spSaveAssessment(period,company,ordreNr,dg,k,kommentar);},2000);
+  _spDebounce[ordreNr]=setTimeout(function(){spSaveAssessment(period,company,ordreNr,dg,k,kommentar,poc);},2000);
 }
 
 async function spMarkDone(period,company,pl){
@@ -1378,7 +1380,7 @@ function calcDG(r){
   var via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
   return {dg:dg,fs:fs,via:via,useTM:useTM};
 }
-function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); }
+function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); var _p=_currentPeriod||document.getElementById('aperiod').textContent; var _c=_currentEntity||document.getElementById('lentity').value||''; if(_p&&_c)spSaveDebounced(_p,_c,id,DGI[id]?DGI[id].dg:null,DGI[id]?DGI[id].k||'':'','',POC[id]); }
 function sD(id,f,v){
   if(!DGI[id])DGI[id]={dg:35,k:''};
   DGI[id][f]=f==='k'?v:parseFloat(v)||0;
