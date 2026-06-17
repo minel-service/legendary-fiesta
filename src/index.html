@@ -11,7 +11,7 @@
     *{box-sizing:border-box;margin:0;padding:0}
     :root{color-scheme:light}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f3f8;color:#1C2344;min-height:100vh}
-
+h
     /* ── Login screen ── */
     #loginScreen{position:fixed;inset:0;background:#1C2344;z-index:1000;displhay:flex;align-items:center;justify-content:center;padding:20px}
     .login-box{background:white;border-radius:20px;padding:36px 40px;width:700px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:popIn .3s ease}
@@ -2039,13 +2039,11 @@ function saveProject(){
   });
   if(Object.keys(weeklyCrews).length===0){alert('Legg inn mannskap for minst én uke.');return;}
   // Sjekk for mulig dobbelregistrering mot OS-ordrenavn
-  if(!editingId){
-    const osNames=(coData[company]?.orderNames||[]);
-    const similar=osNames.filter(n=>liknerOrdrenavn(name,n));
-    if(similar.length>0){
-      const list=similar.slice(0,3).map(n=>'• '+n).join('\n');
-      if(!confirm('⚠️ Mulig dobbelregistrering\n\nKontraktnavnet «'+name+'» ligner på følgende ordre i OS-ressurskalenderen:\n'+list+'\n\nEr du sikker på at dette ikke allerede telles i Ordrestyring-tallene?'))return;
-    }
+  const osNames=(coData[company]?.orderNames||[]);
+  const similar=osNames.filter(n=>liknerOrdrenavn(name,n));
+  if(similar.length>0){
+    const list=similar.slice(0,3).map(n=>'• '+n).join('\n');
+    if(!confirm('⚠️ Mulig dobbelregistrering\n\nKontraktnavnet «'+name+'» ligner på følgende ordre i OS-ressurskalenderen:\n'+list+'\n\nEr du sikker på at dette ikke allerede telles i Ordrestyring-tallene?'))return;
   }
   const _u=auditUser(),_t=auditNow();
   if(editingId){
