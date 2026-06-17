@@ -13,7 +13,7 @@
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f3f8;color:#1C2344;min-height:100vh}
 
     /* ── Login screen ── */
-    #loginScreen{position:fixed;inset:0;background:#1C2344;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+    #loginScreen{position:fixed;inset:0;background:#1C2344;z-index:1000;displhay:flex;align-items:center;justify-content:center;padding:20px}
     .login-box{background:white;border-radius:20px;padding:36px 40px;width:700px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:popIn .3s ease}
     @keyframes popIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
     .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:6px}
@@ -1929,7 +1929,7 @@ function showToast(msg,ok=true){
 // ════════════════════════════════════════════
 async function initApp(){
   updateWhoBar();
-  await loadProjects();
+  allProjects = await loadAllProjects();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
