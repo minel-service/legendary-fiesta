@@ -7,6 +7,17 @@
   <title>Kapasitetsprognose — Minel Konsern</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js"></script>
+  <script>
+    window.appInsights = new ApplicationInsights({
+      config: {
+        connectionString: "InstrumentationKey=6a104921-aad1-4eea-b8bc-a6b51f15031b;IngestionEndpoint=https://norwayeast-0.in.applicationinsights.azure.com/;LiveEndpoint=https://norwayeast.livediagnostics.monitor.azure.com/;ApplicationId=10bd3ea1-6dfa-404b-809b-8e60bf2e2812",
+        enableAutoRouteTracking: false,
+        disableAjaxTracking: true
+      }
+    });
+    window.appInsights.loadAppInsights();
+  </script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{color-scheme:light}
@@ -1943,6 +1954,14 @@ function showToast(msg,ok=true){
 // ════════════════════════════════════════════
 async function initApp(){
   updateWhoBar();
+  // Logg bruker til Application Insights
+  try{
+    const _acc=msalApp.getAllAccounts()[0];
+    if(_acc&&window.appInsights){
+      window.appInsights.setAuthenticatedUserContext(_acc.username,_acc.name,true);
+      window.appInsights.trackEvent({name:"AppAapnet",properties:{navn:_acc.name,epost:_acc.username,selskap:selectedCompany||"(ikke valgt)"}});
+    }
+  }catch(_e){}
   allProjects = await loadAllProjects();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
