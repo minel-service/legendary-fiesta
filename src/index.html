@@ -707,7 +707,7 @@ function categorizeHourType(name) {
 // ORDRESTYRING API
 // ════════════════════════════════════════════
 // Roller som telles som feltarbeidere i kapasitetsprognosen
-const FELTARBEIDER_ROLLER=['Elektriker','Lærling','Hjelpemontør'];
+const FELTARBEIDER_ROLLER=['Elektriker','Lærling','Hjelpemontør','Bas'];
 async function fetchSelskap(co){
   try {
     const now = Date.now();
@@ -739,6 +739,8 @@ async function fetchSelskap(co){
     if (result.errors) throw new Error(result.errors[0]?.message||'GraphQL-feil');
     const j = result.data?.events;
     if (!Array.isArray(j)) throw new Error('Uventet svar fra events-query');
+    const _allRoles=[...new Set(j.map(o=>o.user?.role||'(ingen)'))].sort();
+    console.log('[OS-roller ' + co.navn + ']', _allRoles.join(', '));
 
     // totalUsers: bruk manuell CONFIG-verdi hvis satt, ellers telles fra events
     // (telles etter all data er prosessert nedenfor)
