@@ -12,7 +12,7 @@
       var s=document.createElement('script');
       s.src='https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js';
       s.onload=function(){
-        window.appInsights=new ApplicationInsights({config:{
+        window.appInsights=new Microsoft.ApplicationInsights.ApplicationInsights({config:{
           connectionString:'InstrumentationKey=6a104921-aad1-4eea-b8bc-a6b51f15031b;IngestionEndpoint=https://norwayeast-0.in.applicationinsights.azure.com/;LiveEndpoint=https://norwayeast.livediagnostics.monitor.azure.com/;ApplicationId=10bd3ea1-6dfa-404b-809b-8e60bf2e2812',
           enableAutoRouteTracking:false,disableAjaxTracking:true
         }});
