@@ -7,21 +7,13 @@
   <title>Kapasitetsprognose — Minel Konsern</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-  <script>
-    (function(){
-      var s=document.createElement('script');
-      s.src='https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js';
-      s.onload=function(){
-        window.appInsights=new Microsoft.ApplicationInsights.ApplicationInsights({config:{
-          connectionString:'InstrumentationKey=6a104921-aad1-4eea-b8bc-a6b51f15031b;IngestionEndpoint=https://norwayeast-0.in.applicationinsights.azure.com/;LiveEndpoint=https://norwayeast.livediagnostics.monitor.azure.com/;ApplicationId=10bd3ea1-6dfa-404b-809b-8e60bf2e2812',
-          enableAutoRouteTracking:false,disableAjaxTracking:true
-        }});
-        window.appInsights.loadAppInsights();
-        window.aiReady=true;
-      };
-      document.head.appendChild(s);
-    })();
-  </script>
+  <script type="text/javascript">
+  !(function(cfg){function n(e){t[e]=function(){var n=arguments;t.queue.push(function(){t[e].apply(t,n)})}}var t={initialize:!0,queue:[],sv:"5",version:2,config:cfg.cfg};cfg.src&&(t.url=cfg.src);var e=document,a=window;setTimeout(function(){var n=e.createElement("script");n.src=cfg.src,cfg.crossOrigin&&(n.crossOrigin=cfg.crossOrigin),n.setAttribute("data-snippet-version","0.5.1"),e.head.appendChild(n)});var r=a[cfg.name]||"appInsights";if(a[r]=t,!t.queue||0===t.queue.length)for(var s=["trackEvent","trackPageView","trackException","trackTrace","trackMetric","trackDependencyData","setAuthenticatedUserContext","clearAuthenticatedUserContext","startTrackPage","stopTrackPage","startTrackEvent","stopTrackEvent","addTelemetryInitializer","flush"],i=0;i<s.length;i++)n(s[i])}({
+    src:"https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js",
+    crossOrigin:"anonymous",
+    cfg:{connectionString:"InstrumentationKey=6a104921-aad1-4eea-b8bc-a6b51f15031b;IngestionEndpoint=https://norwayeast-0.in.applicationinsights.azure.com/;LiveEndpoint=https://norwayeast.livediagnostics.monitor.azure.com/;ApplicationId=10bd3ea1-6dfa-404b-809b-8e60bf2e2812",enableAutoRouteTracking:false,disableAjaxTracking:true}
+  }));
+</script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{color-scheme:light}
@@ -1958,21 +1950,14 @@ function showToast(msg,ok=true){
 // ════════════════════════════════════════════
 async function initApp(){
   updateWhoBar();
-  // Logg bruker til Application Insights (venter på SDK)
-  try{
-    const _acc=msalApp.getAllAccounts()[0];
-    if(_acc){
-      const _doTrack=function(){
-        if(window.appInsights&&window.aiReady){
+  // Logg bruker til Application Insights
+      try{
+        const _acc=msalApp.getAllAccounts()[0];
+        if(_acc&&window.appInsights){
           window.appInsights.setAuthenticatedUserContext(_acc.username,_acc.name,true);
           window.appInsights.trackEvent({name:"AppAapnet",properties:{navn:_acc.name,epost:_acc.username,selskap:selectedCompany||"(ikke valgt)"}});
-        } else {
-          setTimeout(_doTrack,500);
         }
-      };
-      _doTrack();
-    }
-  }catch(_e){}
+      }catch(_e){}
   allProjects = await loadAllProjects();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
