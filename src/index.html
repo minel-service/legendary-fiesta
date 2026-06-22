@@ -1945,7 +1945,9 @@ function showToast(msg,ok=true){
 async function initApp(){
   updateWhoBar();
   // Logg bruker til Application Insights - poller til konto er tilgjengelig
+      console.log('[AI Track] starter, kontoer:',msalApp.getAllAccounts().length);
       (function _aiTrack(attempts){
+        try{
         const _acc=msalApp.getAllAccounts()[0];
         if(_acc){
           fetch('https://norwayeast-0.in.applicationinsights.azure.com/v2/track',{
@@ -1962,6 +1964,7 @@ async function initApp(){
         } else if(attempts>0){
           setTimeout(function(){_aiTrack(attempts-1);},500);
         }
+        }catch(e){console.log('[AI Track] exception:',e.message);}
       })(20);
   allProjects = await loadAllProjects();
   const sel=document.getElementById('pCo');
