@@ -1958,7 +1958,7 @@ async function initApp(){
               tags:{'ai.user.authUserId':_acc.username,'ai.user.accountId':_acc.name},
               data:{baseType:'EventData',baseData:{ver:2,name:'AppAapnet',properties:{navn:_acc.name,epost:_acc.username,selskap:selectedCompany||'(ikke valgt)'}}}
             }])
-          }).catch(()=>{});
+          }).then(r=>console.log('[AI Track] Status:',r.status)).catch(e=>console.log('[AI Track] FEIL:',e.message));
         }
       }catch(_e){}
   allProjects = await loadAllProjects();
