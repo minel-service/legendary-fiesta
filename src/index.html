@@ -1958,7 +1958,7 @@ async function initApp(){
               time:new Date().toISOString(),
               iKey:'6a104921-aad1-4eea-b8bc-a6b51f15031b',
               tags:{'ai.user.authUserId':_acc.username,'ai.user.accountId':_acc.name},
-              data:{baseType:'EventData',baseData:{ver:2,name:'AppAapnet',properties:{navn:_acc.name,epost:_acc.username,selskap:selectedCompany||'(ikke valgt)'}}}
+              data:{baseType:'EventData',baseData:{ver:2,name:'AppAapnet',properties:{navn:_acc.name,epost:_acc.username,selskap:(typeof selectedCompany!=='undefined'?selectedCompany:'(ikke valgt)')}}}
             }])
           }).then(r=>console.log('[AI Track] OK:',r.status)).catch(e=>console.log('[AI Track] FEIL:',e.message));
         } else if(attempts>0){
