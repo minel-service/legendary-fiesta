@@ -1469,7 +1469,7 @@ function updateTable(){
     const groups={};
     data.items.forEach(d=>{if(!groups[d.name])groups[d.name]={crew:d.crew,weeks:[]};groups[d.name].weeks.push(d.week)});
     if(!html)html=`<table><thead><tr><th>Oppdrag</th><th>Selskap</th><th>Kilde</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
-    html+=`<tr class="sec-row"><td colspan="6">📅 ${co.navn}</td></tr>`;
+    html+=`<tr class="sec-row"><td colspan="7">📅 ${co.navn}</td></tr>`;
     Object.entries(groups).forEach(([name,d])=>{
       const wn=d.weeks.map(w=>parseInt(w.split('-W')[1]));
       const wStr=wn.length>1?`Uke ${Math.min(...wn)}–${Math.max(...wn)}`:`Uke ${wn[0]}`;
@@ -2421,7 +2421,13 @@ async function fetchAllVIAData(projects){
         }
       });
     }
-  }catch(e){console.warn('[VIA] fetchAllVIAData feil:',e);}
+  
+  // Populer _osOrders fra VIA-data (brukes i autocomplete)
+  window._osOrders=Object.keys(window._viaData).map(k=>{
+    const parts=k.split('__');
+    return {ordrenummer:parts[1]||k, selskap:parts[0]||''};
+  }).filter(o=>o.ordrenummer);
+}catch(e){console.warn('[VIA] fetchAllVIAData feil:',e);}
 }
 
 function calcGjenvaerende(project){
