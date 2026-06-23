@@ -211,7 +211,8 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
       <h2 style="color:#fff;margin:0 0 6px;font-size:1.2rem;">Logg inn med Microsoft</h2>
       <p style="color:#8892b0;font-size:.84rem;margin:0 0 24px;">Hent datasettet delt av daglig leder</p>
       <div id="pl-login-box">
-        <button class="btn btn-grn" style="font-size:1rem;padding:14px 32px;width:100%;" onclick="getSpToken()">🔑 Logg inn med Microsoft</button>
+        <button id="pl-login-btn" class="btn btn-grn" style="font-size:1rem;padding:14px 32px;width:100%;" onclick="loginPL(this)">🔑 Logg inn med Microsoft</button>
+        <p id="pl-login-err" style="display:none;color:#ff6b6b;font-size:.78rem;margin:10px 0 0;"></p>
       </div>
       <div id="pl-co-picker" style="display:none;margin-top:20px;">
         <p style="color:#aaa;font-size:.84rem;margin:0 0 10px;">Velg ditt selskap — huskes til neste gang:</p>
@@ -422,8 +423,9 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   <!-- HISTORIKK -->
   <div class="tab-panel" id="tab-hist">
     <div class="fb" style="margin-bottom:16px;">
-      <span style="font-size:.88rem;font-weight:600;">Historikk lagres automatisk ved låsing.</span>
-      <button class="btn btn-dark" onclick="expHist()" style="margin-left:auto;">📥 Eksporter historikk</button>
+      <span style="font-size:.88rem;font-weight:600;">Historikk lagres automatisk ved låsing (lokalt + SharePoint).</span>
+      <button class="btn" style="background:#2563eb;margin-left:auto;" onclick="syncHistSP(this)" title="Hent historikk fra SharePoint">☁️ Synk fra SharePoint</button>
+      <button class="btn btn-dark" onclick="expHist()">📥 Eksporter historikk</button>
       <button class="btn" style="background:#888;" onclick="clearHist()">🗑 Slett historikk</button>
     </div>
     <div id="histcontent"></div>
@@ -458,6 +460,24 @@ var SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/lists/'+SP_LIST
 function spDriveUrl(company){
   var slug=(company||'default').toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
   return 'https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/drive/root:/VIA_datasett_'+slug+'.json:/content';
+}
+function spHistUrl(company){
+  var slug=(company||'default').toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
+  return 'https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/drive/root:/VIA_historikk_'+slug+'.json:/content';
+}
+async function loginPL(btn){
+  var errEl=document.getElementById('pl-login-err');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Logger inn...';}
+  if(errEl)errEl.style.display='none';
+  var tok=await getSpToken();
+  if(btn){btn.disabled=false;btn.innerHTML='🔑 Logg inn med Microsoft';}
+  if(!tok&&errEl){errEl.style.display='block';errEl.textContent='Innlogging feilet. Tillat popup-vinduer for denne siden i adressefeltet og prøv igjen.';}
+}
+async function spSaveHist(entity){
+  try{var tok=await getSpToken();if(!tok)return;var hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');await fetch(spHistUrl(entity),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(hist)});console.log('[SP] Historikk lagret for',entity);}catch(e){console.warn('[SP] Historikk-lagring feilet:',e);}
+}
+async function spLoadHist(entity){
+  try{var tok=await getSpToken();if(!tok)return false;var r=await fetch(spHistUrl(entity),{headers:{'Authorization':'Bearer '+tok}});if(!r.ok)return false;var spHist=await r.json();if(!Array.isArray(spHist)||!spHist.length)return false;var local=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');var merged={};local.concat(spHist).forEach(function(h){merged[(h.period||'')+'__'+(h.entity||'')]=h;});var combined=Object.values(merged).sort(function(a,b){return(a.id||0)-(b.id||0);});localStorage.setItem(HIST_KEY,JSON.stringify(combined));rHist();return true;}catch(e){console.warn('[SP] Historikk-henting feilet:',e);return false;}
 }
 var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
 var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
@@ -864,6 +884,15 @@ function benchChip(type,dg){
    HISTORY HELPERS
    ============================================================ */
 function getHist(){ return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }
+async function syncHistSP(btn){
+  var entity=_currentEntity||document.getElementById('lentity').value||'';
+  if(!entity){alert('Last inn data for et selskap først.');return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Henter...';}
+  var ok=await spLoadHist(entity);
+  if(btn){btn.disabled=false;btn.innerHTML='☁️ Synk fra SharePoint';}
+  if(ok){alert('✅ Historikk hentet og slått sammen fra SharePoint.');}
+  else{alert('Ingen historikk i SharePoint for '+entity+'. Sjekk at du er innlogget med Microsoft.');}
+}
 
 function getPrevPOCData(ordreNr){
   var hist = getHist(); if(!hist.length) return null;
@@ -1725,6 +1754,7 @@ function saveSnap(name,entity,period){
   filtered.push(snap);
   filtered.sort(function(a,b){return a.id-b.id;});
   localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
+  spSaveHist(entity);
 }
 
 function doSnap(){
