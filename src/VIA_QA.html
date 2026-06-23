@@ -1740,11 +1740,15 @@ function doSnap(){
    EXPORT
    ============================================================ */
 function _sanitizeRows(rows){
+  var allKeys={};
+  rows.forEach(function(row){Object.keys(row).forEach(function(k){allKeys[k]=true;});});
+  var keys=Object.keys(allKeys);
   return rows.map(function(row){
     var clean={};
-    Object.keys(row).forEach(function(k){
+    keys.forEach(function(k){
       var v=row[k];
-      if(v!==v||v===undefined)clean[k]=null;
+      if(v==null||v!==v)clean[k]=null;
+      else if(typeof v==='object')clean[k]=null;
       else clean[k]=v;
     });
     return clean;
