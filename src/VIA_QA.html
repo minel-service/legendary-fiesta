@@ -585,7 +585,7 @@ async function spLoadAssessments(period,company){
         _spIds[f.OrdreNr]=item.id;
         if(f.DG!=null){if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:parseFloat(f.DG)||35,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=parseFloat(f.DG)||35;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
         var _hasPoc=f.Kommentar||f.Timer!=null||f.Timekost!=null||f.Material!=null;
-        if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:650,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||650;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
+        if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:null,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||650;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
       }
     });
     console.log('[SP] Lastet',j.value&&j.value.length,'vurderinger for',period);
@@ -597,7 +597,7 @@ async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar,
   try{
     var tok=await getSpToken();if(!tok)return;
     var fields={Periode:period,Selskap:company,OrdreNr:ordreNr,DG:dg!=null?dg:null,Begrunnelse:begrunnelse||'',Kommentar:kommentar||'',UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
-    if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:650;fields.Material=poc.mat!=null?poc.mat:0;}
+    if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:null;fields.Material=poc.mat!=null?poc.mat:0;}
     var existId=_spIds[ordreNr];
     if(existId){
       await fetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(fields)});
@@ -1166,7 +1166,7 @@ function parseRows(rows,src,prd){
       if(!POC[r.ordreNr]){
         var dg0=r.dg!=null?r.dg:0.35;
         var gj=Math.max(0,(r.tilbud||0)*(1-dg0)-(r.totOmk||0));
-        POC[r.ordreNr]={timer:Math.round(gj/650),tk:650,mat:0,k:''};
+        POC[r.ordreNr]={timer:Math.round(gj/650),tk:null,mat:0,k:''};
       }
     } else {
       if(!DGI[r.ordreNr]){
@@ -1361,9 +1361,10 @@ function rRisk(){
 /* ============================================================
    POC CALCULATIONS
    ============================================================ */
-function calcPOC(r){
-  var inp=POC[r.ordreNr]||{timer:0,tk:650,mat:0,k:''};
-  var gk=(inp.timer||0)*inp.tk+(inp.mat||0);
+function calcPOC(r,stkDefault){
+  var inp=POC[r.ordreNr]||{timer:0,tk:null,mat:0,k:''};
+  var tk=inp.tk!=null?inp.tk:(stkDefault||650);
+  var gk=(inp.timer||0)*tk+(inp.mat||0);
   var esk=(r.totOmk||0)+gk;
   var fg=esk>0?Math.min((r.totOmk||0)/esk,1):null;
   var innt=fg!=null?r.tilbud*fg:null;
@@ -1380,7 +1381,7 @@ function calcDG(r){
   var via=fs!=null&&r.fakt!=null?fs-r.fakt:null;
   return {dg:dg,fs:fs,via:via,useTM:useTM};
 }
-function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:650,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); var _p=_currentPeriod||document.getElementById('aperiod').textContent; var _c=_currentEntity||document.getElementById('lentity').value||''; if(_p&&_c)spSaveDebounced(_p,_c,id,DGI[id]?DGI[id].dg:null,DGI[id]?DGI[id].k||'':'','',POC[id]); }
+function sP(id,f,v){ if(!POC[id])POC[id]={timer:0,tk:null,mat:0,k:''}; POC[id][f]=f==='k'?v:parseFloat(v)||0; rPOC(); var _p=_currentPeriod||document.getElementById('aperiod').textContent; var _c=_currentEntity||document.getElementById('lentity').value||''; if(_p&&_c)spSaveDebounced(_p,_c,id,DGI[id]?DGI[id].dg:null,DGI[id]?DGI[id].k||'':'','',POC[id]); }
 function sD(id,f,v){
   if(!DGI[id])DGI[id]={dg:35,k:''};
   DGI[id][f]=f==='k'?v:parseFloat(v)||0;
@@ -1473,9 +1474,9 @@ function rPOC(){
       }
       function pocRow(r,indent){
         var d=isEditable(r);
-        var inp=POC[r.ordreNr]||{timer:0,tk:stk,mat:0,k:''};
-        inp.tk=inp.tk||stk;
-        var c=calcPOC(r);
+        var inp=POC[r.ordreNr]||{timer:0,tk:null,mat:0,k:''};
+        var tkVal=inp.tk!=null?inp.tk:stk;
+        var c=calcPOC(r,stk);
         if(c.via!=null) pv+=c.via;
         var warn=c.via!=null&&Math.abs(c.via)>50000&&!inp.k;
         var bs=r.beskr?r.beskr.substring(0,40)+(r.beskr.length>40?'…':''):'–';
@@ -1487,7 +1488,7 @@ function rPOC(){
           '<td class="r">'+NK(r.tilbud)+'</td>'+
           '<td class="r">'+NK(r.totOmk)+'</td>'+
           '<td>'+piInp(r.ordreNr,'timer',fmtI(inp.timer||0),d,warn)+'</td>'+
-          '<td>'+piInp(r.ordreNr,'tk',fmtI(inp.tk),d,warn)+'</td>'+
+          '<td>'+piInp(r.ordreNr,'tk',fmtI(tkVal),d,warn)+'</td>'+
           '<td>'+piInp(r.ordreNr,'mat',fmtI(inp.mat||0),d,warn)+'</td>'+
           '<td class="r calc">'+NR(c.gk)+'</td>'+
           '<td class="r calc">'+NR(c.esk)+'</td>'+
@@ -1740,10 +1741,12 @@ function doSnap(){
    ============================================================ */
 function expPOC(){
   var rows=[];
+  var stk=parseFloat(document.getElementById('stk').value)||650;
   ACTIVE.forEach(function(r){
     if(r.hasTilbud){
-      var c=calcPOC(r),inp=POC[r.ordreNr]||{};
-      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,Kontraktssum:r.tilbud,'Påløpte kostnader':r.totOmk,GjeståendeTimer:inp.timer||0,Timekost:inp.tk||650,GjeståendeMat:inp.mat||0,GjeståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,'DG%vFerdig':c.estDG!=null?Math.round(c.estDG*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});
+      var c=calcPOC(r,stk),inp=POC[r.ordreNr]||{};
+      var tkVal=inp.tk!=null?inp.tk:stk;
+      rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,Kontraktssum:r.tilbud,'Påløpte kostnader':r.totOmk,GjeståendeTimer:inp.timer||0,Timekost:tkVal,GjeståendeMat:inp.mat||0,GjeståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,'DG%vFerdig':c.estDG!=null?Math.round(c.estDG*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});
     } else {
       var c=calcDG(r),inp=DGI[r.ordreNr]||{},prev=getPrevDG(r.ordreNr);
       rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,'Påløpte kostnader':r.totOmk,Fakturert:r.fakt,'DG%bekreftet':Math.round(c.dg*1000)/10,'DG%forrigePeriode':prev?Math.round(prev.dg*1000)/10:null,ForrigePeriode:prev?prev.period:null,ForventetSalgsverdi:Math.round(c.fs||0),VIA:Math.round(c.via||0),Begrunnelse:inp.k||''});
@@ -1751,7 +1754,11 @@ function expPOC(){
   });
   var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
-  XLSX.writeFile(wb,'VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx');
+  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var blob=new Blob([buf],{type:'application/octet-stream'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 function expHist(){
   var hist=getHist();
@@ -1764,7 +1771,11 @@ function expHist(){
   });
   var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,'Historikk',ws);
-  XLSX.writeFile(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
+  var buf2=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var blob2=new Blob([buf2],{type:'application/octet-stream'});
+  var a2=document.createElement('a');a2.href=URL.createObjectURL(blob2);
+  a2.download='VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx';
+  document.body.appendChild(a2);a2.click();document.body.removeChild(a2);
 }
 function clearHist(){
   if(confirm('Slette all historikk?')){ localStorage.removeItem(HIST_KEY); rHist(); }
