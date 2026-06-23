@@ -1739,20 +1739,16 @@ function doSnap(){
 /* ============================================================
    EXPORT
    ============================================================ */
-function _sanitizeRows(rows){
-  var allKeys={};
-  rows.forEach(function(row){Object.keys(row).forEach(function(k){allKeys[k]=true;});});
-  var keys=Object.keys(allKeys);
-  return rows.map(function(row){
-    var clean={};
-    keys.forEach(function(k){
-      var v=row[k];
-      if(v==null||v!==v)clean[k]=null;
-      else if(typeof v==='object')clean[k]=null;
-      else clean[k]=v;
-    });
-    return clean;
-  });
+// Safe number: returns null for null/undefined/NaN/Infinity, else Math.round(v)
+function _n(v){return(v!=null&&typeof v==='number'&&isFinite(v))?Math.round(v):null;}
+// Safe percentage: multiplies 0-1 value by 100, one decimal, or null
+function _pct(v){return(v!=null&&typeof v==='number'&&isFinite(v))?Math.round(v*1000)/10:null;}
+// Safe passthrough: keeps finite numbers and strings, null for everything else
+function _s(v){
+  if(v==null)return null;
+  if(typeof v==='number')return isFinite(v)?v:null;
+  if(typeof v==='string')return v;
+  return null;
 }
 function _xlsxDownload(wb,filename){
   try{
@@ -1768,23 +1764,39 @@ function _xlsxDownload(wb,filename){
 function expPOC(){
   try{
     if(typeof XLSX==='undefined'){alert('XLSX-biblioteket er ikke lastet.');return;}
-    var rows=[];
     var stk=parseFloat(document.getElementById('stk').value)||650;
+    var wb=XLSX.utils.book_new();
+    var pocRows=[],dgRows=[];
     ACTIVE.forEach(function(r){
       if(r.hasTilbud){
         var c=calcPOC(r,stk),inp=POC[r.ordreNr]||{};
         var tkVal=inp.tk!=null?inp.tk:stk;
-        rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,Kontraktssum:r.tilbud,'Påløpte kostnader':r.totOmk,GjenståendeTimer:inp.timer||0,Timekost:tkVal,GjenståendeMat:inp.mat||0,GjenståendeKost:Math.round(c.gk),EstSluttkostnad:Math.round(c.esk),Ferdiggrad:c.fg!=null?Math.round(c.fg*1000)/10:null,'DG%vFerdig':c.estDG!=null?Math.round(c.estDG*1000)/10:null,PeriodisertInntekt:Math.round(c.innt||0),Fakturert:r.fakt,VIA:Math.round(c.via||0),Kommentar:inp.k||''});
+        pocRows.push({
+          Ordre:r.ordreNr,Prosjektleder:r.pl||'',Beskrivelse:r.beskr||'',Type:r.type||'',
+          Kontraktssum:_s(r.tilbud),'Påløpte kostnader':_s(r.totOmk),
+          'Gjestående timer':inp.timer||0,Timekost:tkVal,'Gjestående mat':inp.mat||0,
+          'Gjestående kost':_n(c.gk),EstSluttkostnad:_n(c.esk),
+          'Ferdiggrad%':_pct(c.fg),'EstDG%':_pct(c.estDG),
+          PeriodisertInntekt:_n(c.innt),Fakturert:_s(r.fakt),
+          VIA:_n(c.via),Kommentar:inp.k||''
+        });
       } else {
         var c=calcDG(r),inp=DGI[r.ordreNr]||{},prev=getPrevDG(r.ordreNr);
-        rows.push({Ordre:r.ordreNr,Prosjektleder:r.pl,Beskrivelse:r.beskr,Type:r.type,'Påløpte kostnader':r.totOmk!=null?r.totOmk:null,Fakturert:r.fakt!=null?r.fakt:null,'DG%bekreftet':c.dg!=null?Math.round(c.dg*1000)/10:null,'DG%forrigePeriode':prev&&prev.dg!=null?Math.round(prev.dg*1000)/10:null,ForrigePeriode:prev?prev.period:null,ForventetSalgsverdi:c.fs!=null?Math.round(c.fs):null,VIA:c.via!=null?Math.round(c.via):null,Begrunnelse:inp.k||''});
+        dgRows.push({
+          Ordre:r.ordreNr,Prosjektleder:r.pl||'',Beskrivelse:r.beskr||'',Type:r.type||'',
+          'Påløpte kostnader':_s(r.totOmk),Fakturert:_s(r.fakt),
+          'DG% bekreftet':_pct(c.dg),
+          'DG% forrige periode':prev&&prev.dg!=null?_pct(prev.dg):null,
+          'Forrige periode':prev?prev.period||'':null,
+          'Forventet salgsverdi':_n(c.fs),VIA:_n(c.via),Begrunnelse:inp.k||''
+        });
       }
     });
-    if(!rows.length){alert('Ingen rader lastet – last inn data først.');return;}
-    var ws=XLSX.utils.json_to_sheet(_sanitizeRows(rows)),wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,'POC_DG',ws);
+    if(!pocRows.length&&!dgRows.length){alert('Ingen rader lastet - last inn data først.');return;}
+    if(pocRows.length){XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pocRows),'POC');}
+    if(dgRows.length){XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(dgRows),'DG');}
     _xlsxDownload(wb,'VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx');
-  }catch(e){alert('Eksport feilet: '+e.message);}
+  }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
 }
 function expHist(){
   try{
@@ -1794,13 +1806,17 @@ function expHist(){
     var rows=[];
     hist.forEach(function(h){
       h.projects.forEach(function(p){
-        rows.push({Periode:h.period,Selskap:h.entity,LåstAv:h.lockedBy,Ordre:p.ordreNr,Prosjektleder:p.pl,Type:p.type,Kunde:p.kunde,VIA:p.via,DG:p.dg!=null?Math.round(p.dg*1000)/10:null,Risiko:p.risk});
+        rows.push({
+          Periode:h.period||'',Selskap:h.entity||'',LåstAv:h.lockedBy||'',
+          Ordre:p.ordreNr,Prosjektleder:p.pl||'',Type:p.type||'',Kunde:p.kunde||'',
+          VIA:_n(p.via),'DG%':_pct(p.dg),Risiko:p.risk||''
+        });
       });
     });
-    var ws=XLSX.utils.json_to_sheet(_sanitizeRows(rows)),wb=XLSX.utils.book_new();
+    var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,'Historikk',ws);
     _xlsxDownload(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
-  }catch(e){alert('Eksport feilet: '+e.message);}
+  }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
 }
 function clearHist(){
   if(confirm('Slette all historikk?')){ localStorage.removeItem(HIST_KEY); rHist(); }
