@@ -1800,17 +1800,40 @@ function expHist(){
     if(typeof XLSX==='undefined'){alert('XLSX-biblioteket er ikke lastet.');return;}
     var hist=getHist();
     if(!hist.length){alert('Ingen historikk å eksportere.');return;}
-    var rows=[];
+    hist.sort(function(a,b){return(a.id||0)-(b.id||0);});
+    var periods=hist.map(function(h){return h.period;});
+    var projMap={},projOrder=[];
     hist.forEach(function(h){
       h.projects.forEach(function(p){
-        rows.push({
-          Periode:h.period||'',Selskap:h.entity||'',LåstAv:h.lockedBy||'',
-          Ordre:p.ordreNr,Prosjektleder:p.pl||'',Type:p.type||'',Kunde:p.kunde||'',
-          VIA:_n(p.via),'DG%':_pct(p.dg),Risiko:p.risk||''
-        });
+        if(!projMap[p.ordreNr]){
+          projMap[p.ordreNr]={pl:p.pl||'',type:p.type||'',kunde:p.kunde||'',data:{}};
+          projOrder.push(p.ordreNr);
+        }
+        projMap[p.ordreNr].data[h.period]={via:p.via,dg:p.dg,risk:p.risk||''};
       });
     });
-    var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+    var H=['Ordre','Prosjektleder','Type','Kunde'];
+    periods.forEach(function(p){H.push('VIA '+p,'DG% '+p,'Risiko '+p);});
+    if(periods.length>=2){H.push('Δ VIA (siste)','Δ DG% (siste)');}
+    var aoa=[H];
+    projOrder.forEach(function(nr){
+      var proj=projMap[nr];
+      var row=[nr,proj.pl,proj.type,proj.kunde];
+      periods.forEach(function(p){
+        var d=proj.data[p];
+        row.push(d?_n(d.via):null);
+        row.push(d&&d.dg!=null?_pct(d.dg):null);
+        row.push(d?d.risk:null);
+      });
+      if(periods.length>=2){
+        var last=proj.data[periods[periods.length-1]];
+        var prev=proj.data[periods[periods.length-2]];
+        row.push((last&&last.via!=null&&prev&&prev.via!=null)?_n(last.via-prev.via):null);
+        row.push((last&&last.dg!=null&&prev&&prev.dg!=null)?_pct(last.dg-prev.dg):null);
+      }
+      aoa.push(row);
+    });
+    var ws=XLSX.utils.aoa_to_sheet(aoa),wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Historikk');
     _xlsxDownload(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
   }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
