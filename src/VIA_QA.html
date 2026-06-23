@@ -1764,11 +1764,9 @@ function _xlsxDownload(wb,filename){
 function expPOC(){
   try{
     if(typeof XLSX==='undefined'){alert('XLSX-biblioteket er ikke lastet.');return;}
-    if(!ACTIVE.length){alert('Ingen rader lastet – last inn data først.');return;}
+    if(!ACTIVE.length){alert('Ingen rader lastet - last inn data forst.');return;}
     var stk=parseFloat(document.getElementById('stk').value)||650;
-    // One sheet, all orders – AOA avoids SheetJS type-inference crash on heterogeneous rows
-    var H=['Ordre','Prosjektleder','Beskrivelse','Type','Kunde',
-           'Omsetning','Fakturert','Risiko',
+    var H=['Ordre','Prosjektleder','Beskrivelse','Type','Kunde','Omsetning','Fakturert','Risiko',
            'Gjest.timer','Timekost','Gjest.mat','Gjest.kost','Est.sluttkost.',
            'Ferdiggrad%','EstDG%','Per.inntekt',
            'DG%bekreftet','DG%forrige','Forrige periode','Forv.salgsverdi',
@@ -1778,28 +1776,22 @@ function expPOC(){
       if(r.hasTilbud){
         var c=calcPOC(r,stk),inp=POC[r.ordreNr]||{};
         var tkVal=inp.tk!=null?inp.tk:stk;
-        aoa.push([
-          r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
+        aoa.push([r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
           _s(r.tilbud),_s(r.fakt),r.risk||'',
           inp.timer||0,tkVal,inp.mat||0,_n(c.gk),_n(c.esk),
           _pct(c.fg),_pct(c.estDG),_n(c.innt),
-          null,null,null,null,
-          _n(c.via),inp.k||''
-        ]);
+          null,null,null,null,_n(c.via),inp.k||'']);
       } else {
         var c=calcDG(r),inp=DGI[r.ordreNr]||{},prev=getPrevDG(r.ordreNr);
-        aoa.push([
-          r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
+        aoa.push([r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
           _s(r.totOmk),_s(r.fakt),r.risk||'',
           null,null,null,null,null,null,null,null,
           _pct(c.dg),prev&&prev.dg!=null?_pct(prev.dg):null,
-          prev?prev.period||'':null,_n(c.fs),
-          _n(c.via),inp.k||''
-        ]);
+          prev?prev.period||'':null,_n(c.fs),_n(c.via),inp.k||'']);
       }
     });
     var ws=XLSX.utils.aoa_to_sheet(aoa),wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,'VIA_QA',ws);
+    XLSX.utils.book_append_sheet(wb,ws,'VIA_QA');
     _xlsxDownload(wb,'VIA_Minel_'+new Date().toISOString().substring(0,10)+'.xlsx');
   }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
 }
@@ -1819,7 +1811,7 @@ function expHist(){
       });
     });
     var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,'Historikk',ws);
+    XLSX.utils.book_append_sheet(wb,ws,'Historikk');
     _xlsxDownload(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
   }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
 }
