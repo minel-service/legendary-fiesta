@@ -529,7 +529,7 @@ async function fetchUserCompany() {
         <label class="fl">Ordrenummer (OS)</label>
         <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234 — valgfritt" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value,document.getElementById('pCo')?.value||'')" autocomplete="off"/>
         <div id="ordreNrSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:999;max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
-        <div class="hint">Kobler mot VIA QA — beregner gjenværende ordreverdi automatisk</div>
+        <div class="hint">Legg inn når ordrenr i OS er tildelt</div>
         <div id="viaHint" style="font-size:.78rem;color:#555;margin-top:4px;min-height:16px;"></div>
       </div>
     </div>
@@ -1751,7 +1751,7 @@ function buildOreCard(p){
         <div class="od-c-sum-val" data-id="${p.id}">${sumTxt}</div>
         <input class="od-c-sum-inp" type="text" inputmode="numeric" data-id="${p.id}" value="${sumVal}"/>
       </div>
-      <div class="od-c-sum-hint">Klikk beløpet for å redigere — reduser etter hvert som arbeid faktureres</div>
+      <div class="od-c-sum-hint">Ferdiggrad justeres automatisk basert på VIA QA og periodeavslutning</div>
     </div>
     <div class="od-c-meta">
       <span>\u{1F4C5} ${period}</span>
