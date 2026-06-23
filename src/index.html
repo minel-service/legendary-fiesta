@@ -525,6 +525,15 @@ async function fetchUserCompany() {
       </div>
     </div>
     <div class="frow">
+      <div class="fg" style="position:relative;">
+        <label class="fl">Ordrenummer (OS)</label>
+        <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234 — valgfritt" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value)" autocomplete="off"/>
+        <div id="ordreNrSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:999;max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
+        <div class="hint">Kobler mot VIA QA — beregner gjenværende ordreverdi automatisk</div>
+        <div id="viaHint" style="font-size:.78rem;color:#555;margin-top:4px;min-height:16px;"></div>
+      </div>
+    </div>
+    <div class="frow">
       <div class="fg">
         <label class="fl">Startdato *</label>
         <input class="fi" id="pStart" type="date" oninput="genWTbl()"/>
@@ -1484,8 +1493,8 @@ function updateTable(){
         || (p.notes||'').toLowerCase().includes(_tblSearchTerm);
   });
   if(visMp.length>0){
-    if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
-    html+=`<tr class="sec-row"><td colspan="6">📝 Kontraherte prosjekter</td></tr>`;
+    if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>VIA QA</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
+    html+=`<tr class="sec-row"><td colspan="7">📝 Kontraherte prosjekter</td></tr>`;
     visMp.forEach(p=>{
       const wn=Object.keys(p.weeklyCrews).map(w=>parseInt(w.split('-W')[1]));
       const tot=Object.values(p.weeklyCrews).reduce((s,c)=>s+(parseInt(c)||0),0);
@@ -1500,6 +1509,7 @@ function updateTable(){
         <td><strong>${p.name}</strong></td>
         <td>${p.company?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${bc};display:inline-block"></span>${p.company}</span>`:'<span style="color:#94a3b8;font-size:.78rem">—</span>'}</td>
         <td style="font-size:.82rem">${ks}</td>
+        <td style="font-size:.78rem;color:#0f766e;white-space:nowrap">${viaInfoText(p)||''}</td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${MANUAL_COLOR}"></div></div><span class="cnum">${avg}<span style="color:#94a3b8;font-weight:400;font-size:.74rem"> snitt</span></span></div></td>
         <td><div class="act-btns">${canEdit?`<button class="act-btn edit" data-action="edit" data-id="${p.id}">✏ Rediger</button><button class="act-btn del" data-action="del" data-id="${p.id}">🗑</button>`:''}</div></td>
@@ -1967,6 +1977,7 @@ async function initApp(){
         }catch(e){console.log('[AI Track] exception:',e.message);}
       })(20);
   allProjects = await loadAllProjects();
+  fetchAllVIAData(allProjects);
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
@@ -2010,6 +2021,8 @@ function openProjModal(){
 function closeProjModal(){
   document.getElementById('projOverlay').style.display='none';
   editingId=null;
+  document.getElementById('pOrdreNr').value='';
+  document.getElementById('ordreNrSuggest').style.display='none';
 }
 
 function ovcClick(e){if(e.target===document.getElementById('projOverlay'))closeProjModal();}
@@ -2057,6 +2070,7 @@ function saveProject(){
   const company=document.getElementById('pCo').value;
   const kontraktssum=parseKrInput('pKontrakt');
   const notes=(document.getElementById('pNotes')?.value||'').trim();
+  const ordreNr=document.getElementById('pOrdreNr')?.value?.trim()||null;
   if(!name){alert('Prosjektnavn er åkrevd.');return;}
   if(!company){alert('Velg et selskap.');return;}
   // Tilgangskontroll: blokkér hvis brukeren prøver å lagre til annet selskap
@@ -2080,7 +2094,7 @@ function saveProject(){
   const _u=auditUser(),_t=auditNow();
   if(editingId){
     const idx=allProjects.findIndex(p=>p.id===editingId);
-    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,lastEditedBy:_u,lastEditedAt:_t};
+    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,lastEditedBy:_u,lastEditedAt:_t};
   } else {
     const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
     allProjects.push(nyP);
@@ -2107,6 +2121,7 @@ function editProj(id){
   document.getElementById('pName').value=p.name;
   document.getElementById('pKontrakt').value=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
   if(document.getElementById('pNotes')) document.getElementById('pNotes').value=p.notes||'';
+  document.getElementById('pOrdreNr').value=p.ordreNr||'';
   const sel=document.getElementById('pCo');
   sel.disabled=(currentCompany!=='__admin__');
   sel.value=p.company||'';
@@ -2181,7 +2196,7 @@ function oreAdjustWeeks(id){
   }
   scheduleSave();
   renderOreDrawer();
-  updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
+  updateOrdrereserve();fetchAllVIAData(allProjects).then(()=>updateOrdrereserve());updateChart();updateMonthlyChart();updateTable();
 }
 
 // ════════════════════════════════════════════
@@ -2275,6 +2290,140 @@ async function postToSharePointList(p){
 })();
 async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
 
+
+// ══ ORDRENR AUTOCOMPLETE + VIA QA INTEGRATION ══
+function suggestOrdreNr(val){
+  const box=document.getElementById('ordreNrSuggest');
+  if(!val||val.length<2){box.style.display='none';return;}
+  const orders=window._osOrders||[];
+  const matches=orders.filter(o=>{
+    const nr=o.ordrenummer||o.OrdreNr||'';
+    const nm=o.navn||o.name||'';
+    return nr.toLowerCase().includes(val.toLowerCase())||nm.toLowerCase().includes(val.toLowerCase());
+  }).slice(0,8);
+  if(!matches.length){box.style.display='none';return;}
+  box.innerHTML=matches.map(o=>{
+    const nr=o.ordrenummer||o.OrdreNr||'';
+    const nm=o.navn||o.name||'';
+    return `<div style="padding:6px 10px;cursor:pointer" onmousedown="selectOrdreNr('${nr}')">${nr}${nm?' — '+nm:''}</div>`;
+  }).join('');
+  box.style.display='block';
+}
+function selectOrdreNr(nr){
+  document.getElementById('pOrdreNr').value=nr;
+  document.getElementById('ordreNrSuggest').style.display='none';
+  fetchVIAFerdiggrad(nr);
+}
+
+// VIA QA SharePoint-konstanter
+var VIA_SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
+var VIA_SP_LIST='17a680a1-2dac-4cbb-ac95-69a707eb138c';
+var VIA_SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+VIA_SP_SITE+'/lists/'+VIA_SP_LIST;
+
+async function getSpToken(){
+  const acc=msalApp.getAllAccounts()[0];
+  if(!acc) return null;
+  try{
+    const r=await msalApp.acquireTokenSilent({account:acc,scopes:['https://graph.microsoft.com/Sites.Selected']});
+    return r.accessToken;
+  }catch(e){
+    try{
+      const r=await msalApp.acquireTokenPopup({account:acc,scopes:['https://graph.microsoft.com/Sites.Selected']});
+      return r.accessToken;
+    }catch(e2){return null;}
+  }
+}
+
+async function fetchVIAFerdiggrad(ordreNr){
+  const hint=document.getElementById('viaHint');
+  if(!ordreNr){if(hint)hint.textContent='';return;}
+  if(hint) hint.textContent='Henter VIA QA-data…';
+  try{
+    const tok=await getSpToken();
+    if(!tok){if(hint)hint.textContent='';return;}
+    const filter=encodeURIComponent(`fields/OrdreNr eq '${ordreNr}'`);
+    const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$orderby=fields/UpdatedAt desc&$top=1`;
+    const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
+    if(!resp.ok){if(hint)hint.textContent='';return;}
+    const data=await resp.json();
+    const items=data.value||[];
+    if(!items.length){if(hint)hint.textContent='Ingen VIA QA-vurdering funnet for dette ordrenummeret';return;}
+    const f=items[0].fields||{};
+    const dg=f.DG!=null?parseFloat(f.DG):null;
+    const timer=f.Timer!=null?parseFloat(f.Timer):0;
+    const tk=f.Timekost!=null?parseFloat(f.Timekost):null;
+    const mat=f.Material!=null?parseFloat(f.Material):0;
+    if(!window._viaData) window._viaData={};
+    window._viaData[ordreNr]={dg,timer,tk,mat,updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy};
+    const parts=[];
+    if(dg!=null) parts.push('DG '+(dg>1?Math.round(dg):Math.round(dg*100))+'%');
+    if(timer>0) parts.push(timer+'t gjenst.');
+    if(hint) hint.textContent=parts.length?parts.join(' · '):'VIA QA funnet (ingen DG/timer)';
+  }catch(e){if(hint)hint.textContent='';}
+}
+
+async function fetchAllVIAData(projects){
+  if(!projects||!projects.length) return;
+  const withOrdre=projects.filter(p=>p.ordreNr);
+  if(!withOrdre.length) return;
+  try{
+    const tok=await getSpToken();
+    if(!tok) return;
+    if(!window._viaData) window._viaData={};
+    // Fetch in batches of 10 OrdreNr
+    for(let i=0;i<withOrdre.length;i+=10){
+      const batch=withOrdre.slice(i,i+10);
+      const filterParts=batch.map(p=>`fields/OrdreNr eq '${p.ordreNr}'`);
+      const filter=encodeURIComponent(filterParts.join(' or '));
+      const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$top=100`;
+      const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
+      if(!resp.ok) continue;
+      const data=await resp.json();
+      (data.value||[]).forEach(item=>{
+        const f=item.fields||{};
+        const nr=f.OrdreNr;
+        if(!nr) return;
+        const existing=window._viaData[nr];
+        const updAt=f.UpdatedAt?new Date(f.UpdatedAt):new Date(0);
+        const existAt=existing?.updatedAt?new Date(existing.updatedAt):new Date(0);
+        if(!existing||updAt>existAt){
+          window._viaData[nr]={
+            dg:f.DG!=null?parseFloat(f.DG):null,
+            timer:f.Timer!=null?parseFloat(f.Timer):0,
+            tk:f.Timekost!=null?parseFloat(f.Timekost):null,
+            mat:f.Material!=null?parseFloat(f.Material):0,
+            updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy
+          };
+        }
+      });
+    }
+  }catch(e){console.warn('[VIA] fetchAllVIAData feil:',e);}
+}
+
+function calcGjenvaerende(project){
+  var k=project.kontraktssum||0;
+  if(!k||!project.ordreNr) return null;
+  var via=window._viaData&&window._viaData[project.ordreNr];
+  if(!via) return null;
+  var dg=via.dg!=null?(via.dg>1?via.dg/100:via.dg):null;
+  if(via.timer>0&&via.tk!=null&&dg!=null&&dg<1){
+    var gjenK=via.timer*(via.tk||650)+(via.mat||0);
+    return Math.min(gjenK/(1-dg),k);
+  }
+  if(via.timer>0&&via.tk!=null) return via.timer*(via.tk||650)+(via.mat||0);
+  return null;
+}
+
+function viaInfoText(project){
+  if(!project.ordreNr) return '';
+  var via=window._viaData&&window._viaData[project.ordreNr];
+  if(!via) return '';
+  var parts=[];
+  if(via.dg!=null) parts.push('DG '+(via.dg>1?Math.round(via.dg):Math.round(via.dg*100))+'%');
+  if(via.timer>0) parts.push(via.timer+'t gjenst.');
+  if(via.updatedAt) parts.push(new Date(via.updatedAt).toLocaleDateString('no-NO',{day:'numeric',month:'short'}));
+  return parts.join(' · ');
+}
 </script>
 </body>
 </html>
