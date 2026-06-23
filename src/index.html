@@ -1979,6 +1979,7 @@ async function initApp(){
       })(20);
   allProjects = await loadAllProjects();
   fetchAllVIAData(allProjects);
+  fetchVIAOrderList();
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
@@ -2292,21 +2293,54 @@ async function postToSharePointList(p){
 async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
 
 
+// Henter alle unike OrdreNr + Selskap fra VIA QA SP-liste for autocomplete
+async function fetchVIAOrderList(){
+  try{
+    const tok=await getSpToken();
+    if(!tok) return;
+    // Hent top 500 nyeste — kun OrdreNr og Selskap-feltene
+    const url=VIA_SP_GRAPH+'/items?expand=fields&$select=fields/OrdreNr,fields/Selskap,fields/UpdatedAt&$orderby=fields/UpdatedAt desc&$top=500';
+    const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
+    if(!resp.ok) return;
+    const data=await resp.json();
+    // Dedupliser på OrdreNr+Selskap — behold siste per kombinasjon
+    const seen=new Set();
+    const orders=[];
+    (data.value||[]).forEach(item=>{
+      const f=item.fields||{};
+      const nr=f.OrdreNr||'';
+      const sel=f.Selskap||'';
+      if(!nr) return;
+      const key=sel+'__'+nr;
+      if(seen.has(key)) return;
+      seen.add(key);
+      orders.push({ordrenummer:nr, selskap:sel});
+    });
+    window._osOrders=orders;
+    console.log('[VIA] Lastet',orders.length,'unike ordrenumre fra VIA QA');
+  }catch(e){
+    console.warn('[VIA] fetchVIAOrderList feil:',e);
+  }
+}
+
 // ══ ORDRENR AUTOCOMPLETE + VIA QA INTEGRATION ══
 function suggestOrdreNr(val){
   const box=document.getElementById('ordreNrSuggest');
   if(!val||val.length<2){box.style.display='none';return;}
   const orders=window._osOrders||[];
+  const co=(document.getElementById('pCo')?.value||'').toLowerCase();
   const matches=orders.filter(o=>{
-    const nr=o.ordrenummer||o.OrdreNr||'';
-    const nm=o.navn||o.name||'';
-    return nr.toLowerCase().includes(val.toLowerCase())||nm.toLowerCase().includes(val.toLowerCase());
-  }).slice(0,8);
+    const nr=(o.ordrenummer||'').toLowerCase();
+    const sel=(o.selskap||'').toLowerCase();
+    // Filtrer på selskap hvis valgt, ellers vis alle
+    if(co && sel && !sel.includes(co) && !co.includes(sel)) return false;
+    return nr.includes(val.toLowerCase());
+  }).slice(0,10);
   if(!matches.length){box.style.display='none';return;}
   box.innerHTML=matches.map(o=>{
-    const nr=o.ordrenummer||o.OrdreNr||'';
-    const nm=o.navn||o.name||'';
-    return `<div style="padding:6px 10px;cursor:pointer" onmousedown="selectOrdreNr('${nr}')">${nr}${nm?' — '+nm:''}</div>`;
+    const nr=o.ordrenummer||'';
+    const sel=o.selskap||'';
+    return `<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0" onmousedown="selectOrdreNr('${nr}')">${nr}<span style="font-size:.8em;color:#888;margin-left:8px">${sel}</span></div>`;
   }).join('');
   box.style.display='block';
 }
