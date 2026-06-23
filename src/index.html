@@ -527,7 +527,7 @@ async function fetchUserCompany() {
     <div class="frow">
       <div class="fg" style="position:relative;">
         <label class="fl">Ordrenummer (OS)</label>
-        <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234 — valgfritt" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value)" autocomplete="off"/>
+        <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234 — valgfritt" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value,document.getElementById('pCo')?.value||'')" autocomplete="off"/>
         <div id="ordreNrSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:999;max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
         <div class="hint">Kobler mot VIA QA — beregner gjenværende ordreverdi automatisk</div>
         <div id="viaHint" style="font-size:.78rem;color:#555;margin-top:4px;min-height:16px;"></div>
@@ -1478,6 +1478,7 @@ function updateTable(){
         <td><strong>${name}</strong></td>
         <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${col(gi)};display:inline-block"></span>${co.navn}</span></td>
         <td>${data.status==='demo'?'<span class="badge badge-demo">Demo</span>':'<span style="font-size:.71rem;color:#64748b">Ordrestyring</span>'}</td>
+        <td></td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${col(gi)}"></div></div><span class="cnum">${d.crew}</span></div></td>
         <td></td>
@@ -2312,13 +2313,18 @@ function suggestOrdreNr(val){
 function selectOrdreNr(nr){
   document.getElementById('pOrdreNr').value=nr;
   document.getElementById('ordreNrSuggest').style.display='none';
-  fetchVIAFerdiggrad(nr);
+  // Hent selskap fra modal-dropdown
+  const co=document.getElementById('pCo')?.value||'';
+  fetchVIAFerdiggrad(nr,co);
 }
 
 // VIA QA SharePoint-konstanter
 var VIA_SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
 var VIA_SP_LIST='17a680a1-2dac-4cbb-ac95-69a707eb138c';
 var VIA_SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+VIA_SP_SITE+'/lists/'+VIA_SP_LIST;
+
+// Nøkkel: selskap__ordreNr — sikrer at samme ordreNr hos ulike selskap ikke blandes
+function viaKey(company,ordreNr){ return (company||'')+'__'+(ordreNr||''); }
 
 async function getSpToken(){
   const acc=msalApp.getAllAccounts()[0];
@@ -2334,27 +2340,38 @@ async function getSpToken(){
   }
 }
 
-async function fetchVIAFerdiggrad(ordreNr){
+async function fetchVIAFerdiggrad(ordreNr,company){
   const hint=document.getElementById('viaHint');
   if(!ordreNr){if(hint)hint.textContent='';return;}
   if(hint) hint.textContent='Henter VIA QA-data…';
   try{
     const tok=await getSpToken();
     if(!tok){if(hint)hint.textContent='';return;}
-    const filter=encodeURIComponent(`fields/OrdreNr eq '${ordreNr}'`);
+    // Filter på BÅDE OrdreNr og Selskap
+    let filterStr=`fields/OrdreNr eq '${ordreNr}'`;
+    if(company) filterStr+=` and fields/Selskap eq '${company}'`;
+    const filter=encodeURIComponent(filterStr);
     const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$orderby=fields/UpdatedAt desc&$top=1`;
     const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
     if(!resp.ok){if(hint)hint.textContent='';return;}
     const data=await resp.json();
     const items=data.value||[];
-    if(!items.length){if(hint)hint.textContent='Ingen VIA QA-vurdering funnet for dette ordrenummeret';return;}
+    if(!items.length){
+      // Prøv uten selskapsfilter som fallback
+      const url2=VIA_SP_GRAPH+`/items?expand=fields&$filter=${encodeURIComponent(`fields/OrdreNr eq '${ordreNr}'`)}&$orderby=fields/UpdatedAt desc&$top=1`;
+      const resp2=await fetch(url2,{headers:{Authorization:'Bearer '+tok}});
+      const data2=await resp2.json();
+      if(!(data2.value||[]).length){if(hint)hint.textContent='Ingen VIA QA-vurdering funnet';return;}
+      items.push(...(data2.value||[]));
+    }
     const f=items[0].fields||{};
     const dg=f.DG!=null?parseFloat(f.DG):null;
     const timer=f.Timer!=null?parseFloat(f.Timer):0;
     const tk=f.Timekost!=null?parseFloat(f.Timekost):null;
     const mat=f.Material!=null?parseFloat(f.Material):0;
     if(!window._viaData) window._viaData={};
-    window._viaData[ordreNr]={dg,timer,tk,mat,updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy};
+    const key=viaKey(company||f.Selskap||'',ordreNr);
+    window._viaData[key]={dg,timer,tk,mat,updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy,selskap:f.Selskap};
     const parts=[];
     if(dg!=null) parts.push('DG '+(dg>1?Math.round(dg):Math.round(dg*100))+'%');
     if(timer>0) parts.push(timer+'t gjenst.');
@@ -2370,10 +2387,15 @@ async function fetchAllVIAData(projects){
     const tok=await getSpToken();
     if(!tok) return;
     if(!window._viaData) window._viaData={};
-    // Fetch in batches of 10 OrdreNr
+    // Hent i grupper av 10 — filtrer på OrdreNr (og Selskap for sikkerhet)
     for(let i=0;i<withOrdre.length;i+=10){
       const batch=withOrdre.slice(i,i+10);
-      const filterParts=batch.map(p=>`fields/OrdreNr eq '${p.ordreNr}'`);
+      // Lag filter med BÅDE OrdreNr og Selskap per prosjekt
+      const filterParts=batch.map(p=>{
+        let f=`fields/OrdreNr eq '${p.ordreNr}'`;
+        if(p.company) f+=` and fields/Selskap eq '${p.company}'`;
+        return `(${f})`;
+      });
       const filter=encodeURIComponent(filterParts.join(' or '));
       const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$top=100`;
       const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
@@ -2382,17 +2404,19 @@ async function fetchAllVIAData(projects){
       (data.value||[]).forEach(item=>{
         const f=item.fields||{};
         const nr=f.OrdreNr;
+        const sel=f.Selskap||'';
         if(!nr) return;
-        const existing=window._viaData[nr];
+        const key=viaKey(sel,nr);
+        const existing=window._viaData[key];
         const updAt=f.UpdatedAt?new Date(f.UpdatedAt):new Date(0);
         const existAt=existing?.updatedAt?new Date(existing.updatedAt):new Date(0);
         if(!existing||updAt>existAt){
-          window._viaData[nr]={
+          window._viaData[key]={
             dg:f.DG!=null?parseFloat(f.DG):null,
             timer:f.Timer!=null?parseFloat(f.Timer):0,
             tk:f.Timekost!=null?parseFloat(f.Timekost):null,
             mat:f.Material!=null?parseFloat(f.Material):0,
-            updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy
+            updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy,selskap:sel
           };
         }
       });
@@ -2403,7 +2427,8 @@ async function fetchAllVIAData(projects){
 function calcGjenvaerende(project){
   var k=project.kontraktssum||0;
   if(!k||!project.ordreNr) return null;
-  var via=window._viaData&&window._viaData[project.ordreNr];
+  var key=viaKey(project.company||'',project.ordreNr);
+  var via=window._viaData&&window._viaData[key];
   if(!via) return null;
   var dg=via.dg!=null?(via.dg>1?via.dg/100:via.dg):null;
   if(via.timer>0&&via.tk!=null&&dg!=null&&dg<1){
@@ -2416,7 +2441,8 @@ function calcGjenvaerende(project){
 
 function viaInfoText(project){
   if(!project.ordreNr) return '';
-  var via=window._viaData&&window._viaData[project.ordreNr];
+  var key=viaKey(project.company||'',project.ordreNr);
+  var via=window._viaData&&window._viaData[key];
   if(!via) return '';
   var parts=[];
   if(via.dg!=null) parts.push('DG '+(via.dg>1?Math.round(via.dg):Math.round(via.dg*100))+'%');
@@ -2424,6 +2450,7 @@ function viaInfoText(project){
   if(via.updatedAt) parts.push(new Date(via.updatedAt).toLocaleDateString('no-NO',{day:'numeric',month:'short'}));
   return parts.join(' · ');
 }
+
 </script>
 </body>
 </html>
