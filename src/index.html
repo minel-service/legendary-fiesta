@@ -1228,7 +1228,7 @@ function buildMonthlyTotals(){
   const osWeekSet=new Set(weeks);
   allProjects.forEach(p=>{
     if(p.inOS||!p.company||!byCoMon[p.company])return;
-    Object.entries(p.weeklyCrew||{}).forEach(([wk,c])=>{
+    Object.entries(p.weeklyCrews||{}).forEach(([wk,c])=>{
       const[yr,wn]=wk.split('-W').map(Number);
       const mon=mondayOf(yr,wn);
       const mk=`${mon.getFullYear()}-${mon.getMonth()}`;
