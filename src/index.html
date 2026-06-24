@@ -1793,7 +1793,7 @@ function buildOreCard(p){
     ${(()=>{
       const gj=calcGjenvaerende(p);
       const via=viaInfoText(p);
-      if(!gj&&!via) return '';
+      if(!gj&&!via){return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">FERDIGGRAD &amp; GJENSTÅENDE (VIA QA)</div><div style="font-size:.75rem;color:#94a3b8">${p.ordreNr?'Ingen VIA QA-data ennå (ordrenr: '+p.ordreNr+')':'Registrer ordrenr. (OS) for å aktivere VIA QA'}</div></div>`;}
       const dg=window._viaData&&window._viaData[viaKey(p.company||'',p.ordreNr||'')];
       const dgPct=dg&&dg.dg!=null?(dg.dg>1?Math.round(dg.dg):Math.round(dg.dg*100)):null;
       return '<div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-radius:6px;border-left:3px solid #16a34a">'
