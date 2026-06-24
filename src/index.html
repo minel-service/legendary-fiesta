@@ -293,7 +293,7 @@ const SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,662
 const BRIDGE_URL = 'https://minel-sp-bridge.azurewebsites.net';
 let msalApp=null,_scopes=['https://graph.microsoft.com/Sites.Selected','User.Read'];
 try{msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});console.log('[MSAL] OK');}catch(e){console.warn('[MSAL]:',e.message);}
-async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
+async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){if(e instanceof msal.InteractionRequiredAuthError||e.name==='InteractionRequiredAuthError'){const _rp=await msalApp.acquireTokenPopup({scopes:_scopes,account:accs[0]});return _rp.accessToken;}sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
 async function gFetch(url,opts={}){const tok=await getToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
 function auditUser(){const accs=msalApp?msalApp.getAllAccounts():[];if(!accs.length)return'ukjent';const acc=accs[0];if(acc.name&&acc.name!=='unknown'&&!acc.name.includes('#'))return acc.name;const local=(acc.username||'').split('@')[0];return local.split('.').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ');}
 function auditNow(){return new Date().toISOString();}
@@ -2285,8 +2285,8 @@ async function postToSharePointList(p){
     const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
     const url=`${GRAPH}/sites/${SP_SITE}/lists/${CONFIG.spKunngjøringer}/items`;
     const r=await gFetch(url,{method:'POST',body:JSON.stringify({fields:{Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,Tekst:`${p.company} har vunnet et nytt prosjekt: ${p.name}. Kontraktssum: ${sumTxt}. Periode: ${period}.`}})});
-    console.log('[Graph kunngjøringer]',r&&r.ok?'✅ Sendt':'[!] '+(r?.status||'?'));
-  }catch(e){console.warn('[Graph] Kunngjøringer:',e.message);}
+    if(!r||!r.ok)throw new Error('HTTP '+(r?.status||0));console.log('[Graph kunngjøringer] ✅ Sendt');
+  }catch(e){console.error('[Graph Kunngjøringer] ❌',e.message);showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);}
 }
 
 // STARTUP
