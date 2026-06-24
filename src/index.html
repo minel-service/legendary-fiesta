@@ -1219,6 +1219,7 @@ function buildMonthlyTotals(){
     manMon[mk].cnt++;
   });
   
+  const osWeekSet=new Set(weeks);
   allProjects.forEach(p=>{
     if(p.inOS||!p.company||!byCoMon[p.company])return;
     Object.entries(p.weeklyCrew||{}).forEach(([wk,c])=>{
@@ -1227,6 +1228,7 @@ function buildMonthlyTotals(){
       const mk=`${mon.getFullYear()}-${mon.getMonth()}`;
       if(!byCoMon[p.company][mk])return;
       byCoMon[p.company][mk].sum+=parseInt(c)||0;
+      if(!osWeekSet.has(wk)) byCoMon[p.company][mk].cnt++;
     });
   });
   return{months,byCoMon,manMon};
