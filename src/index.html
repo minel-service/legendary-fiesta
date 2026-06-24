@@ -1215,6 +1215,7 @@ function buildMonthlyTotals(){
       byCoMon[co.navn][mk].sum+=v;
       byCoMon[co.navn][mk].cnt++;
     });
+    allProjects.forEach(p=>{if(p.inOS||!p.company||!byCoMon[p.company])return;const crew=parseInt(p.weeklyCrew?.[wk])||0;byCoMon[p.company][mk].sum+=crew;});
     manMon[mk].sum+=manT[wk]||0;
     manMon[mk].cnt++;
   });
@@ -1249,17 +1250,9 @@ function updateMonthlyChart(){
     });
   });
 
-  // Manuelle prosjekter
-  const manData=months.map(m=>{const d=manMon[mKey(m)];return d.cnt>0?Math.round(d.sum/d.cnt):0;});
-  if(manData.some(v=>v>0)){
-    datasets.push({label:'Manuelt',data:manData,backgroundColor:MANUAL_COLOR+'88',borderColor:MANUAL_COLOR,borderWidth:1.5,fill:true,tension:0.35,pointRadius:3,pointHoverRadius:5,stack:'main'});
-  }
-
   // Maks kapasitet
   const maxKap=companies.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
-  if(maxKap>0){
-    datasets.push({type:'line',label:`Maks (${maxKap})`,data:months.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2.5,borderDash:[8,5],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
-  }
+  datasets.push({label:`Maks (${maxKap})`,data:months.map(()=>maxKap),borderColor:'#6366f1',borderWidth:2.5,borderDash:[8,5],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
 
   if(monthlyChartInst)monthlyChartInst.destroy();
   const ctx=document.getElementById('monthlyChart').getContext('2d');
