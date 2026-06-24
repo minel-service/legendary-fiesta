@@ -338,6 +338,12 @@ async function fetchUserCompany() {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const me = await r.json();
+    const BLOCKED=['jonas.prestkvern@minel.no'];
+    if(BLOCKED.some(b=>(me.userPrincipalName||me.mail||'').toLowerCase()===b)){
+      document.body.innerHTML='<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:sans-serif;flex-direction:column;gap:24px"><h2 style="color:#dc2626;margin:0">Tilgang sperret</h2><p style="color:#374151;margin:0">Din bruker har ikke tilgang til denne applikasjonen.</p><p style="color:#9ca3af;font-size:.875em;margin:0">Vil logges ut om 4 sekunder.</p></div>';
+      setTimeout(()=>msalApp&&msalApp.logoutRedirect(),4000);
+      return null;
+    }
     const loc = (me.officeLocation || '').trim().toLowerCase();
     console.log('[Tilgang] officeLocation:', me.officeLocation, '→', OFFICE_MAP[loc] || 'ukjent');
     const mapped = OFFICE_MAP[loc] || null;
