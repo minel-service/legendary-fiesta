@@ -1509,8 +1509,15 @@ function updateTable(){
       html+=`<tr>
         <td><strong>${p.name}</strong></td>
         <td>${p.company?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${bc};display:inline-block"></span>${p.company}</span>`:'<span style="color:#94a3b8;font-size:.78rem">—</span>'}</td>
-        <td style="font-size:.82rem">${ks}</td>
-        <td style="font-size:.78rem;color:#0f766e;white-space:nowrap">${viaInfoText(p)||''}</td>
+        <td style="font-size:.82rem">${ks}${calcGjenvaerende(p)!=null?'<div style="font-size:.72rem;color:#1e40af;font-weight:600">kr '+calcGjenvaerende(p).toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår</div>':''}</td>
+        <td style="font-size:.78rem;white-space:nowrap">${(()=>{
+  const via=viaInfoText(p);
+  const gj=calcGjenvaerende(p);
+  if(!via&&!gj) return '<span style="color:#cbd5e1">—</span>';
+  const dgPart=via?'<span style="color:#0f766e">'+via+'</span>':'';
+  const gjPart=gj!=null?'<div style="color:#1e40af;font-weight:600">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår</div>':'';
+  return dgPart+gjPart;
+})()}</td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${MANUAL_COLOR}"></div></div><span class="cnum">${avg}<span style="color:#94a3b8;font-weight:400;font-size:.74rem"> snitt</span></span></div></td>
         <td><div class="act-btns">${canEdit?`<button class="act-btn edit" data-action="edit" data-id="${p.id}">✏ Rediger</button><button class="act-btn del" data-action="del" data-id="${p.id}">🗑</button>`:''}</div></td>
@@ -1773,6 +1780,17 @@ function buildOreCard(p){
       <label class="os-toggle"><input type="checkbox" ${p.inOS?'checked':''} onchange="setInOS('${p.id}',this.checked)"><span class="os-slider"></span></label>
     </div>
     ${p.ordreNr?'<div style="margin-top:6px;font-size:.75rem;color:#64748b">📋 Ordrenr\xa0(OS): <strong>'+p.ordreNr+'</strong>'+( viaInfoText(p)?'\xa0·\xa0<span style="color:#0f766e">'+viaInfoText(p)+'</span>':'')+'</div>':''}
+    ${(()=>{
+      const gj=calcGjenvaerende(p);
+      const via=viaInfoText(p);
+      if(!gj&&!via) return '';
+      const dg=window._viaData&&window._viaData[viaKey(p.company||'',p.ordreNr||'')];
+      const dgPct=dg&&dg.dg!=null?(dg.dg>1?Math.round(dg.dg):Math.round(dg.dg*100)):null;
+      return '<div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-radius:6px;border-left:3px solid #16a34a">'
+        +(dgPct!=null?'<div style="font-size:.72rem;font-weight:700;color:#15803d;letter-spacing:.05em">FERDIGGRAD (VIA QA)</div><div style="font-size:1.1rem;font-weight:700;color:#15803d">'+dgPct+'%</div>':'')
+        +(gj!=null?'<div style="font-size:.78rem;color:#1e40af;font-weight:600;margin-top:2px">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår av tilbudssum</div>':'')
+        +'</div>';
+    })()}
     <div style="margin-top:10px"><div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px">📝 Kommentar</div><textarea class="od-notes-inp" data-id="${p.id}" placeholder="Notater, spesielle avtaler, kontaktperson..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.78rem;color:#334155;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#C8102E'" onblur="this.style.borderColor='#e2e8f0';oreUpdateNotes(this.dataset.id,this.value)">${p.notes||''}</textarea></div>
   </div>`;
 }
