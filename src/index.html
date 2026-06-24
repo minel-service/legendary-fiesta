@@ -1215,9 +1215,19 @@ function buildMonthlyTotals(){
       byCoMon[co.navn][mk].sum+=v;
       byCoMon[co.navn][mk].cnt++;
     });
-    allProjects.forEach(p=>{if(p.inOS||!p.company||!byCoMon[p.company])return;const crew=parseInt(p.weeklyCrew?.[wk])||0;byCoMon[p.company][mk].sum+=crew;});
     manMon[mk].sum+=manT[wk]||0;
     manMon[mk].cnt++;
+  });
+  
+  allProjects.forEach(p=>{
+    if(p.inOS||!p.company||!byCoMon[p.company])return;
+    Object.entries(p.weeklyCrew||{}).forEach(([wk,c])=>{
+      const[yr,wn]=wk.split('-W').map(Number);
+      const mon=mondayOf(yr,wn);
+      const mk=`${mon.getFullYear()}-${mon.getMonth()}`;
+      if(!byCoMon[p.company][mk])return;
+      byCoMon[p.company][mk].sum+=parseInt(c)||0;
+    });
   });
   return{months,byCoMon,manMon};
 }
@@ -1273,8 +1283,7 @@ function updateMonthlyChart(){
               const lines=['───────────────'];
               let tot=0;
               visCos.forEach(co=>{const d=byCoMon[co.navn][mk];const v=d.cnt>0?Math.round(d.sum/d.cnt):0;if(v>0){lines.push(`${co.navn}: ${v}`);tot+=v}});
-              const md=manMon[mk];const mv=md.cnt>0?Math.round(md.sum/md.cnt):0;if(mv>0){lines.push(`Manuelt: ${mv}`);tot+=mv}
-              lines.push('───────────────');
+                            lines.push('───────────────');
               const pct=maxKap>0?` (${Math.round(tot/maxKap*100)}%)`:'';
               lines.push(`Totalt: ${tot} snitt/uke${pct}`);
               if(maxKap>0&&tot>maxKap) lines.push(`⚠️ Overkapasitet: +${tot-maxKap}`);
