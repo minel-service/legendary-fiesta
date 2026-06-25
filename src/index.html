@@ -132,6 +132,7 @@ h
     .act-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;cursor:pointer;color:#64748b;font-size:.82rem;padding:5px 9px;border-radius:7px;transition:all .15s;line-height:1;font-weight:500}
     .act-btn.edit:hover{color:#C8102E;background:#fff0f3;border-color:#fca5a5}
     .act-btn.del:hover{color:#ef4444;background:#fee2e2;border-color:#fecaca}
+    .act-btn.kunngjor:hover{color:#8b5cf6;background:#f5f3ff;border-color:#ddd6fe}
 
     /* ── Badge ── */
     .badge{display:inline-block;font-size:.67rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
@@ -1530,7 +1531,7 @@ function updateTable(){
 })()}</td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${MANUAL_COLOR}"></div></div><span class="cnum">${avg}<span style="color:#94a3b8;font-weight:400;font-size:.74rem"> snitt</span></span></div></td>
-        <td><div class="act-btns">${canEdit?`<button class="act-btn edit" data-action="edit" data-id="${p.id}">✏ Rediger</button><button class="act-btn del" data-action="del" data-id="${p.id}">🗑</button>`:''}</div></td>
+        <td><div class="act-btns">${canEdit?`<button class="act-btn edit" data-action="edit" data-id="${p.id}">✏ Rediger</button><button class="act-btn kunngjor" data-action="kunngjor" data-id="${p.id}" title="Kunngjør på intranett">📢</button><button class="act-btn del" data-action="del" data-id="${p.id}">🗑</button>`:''}</div></td>
       </tr>`;
     });
   }
@@ -1549,6 +1550,7 @@ function updateTable(){
     const id=btn.dataset.id;
     if(btn.dataset.action==='edit') editProj(id);
     if(btn.dataset.action==='del')  delProj(id);
+    if(btn.dataset.action==='kunngjor'){const proj=allProjects.find(x=>x.id===id);if(proj)postToSharePointList(proj);}
   },{once:true}); // once:true fjernes og settes på nytt ved hver updateTable
   // Re-attach persistent: bruk capture-delegasjon
   document.getElementById('tblWrap').onclick=e=>{
@@ -1557,6 +1559,7 @@ function updateTable(){
     const id=btn.dataset.id;
     if(btn.dataset.action==='edit') editProj(id);
     if(btn.dataset.action==='del')  delProj(id);
+    if(btn.dataset.action==='kunngjor'){const proj=allProjects.find(x=>x.id===id);if(proj)postToSharePointList(proj);}
   };
 }
 
