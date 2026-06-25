@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.5</title>
+<title>VIA QA – Minel AS v9.13</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -111,7 +111,7 @@ input.ci{width:100%;border:1.5px solid var(--border);border-radius:5px;padding:4
 input.ci.req{border-color:var(--amber);background:var(--amberbg);}
 input.ci:disabled{background:#f0f0f0;color:#666;}
 /* Calc cells */
-.calc{font-weight:700;}.vpos{color:#003090;font-weight:800;}.vneg{color:var(--red);font-weight:800;}
+.calc{font-weight:700;}.vpos{color:var(--amber);font-weight:800;}.vneg{color:var(--mid);font-weight:700;}
 .rwarn td{background:#FFFAED!important;}
 .totbar{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;}
 .totbar span{background:#fff;border-radius:7px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.85rem;font-weight:600;}
@@ -189,7 +189,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
-  <span class="hd-badge">v9.5</span>
+  <span class="hd-badge">v9.13</span>
 </header>
 
 <!-- START PANEL -->
@@ -228,7 +228,8 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <!-- DL CARD: Daglig leder -->
     <div style="background:#fff;border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.10);text-align:center;">
       <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:10px;">Daglig leder</div>
-      <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
+      <div style="font-size:2.5rem;margin-bottom:12px;">�
+</div>
       <h2 style="color:#1a1a2e;margin:0 0 6px;font-size:1.2rem;">Hent perioderegnskap</h2>
       <p style="color:#666;font-size:.84rem;margin:0 0 20px;">Direkte fra Ordrestyring via API</p>
       <div id="dl-login-confirm" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-bottom:16px;text-align:center;"></div>
@@ -424,7 +425,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   <div class="tab-panel" id="tab-hist">
     <div class="fb" style="margin-bottom:16px;">
       <span style="font-size:.88rem;font-weight:600;">Historikk lagres automatisk ved låsing (lokalt + SharePoint).</span>
-      <button class="btn" style="background:#2563eb;margin-left:auto;" onclick="syncHistSP(this)" title="Hent historikk fra SharePoint">☁️ Synk fra SharePoint</button>
+      <button class="btn" style="background:#2563eb;margin-left:auto;" onclick="syncHistSP(this)" title="Hent historikk fra SharePoint og slå sammen med lokal">☁️ Synk fra SharePoint</button>
       <button class="btn btn-dark" onclick="expHist()">📥 Eksporter historikk</button>
       <button class="btn" style="background:#888;" onclick="clearHist()">🗑 Slett historikk</button>
     </div>
@@ -450,7 +451,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.5 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.13 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -465,19 +466,30 @@ function spHistUrl(company){
   var slug=(company||'default').toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
   return 'https://graph.microsoft.com/v1.0/sites/'+SP_SITE+'/drive/root:/VIA_historikk_'+slug+'.json:/content';
 }
-async function loginPL(btn){
-  var errEl=document.getElementById('pl-login-err');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Logger inn...';}
-  if(errEl)errEl.style.display='none';
-  var tok=await getSpToken();
-  if(btn){btn.disabled=false;btn.innerHTML='🔑 Logg inn med Microsoft';}
-  if(!tok&&errEl){errEl.style.display='block';errEl.textContent='Innlogging feilet. Tillat popup-vinduer for denne siden i adressefeltet og prøv igjen.';}
-}
 async function spSaveHist(entity){
-  try{var tok=await getSpToken();if(!tok)return;var hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');await fetch(spHistUrl(entity),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(hist)});console.log('[SP] Historikk lagret for',entity);}catch(e){console.warn('[SP] Historikk-lagring feilet:',e);}
+  try{
+    var tok=await getSpToken();if(!tok)return;
+    var hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+    await fetch(spHistUrl(entity),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(hist)});
+    console.log('[SP] Historikk lagret til SharePoint for',entity);
+  }catch(e){console.warn('[SP] Historikk-lagring feilet:',e);}
 }
 async function spLoadHist(entity){
-  try{var tok=await getSpToken();if(!tok)return false;var r=await fetch(spHistUrl(entity),{headers:{'Authorization':'Bearer '+tok}});if(!r.ok)return false;var spHist=await r.json();if(!Array.isArray(spHist)||!spHist.length)return false;var local=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');var merged={};local.concat(spHist).forEach(function(h){merged[(h.period||'')+'__'+(h.entity||'')]=h;});var combined=Object.values(merged).sort(function(a,b){return(a.id||0)-(b.id||0);});localStorage.setItem(HIST_KEY,JSON.stringify(combined));rHist();return true;}catch(e){console.warn('[SP] Historikk-henting feilet:',e);return false;}
+  try{
+    var tok=await getSpToken();if(!tok)return false;
+    var r=await fetch(spHistUrl(entity),{headers:{'Authorization':'Bearer '+tok}});
+    if(!r.ok)return false;
+    var spHist=await r.json();
+    if(!Array.isArray(spHist)||!spHist.length)return false;
+    // Merge SP history with local — keep both, deduplicate by period+entity
+    var local=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+    var merged={};
+    local.concat(spHist).forEach(function(h){merged[(h.period||'')+'__'+(h.entity||'')]=h;});
+    var combined=Object.values(merged).sort(function(a,b){return(a.id||0)-(b.id||0);});
+    localStorage.setItem(HIST_KEY,JSON.stringify(combined));
+    rHist();
+    return true;
+  }catch(e){console.warn('[SP] Historikk-henting feilet:',e);return false;}
 }
 var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
 var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
@@ -532,8 +544,8 @@ function isEditable(r){
   if(!_currentUser) return '';
   if(_currentUser.isDL) return '';
   if(r&&r.pl&&r.pl!==_currentUser.plName) return 'disabled';
-  var period=document.getElementById('aperiod').textContent;
-  var company=document.getElementById('lentity').value||'';
+  var period=_currentPeriod||document.getElementById('aperiod').textContent;
+  var company=_currentEntity||document.getElementById('lentity').value||'';
   var stObj=getStatus();
   var k=period+'__'+company+'__'+(r?r.pl:_currentUser.plName);
   if(stObj[k]&&stObj[k].done) return 'disabled';
@@ -569,6 +581,17 @@ async function initMSAL(){
   try{var resp=await _msalApp.handleRedirectPromise();if(resp){_spToken=resp.accessToken;_spUser=resp.account.username;}}catch(e){}
 }
 
+async function loginPL(btn){
+  var errEl=document.getElementById('pl-login-err');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Logger inn...';}
+  if(errEl)errEl.style.display='none';
+  var tok=await getSpToken();
+  if(btn){btn.disabled=false;btn.innerHTML='🔑 Logg inn med Microsoft';}
+  if(!tok&&errEl){
+    errEl.style.display='block';
+    errEl.textContent='Innlogging feilet. Tillat popup-vinduer for denne siden i adressefeltet og prøv igjen.';
+  }
+}
 async function getSpToken(){
   try{
     if(typeof msal==='undefined') return null;
@@ -605,7 +628,7 @@ async function spLoadAssessments(period,company){
         _spIds[f.OrdreNr]=item.id;
         if(f.DG!=null){if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:parseFloat(f.DG)||35,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=parseFloat(f.DG)||35;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
         var _hasPoc=f.Kommentar||f.Timer!=null||f.Timekost!=null||f.Material!=null;
-        if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:null,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||650;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
+        if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:null,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||null;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
       }
     });
     console.log('[SP] Lastet',j.value&&j.value.length,'vurderinger for',period);
@@ -617,7 +640,7 @@ async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar,
   try{
     var tok=await getSpToken();if(!tok)return;
     var fields={Periode:period,Selskap:company,OrdreNr:ordreNr,DG:dg!=null?dg:null,Begrunnelse:begrunnelse||'',Kommentar:kommentar||'',UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
-    if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:null;fields.Material=poc.mat!=null?poc.mat:0;}
+    if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:650;fields.Material=poc.mat!=null?poc.mat:0;}
     var existId=_spIds[ordreNr];
     if(existId){
       await fetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(fields)});
@@ -638,17 +661,7 @@ function plLoadDataset(company){
     if(!res){
       document.getElementById('startPanel').style.display='block';
       var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='block';
-      var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
-      var nd=document.getElementById('pl-no-data');if(nd){nd.style.display='block';nd.textContent='⚠️ Ingen datasett er delt ennå for dette selskapet. Kontakt din daglig leder.';}
-      var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='none';
-      var nm=document.getElementById('pl-no-data');if(nm){nm.style.display='block';nm.innerHTML='⚠️ Ingen datasett for <strong>'+company+'</strong> ennå. Kontakt din daglig leder, eller <a href="#" onclick="localStorage.removeItem(\'VIA_PL_COMPANY\');location.reload()">velg annet selskap</a>.';}
-    }
-  });
-}
-async function spSaveDataset(){
-  var tok=await getSpToken();if(!tok){alert('Innlogging kreves.');return;}
-  if(!ACTIVE.length){alert('Ingen data lastet inn ennå.');return;}
-  var data={src:document.getElementById('lentity').value,period:document.getElementById('aperiod').textContent,exported:new Date().toISOString(),exportedBy:_currentUser?_currentUser.name:'',rows:ACTIVE};
+      var loginBox=document.getElementById('pt.getElementById('aperiod').textContent,exported:new Date().toISOString(),exportedBy:_currentUser?_currentUser.name:'',rows:ACTIVE};
   try{
     var r=await fetch(spDriveUrl(data.src),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(r.ok){
@@ -679,6 +692,26 @@ async function spMarkDone(period,company,pl){
     var fields={Periode:period,Selskap:company,OrdreNr:'_STATUS_',Begrunnelse:pl,UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
     await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
   }catch(e){console.warn('[SP] MarkDone feilet:',e);}
+}
+// ════ END SHAREPOINT ════
+
+/* ============================================================
+   GLOBALS
+   ============================================================ */
+var ACTIVE = [], POC = {}, DGI = {}, LOCKED = false, BENCH = {};
+var _currentPeriod = '', _currentEntity = '';
+window.addEventListener('beforeunload', function(e){
+  if(ACTIVE.length){ e.preventDefault(); e.returnValue=''; }
+});
+var GROUPS = {};          // base ordreNr → [list of sub-ordreNr]
+var GRP_MODE = {};        // base ordreNr → 'samlet' | 'individuelt'
+var GRP_KEY = 'minel_via_grpmode_v1';
+var HIST_KEY = 'minel_via_history_v2';
+var STATUS_KEY = 'minel_via_status_v1';
+var SESSION_KEY = 'minel_via_session_v1';
+var HIDE_SETTLED = false, HIDE_SMALL = false, HIDE_SMALL_POC = false;
+var QS = {col:6,asc:false}, RS = {col:8,asc:false};
+var POCS = {ctch(e){console.warn('[SP] MarkDone feilet:',e);}
 }
 // ════ END SHAREPOINT ════
 
@@ -843,7 +876,7 @@ function buildBenchmarkFromHistory(){
 function fetchBenchmark(key){
   var histBench = buildBenchmarkFromHistory();
   if(Object.keys(histBench).length >= 2){
-    window._benchSource = 'historikk ('+getHist().length+' perioder)';
+    window._benchSource = 'historikk ('+getHist().length+' perioder(';
     return Promise.resolve(histBench);
   }
   window._benchSource = 'Ordrestyring API (historikk bygges opp)';
@@ -886,12 +919,12 @@ function benchChip(type,dg){
 function getHist(){ return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }
 async function syncHistSP(btn){
   var entity=_currentEntity||document.getElementById('lentity').value||'';
-  if(!entity){alert('Last inn data for et selskap først.');return;}
+  if(!entity){alert('Last inn data for et selskap først, så vet vi hvilken historikk som skal hentes.');return;}
   if(btn){btn.disabled=true;btn.textContent='⏳ Henter...';}
   var ok=await spLoadHist(entity);
   if(btn){btn.disabled=false;btn.innerHTML='☁️ Synk fra SharePoint';}
   if(ok){alert('✅ Historikk hentet og slått sammen fra SharePoint.');}
-  else{alert('Ingen historikk i SharePoint for '+entity+'. Sjekk at du er innlogget med Microsoft.');}
+  else{alert('Ingen historikk funnet i SharePoint for '+entity+'. Logg inn med Microsoft-knappen på startsiden hvis du ikke er innlogget.');}
 }
 
 function getPrevPOCData(ordreNr){
@@ -961,7 +994,7 @@ function markReady(){
     if(!confirm('Det gjenstår '+igjen+' ordre uten begrunnelse. Vil du likevel markere som ferdig?')) return;
   }
   saveStatus(pl,period,entity);spMarkDone(period,entity,pl).catch(function(e){console.warn('[SP] Status feilet:',e);});
-  alert('✅ '+pl+' er markert som ferdig for '+period+'!\nDaglig leder kan se status i Status-fanen.');
+  alert('✅ '+pl+' er markert som ferdig for '+period+'%\nDaglig leder kan se status i Status-fanen.');
   rStatus(); ST('status');
 }
 function rStatus(){
@@ -1233,11 +1266,12 @@ function parseRows(rows,src,prd){
   while(qt.options.length>1) qt.remove(1);
   types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;qt.appendChild(o);});
 
+  _currentEntity=src.replace(/\s*[–\-]\s*t\.o\.m\..*$/i,'').trim()||src.trim();
+  _currentPeriod=prd;
   document.getElementById('atitle').textContent=src;
   document.getElementById('aperiod').textContent=prd;
   document.getElementById('lperiod').value=prd;
-  _currentPeriod=prd;
-  _currentEntity=src.replace(/\s*[–\-]\s*t\.o\.m\..*$/i,'').trim()||src.trim();
+  document.getElementById('lentity').value=_currentEntity; // sett alltid — kritisk for PL-flyt
   document.getElementById('startPanel').style.display='none';
   document.getElementById('app').style.display='block';
   window.scrollTo(0,0);
@@ -1262,6 +1296,8 @@ function rDash(){
   }).length;
   var _negVIA = ACTIVE.filter(function(r){return (r.via||0)<-5000;});
   var _negVIAkr = _negVIA.reduce(function(s,r){return s+Math.abs(r.via||0);},0);
+  var _posVIARisk = ACTIVE.filter(function(r){return (r.via||0)>50000;});
+  var _posVIAkr = _posVIARisk.reduce(function(s,r){return s+(r.via||0);},0);
   // Weighted avg DG% across all T&M orders with costs > 0
   var _dgVurd = _dg2.filter(function(r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return e!=null&&e>0&&(r.totOmk||0)>500;});
   var _dgTotCost = _dgVurd.reduce(function(s,r){return s+(r.totOmk||0);},0);
@@ -1271,7 +1307,7 @@ function rDash(){
     '<div class="kpi"><div class="lb">Aktive ordrer</div><div class="vl">'+a.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">'+_pocOrdrer+' fastpris · '+_dg2.length+' regningsordrer</div></div>'+
     '<div class="kpi '+((_plFerdig===_pls.length&&_pls.length>0)?'g':'a')+'"><div class="lb">PLer ferdige</div><div class="vl">'+_plFerdig+'/'+_pls.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Har meldt seg ferdig i Status-fanen</div></div>'+
     '<div class="kpi '+(_wgtDG==null?'':_wgtDG>=0.30?'g':_wgtDG>=0.18?'a':'r')+'"><div class="lb">Snitt DG%</div><div class="vl">'+(_wgtDG!=null?Math.round(_wgtDG*100)+'%':'–')+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">Vektet snitt — regningsordrer</div></div>'+
-    '<div class="kpi '+(_negVIA.length>0?'r':'g')+'"><div class="lb">Neg. VIA</div><div class="vl">'+_negVIA.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">'+(_negVIA.length>0?'Tap: '+NK(_negVIAkr):'Ingen kostnadssprekk')+'</div></div>';
+    '<div class="kpi '+(_posVIARisk.length>0?'a':'g')+'"><div class="lb">Underbilling</div><div class="vl">'+_posVIARisk.length+'</div><div style="font-size:.74rem;color:#888;margin-top:3px;">'+(_posVIARisk.length>0?'Ikke fakturert: '+NK(_posVIAkr):'Ingen underbilling &gt; 50k')+'</div></div>';
 
   var h=a.filter(function(r){return r.risk==='HØY';}),
       m=a.filter(function(r){return r.risk==='MIDDELS';}),
@@ -1289,7 +1325,8 @@ function rDash(){
   var fs=[];
   var _dgFall=_dg2.filter(function(r){var p=getPrevDG(r.ordreNr);var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return p&&e!=null&&(p.dg-e)>0.02;});
   if(_dgFall.length>0) fs.push('🔴 '+_dgFall.length+' ordre(r) har lavere DG% enn forrige periode.');
-  if(_negVIA.length>0) fs.push('🔴 '+_negVIA.length+' ordre(r) med negativ VIA — samlet tap: '+NK(_negVIAkr)+'.');
+  if(_posVIARisk.length>0) fs.push('⚠️ '+_posVIARisk.length+' ordre(r) har positiv VIA over 50 000 kr (underbilling, samlet: '+NK(_posVIAkr)+') — vurder fakturering.');
+  if(_negVIA.length>0) fs.push('ℹ️ '+_negVIA.length+' ordre(r) med negativ VIA (aconto-overbilling: '+NK(_negVIAkr)+') — OK hvis aktive prosjekter.');
   if(_manglerBegr>0) fs.push('⚠️ '+_manglerBegr+' MIDDELS/HØY-ordre mangler begrunnelse.');
   if(_lavMargin.length) fs.push('🔴 '+_lavMargin.length+' ordre(r) med under 10% margin og kostnader over 50 000 kr.');
   if(rnd>a.length*.3) fs.push('ℹ️ '+rnd+' ordrer har rund DG% — be PLene om presisering.');
@@ -1307,7 +1344,7 @@ function rDash(){
   var pr=Object.entries(pm).sort(function(a,b){return b[1].c-a[1].c;});
   var stObj=getStatus();
   document.getElementById('pltbl').innerHTML=
-    '<thead><tr><th>Prosjektleder</th><th title="Antall aktive ordrer">Ordrer</th><th title="Vektet snitt DG% på regningsordrer">Snitt DG%</th><th title="Ordrer uten begrunnelse">Ikke vurdert</th><th title="Ordrer med VIA under -5000 kr">Neg. VIA</th><th title="Sum negativ VIA">Eksponering</th><th>Status</th></tr></thead>'+
+    '<thead><tr><th>Prosjektleder</th><th title="Antall aktive ordrer">Ordrer</th><th title="Vektet snitt DG% på regningsordrer">Snitt DG%</th><th title="Ordrer uten begrunnelse">Ikke vurdert</th><th title="Ordrer med negativ VIA (akonto-overbilling) — ikke nødvendigvis negativt">Akonto/overbill.</th><th title="Sum akonto-overbilling">Overbill. beløp</th><th>Status</th></tr></thead>'+
     '<tbody>'+pr.map(function(e){
       var pl=e[0];
       var ikkeVurdertPL=ACTIVE.filter(function(r){return r.pl===pl&&!r.hasTilbud&&!(DGI[r.ordreNr]&&DGI[r.ordreNr].k&&DGI[r.ordreNr].k.trim().length>0);}).length;
@@ -1324,7 +1361,7 @@ function rDash(){
       var _plDG=_plCost>0?_plDGRows.reduce(function(s,r){var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return s+(e||0)*(r.totOmk||0);},0)/_plCost:null;
       var _plDGcol=_plDG==null?'#aaa':_plDG>=0.30?'var(--green)':_plDG>=0.18?'var(--amber)':'var(--red)';
       var _plDGstr=_plDG!=null?'<span style="color:'+_plDGcol+';font-weight:700">'+Math.round(_plDG*100)+'%</span>':'–';
-      return '<tr><td>'+pl+'</td><td class="c">'+e[1].c+'</td><td class="c">'+_plDGstr+'</td><td class="c">'+(ikkeVurdertPL>0?'<span style="color:var(--amber);font-weight:700">'+ikkeVurdertPL+'</span>':'<span style="color:var(--green)">0</span>')+'</td><td class="c">'+(negVIAPL>0?'<span style="color:var(--red);font-weight:700">'+negVIAPL+'</span>':'–')+'</td><td class="r" style="font-weight:700;color:'+(ekspPL>0?'var(--red)':'var(--dark)')+'">'+NK(ekspPL)+'</td><td class="c">'+(stDone?'<span class="status-done">✅</span>'+_stTag:'<span class="status-wait">⏳</span>')+'</td></tr>';
+      return '<tr><td>'+pl+'</td><td class="c">'+e[1].c+'</td><td class="c">'+_plDGstr+'</td><td class="c">'+(ikkeVurdertPL>0?'<span style="color:var(--amber);font-weight:700">'+ikkeVurdertPL+'</span>':'<span style="color:var(--green)">0</span>')+'</td><td class="c">'+(negVIAPL>0?'<span style="color:var(--mid);font-weight:600">'+negVIAPL+'</span>':'–')+'</td><td class="r" style="font-weight:600;color:var(--mid);">'+NK(ekspPL)+'</td><td class="c">'+(stDone?'<span class="status-done">✅</span>'+_stTag:'<span class="status-wait">⏳</span>')+'</td></tr>';
     }).join('')+'</tbody>';
 }
 
@@ -1357,7 +1394,7 @@ function rQA(){
     return '<th'+cls+' onclick="QS={col:'+i+',asc:'+(QS.col===i?!QS.asc:false)+'};rQA()">'+n+'</th>';
   }).join('')+'<th>QA Flagg</th></tr></thead>';
   document.getElementById('qatbl').innerHTML=hdr+'<tbody>'+rows.map(function(r){
-    var vc=(r.via||0)<-5000?'color:var(--red);font-weight:700':(r.via||0)>50000?'font-weight:700':'';
+    var vc=(r.via||0)>50000?'color:var(--amber);font-weight:700':(r.via||0)<-5000?'color:var(--mid);font-weight:600':'';
     var _qdg = r.hasTilbud ? r.dg : (DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0 ? DGI[r.ordreNr].dg/100 : r.dg);
     return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.status+'</td><td>'+r.type+'</td><td style="white-space:nowrap">'+r.pl+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.beskr+'">'+r.beskr.substring(0,48)+(r.beskr.length>48?'…':'')+'</td><td>'+r.kunde+'</td><td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(_qdg)+'</td><td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td><td class="r" style="'+vc+'">'+NK(r.via)+'</td><td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
   }).join('')+'</tbody>';
@@ -1383,7 +1420,8 @@ function rRisk(){
     return '<th'+cls+' onclick="RS={col:'+i+',asc:'+(RS.col===i?!RS.asc:false)+'};rRisk()">'+n+'</th>';
   }).join('')+'<th>Risikoer</th></tr></thead>';
   document.getElementById('risktbl').innerHTML=hdr+'<tbody>'+rows.map(function(r){
-    return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td><td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td><td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td><td class="r" style="'+((r.via||0)<0?'color:var(--red);font-weight:700':'')+'">'+NK(r.via)+'</td><td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
+    var _rvc=(r.via||0)>50000?'color:var(--amber);font-weight:700':(r.via||0)<-5000?'color:var(--mid)':'';
+    return '<tr><td><strong>'+r.ordreNr+'</strong></td><td>'+r.type+'</td><td>'+r.pl+'</td><td>'+r.kunde+'</td><td class="r">'+NK(r.totOmk)+'</td><td class="r">'+PC(r.dg)+'</td><td class="r">'+NK(r.tilbud)+'</td><td class="r">'+NK(r.fakt)+'</td><td class="r" style="'+_rvc+'">'+NK(r.via)+'</td><td class="c">'+rb(r.risk)+'</td><td>'+fh(r.flags)+'</td></tr>';
   }).join('')+'</tbody>';
 }
 
@@ -1396,8 +1434,8 @@ function calcPOC(r,stkDefault){
   var gk=(inp.timer||0)*tk+(inp.mat||0);
   var esk=(r.totOmk||0)+gk;
   var fg=esk>0?Math.min((r.totOmk||0)/esk,1):null;
-  var innt=fg!=null?r.tilbud*fg:null;
-  var estDG=esk>0?(r.tilbud-esk)/r.tilbud:null;
+  var innt=(fg!=null&&r.tilbud!=null)?r.tilbud*fg:null;
+  var estDG=(esk>0&&r.tilbud!=null)?(r.tilbud-esk)/r.tilbud:null;
   var via=innt!=null&&r.fakt!=null?innt-r.fakt:null;
   return {gk:gk,esk:esk,fg:fg,innt:innt,estDG:estDG,via:via};
 }
@@ -1416,7 +1454,7 @@ function sD(id,f,v){
   DGI[id][f]=f==='k'?v:parseFloat(v)||0;
   if(f==='dg'){var _r=ACTIVE.find(function(x){return x.ordreNr===id;});if(_r&&_r.isTM)DGI[id].tmOverride=true;}
   rPOC();
-  var _p=document.getElementById('aperiod').textContent,_c=document.getElementById('lentity').value||'';
+  var _p=_currentPeriod||document.getElementById('aperiod').textContent,_c=_currentEntity||document.getElementById('lentity').value||'';
   spSaveDebounced(_p,_c,id,DGI[id].dg,DGI[id].k,'');
 }
 function resetTM(id){
@@ -1585,7 +1623,7 @@ function rPOC(){
 
   document.getElementById('poctot').innerHTML=
     '<span>Prosjekter: <strong>'+pocR.length+'</strong></span>'+
-    '<span>Total VIA (POC): <strong style="color:'+(pv<0?'var(--red)':'var(--dark)')+'">'+NK(pv)+'</strong></span>';
+    '<span>Total VIA (POC): <strong style="color:'+(pv>50000?'var(--amber)':'var(--dark)')+'">'+NK(pv)+'</strong></span>';
 
   var dv=0;
   document.getElementById('dgtbl').innerHTML=
@@ -1613,7 +1651,7 @@ function rPOC(){
           +(_tmOvr
             ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px"><span style="font-size:.8rem;color:#666">%</span>'
               +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 6px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;line-height:1.6" title="Tilbake til Auto T&M">⚡</button>'
-            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for å overstyre"><span style="font-size:.8rem;color:var(--green)">% <span title="Hentet automatisk fra Ordrestyring" style="font-size:.65rem;background:var(--green);color:#fff;border-radius:3px;padding:0 3px;margin-left:1px;font-weight:700;letter-spacing:.3px">OS</span></span>'
+            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for à overstyre"><span style="font-size:.8rem;color:var(--green)">% <span title="Hentet automatisk fra Ordrestyring" style="font-size:.65rem;background:var(--green);color:#fff;border-radius:3px;padding:0 3px;margin-left:1px;font-weight:700;letter-spacing:.3px">OS</span></span>'
             )
           +'</div>'
         : '<div style="display:flex;align-items:center;gap:4px;"><input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:35)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px"><span style="font-size:.8rem;color:#666">%</span></div>';
@@ -1627,7 +1665,7 @@ function rPOC(){
         '<td class="r">'+NK(r.fakt)+'</td>'+
         '<td>'+dgCell+'</td>'+
         '<td class="c">'+prevDGCell(r.ordreNr,c.dg)+'</td>'+
-        '<td class="r calc">'+NK(c.fs)+'</td>'+
+        '<td class="r calc">'+NL(c.fs)+'</td>'+
         '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
         '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Begrunnelse for DG%-estimat…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
         '<td class="c">'+rb(r.risk)+'</td>'+
@@ -1636,8 +1674,8 @@ function rPOC(){
 
   document.getElementById('dgtot').innerHTML=
     '<span>Prosjekter: <strong>'+dgR.length+'</strong></span>'+
-    '<span>DG-VIA: <strong style="color:'+(dv<0?'var(--red)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
-    '<span>Kombinert VIA: <strong style="color:'+((pv+dv)<0?'var(--red)':'var(--dark)')+'">'+NK(pv+dv)+'</strong></span>';
+    '<span>DG-VIA: <strong style="color:'+(dv>50000?'var(--amber)':'var(--dark)')+'">'+NK(dv)+'</strong></span>'+
+    '<span>Kombinert VIA: <strong style="color:'+((pv+dv)>100000?'var(--amber)':'var(--dark)')+'">'+NK(pv+dv)+'</strong></span>';
 }
 
 /* ============================================================
@@ -1652,7 +1690,7 @@ function rHist(){
   }
   el.innerHTML='<div class="tw"><table><thead><tr><th>Periode</th><th>Selskap</th><th>Låst av</th><th>Dato</th><th style="text-align:right">Total VIA</th><th style="text-align:right">POC-VIA</th><th style="text-align:right">DG-VIA</th><th style="text-align:center">Ordrer</th><th style="text-align:center">Kritiske</th></tr></thead><tbody>'+
     hist.slice().reverse().map(function(h){
-      return '<tr><td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td><td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td><td class="r" style="font-weight:700;color:'+(h.summary.totalVIA<0?'var(--red)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td><td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td><td class="c">'+h.summary.projectCount+'</td><td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td></tr>';
+      return '<tr><td><strong>'+h.period+'</strong></td><td>'+h.entity+'</td><td>'+h.lockedBy+'</td><td>'+new Date(h.lockedAt).toLocaleDateString('no-NO')+'</td><td class="r" style="font-weight:700;color:'+(h.summary.totalVIA>100000?'var(--amber)':'var(--dark)')+'">'+NK(h.summary.totalVIA)+'</td><td class="r">'+NK(h.summary.pocVIA)+'</td><td class="r">'+NK(h.summary.dgVIA)+'</td><td class="c">'+h.summary.projectCount+'</td><td class="c">'+(h.summary.highRisk>0?'<span style="color:var(--red);font-weight:800">'+h.summary.highRisk+'</span>':'0')+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 }
 
@@ -1694,15 +1732,15 @@ function printLockReport(lockedBy,entity,period){
     var st=getStatus();
     var k=period+'__'+entity+'__'+p.name;
     var ferdig=st[k]?'✓':'–';
-    return '<tr><td>'+p.name+'</td><td class="c">'+p.ordrer+'</td><td class="c">'+p.poc+'</td><td class="c">'+p.dg+'</td><td class="r"'+(p.via<0?' class="r neg"':'')+'>'+NK2(p.via)+'</td><td class="c">'+ferdig+'</td></tr>';
+    return '<tr><td>'+p.name+'</td><td class="c">'+p.ordrer+'</td><td class="c">'+p.poc+'</td><td class="c">'+p.dg+'</td><td class="r"'+(p.via>50000?' style="color:var(--amber);font-weight:700"':'')+'>'+NK2(p.via)+'</td><td class="c">'+ferdig+'</td></tr>';
   }).join('');
   var pocRows=ACTIVE.filter(function(r){return r.hasTilbud;}).map(function(r){
     var c=calcPOC(r),inp=POC[r.ordreNr]||{};
-    return '<tr><td>'+r.ordreNr+'</td><td>'+r.beskr.substring(0,40)+'</td><td>'+r.pl+'</td><td class="r">'+NK2(r.tilbud)+'</td><td class="r">'+PC2(c.fg)+'</td><td class="r"'+(c.via!=null&&c.via<0?' style="color:#c0392b"':'')+'>'+NK2(c.via)+'</td></tr>';
+    return '<tr><td>'+r.ordreNr+'</td><td>'+((r.beskr||'').substring(0,40))+'</td><td>'+r.pl+'</td><td class="r">'+NK2(r.tilbud)+'</td><td class="r">'+PC2(c.fg)+'</td><td class="r"'+(c.via!=null&&c.via>50000?' style="color:var(--amber);font-weight:700"':'')+'>'+NK2(c.via)+'</td></tr>';
   }).join('');
   var dgRows=ACTIVE.filter(function(r){return !r.hasTilbud;}).sort(function(a,b){return (a.via||0)-(b.via||0);}).map(function(r){
     var c=calcDG(r),inp=DGI[r.ordreNr]||{};
-    return '<tr><td>'+r.ordreNr+'</td><td>'+r.beskr.substring(0,40)+'</td><td>'+r.pl+'</td><td class="r">'+NK2(r.totOmk)+'</td><td class="r">'+PC2(c.dg)+'</td><td class="r"'+(c.via!=null&&c.via<0?' style="color:#c0392b"':'')+'>'+NK2(c.via)+'</td><td>'+((inp.k&&inp.k.substring(0,30))||'')+'</td></tr>';
+    return '<tr><td>'+r.ordreNr+'</td><td>'+((r.beskr||'').substring(0,40))+'</td><td>'+r.pl+'</td><td class="r">'+NK2(r.totOmk)+'</td><td class="r">'+PC2(c.dg)+'</td><td class="r"'+(c.via!=null&&c.via>50000?' style="color:var(--amber);font-weight:700"':'')+'>'+NK2(c.via)+'</td><td>'+((inp.k&&inp.k.substring(0,30))||'')+'</td></tr>';
   }).join('');
   var tsNow=new Date().toLocaleString('no-NO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
   document.getElementById('print-report').innerHTML=
@@ -1738,7 +1776,7 @@ function saveSnap(name,entity,period){
     }
     return {
       ordreNr:r.ordreNr,pl:r.pl,type:r.type,kunde:r.kunde,
-      beskr:r.beskr.substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,
+      beskr:(r.beskr||'').substring(0,60),tilbud:r.tilbud,totOmk:r.totOmk,fakt:r.fakt,
       via:via!=null?Math.round(via):null,
       dg:dg!=null?Math.round(dg*10000)/10000:null,
       fg:r.hasTilbud&&_fg!=null?Math.round(_fg*1000)/1000:null,
@@ -1754,6 +1792,7 @@ function saveSnap(name,entity,period){
   filtered.push(snap);
   filtered.sort(function(a,b){return a.id-b.id;});
   localStorage.setItem(HIST_KEY,JSON.stringify(filtered));
+  // Also backup to SharePoint silently (non-blocking)
   spSaveHist(entity);
 }
 
@@ -1794,11 +1833,15 @@ function _xlsxDownload(wb,filename){
 function expPOC(){
   try{
     if(typeof XLSX==='undefined'){alert('XLSX-biblioteket er ikke lastet.');return;}
-    if(!ACTIVE.length){alert('Ingen rader lastet - last inn data forst.');return;}
+    if(!ACTIVE.length){alert('Ingen rader lastet – last inn data først.');return;}
     var stk=parseFloat(document.getElementById('stk').value)||650;
-    var H=['Ordre','Prosjektleder','Beskrivelse','Type','Kunde','Omsetning','Fakturert','Risiko',
+    // One sheet, all orders – AOA avoids SheetJS type-inference crash on heterogeneous rows
+    var H=['Ordre','Prosjektleder','Beskrivelse','Type','Kunde',
+           'Omsetning','Fakturert','Risiko',
+           // POC-only cols (index 8-15)
            'Gjest.timer','Timekost','Gjest.mat','Gjest.kost','Est.sluttkost.',
            'Ferdiggrad%','EstDG%','Per.inntekt',
+           // DG-only cols (index 16-19)
            'DG%bekreftet','DG%forrige','Forrige periode','Forv.salgsverdi',
            'VIA','Kommentar/Begrunnelse'];
     var aoa=[H];
@@ -1806,18 +1849,24 @@ function expPOC(){
       if(r.hasTilbud){
         var c=calcPOC(r,stk),inp=POC[r.ordreNr]||{};
         var tkVal=inp.tk!=null?inp.tk:stk;
-        aoa.push([r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
+        aoa.push([
+          r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
           _s(r.tilbud),_s(r.fakt),r.risk||'',
           inp.timer||0,tkVal,inp.mat||0,_n(c.gk),_n(c.esk),
           _pct(c.fg),_pct(c.estDG),_n(c.innt),
-          null,null,null,null,_n(c.via),inp.k||'']);
+          null,null,null,null,
+          _n(c.via),inp.k||''
+        ]);
       } else {
         var c=calcDG(r),inp=DGI[r.ordreNr]||{},prev=getPrevDG(r.ordreNr);
-        aoa.push([r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
+        aoa.push([
+          r.ordreNr,r.pl||'',r.beskr||'',r.type||'',r.kunde||'',
           _s(r.totOmk),_s(r.fakt),r.risk||'',
           null,null,null,null,null,null,null,null,
           _pct(c.dg),prev&&prev.dg!=null?_pct(prev.dg):null,
-          prev?prev.period||'':null,_n(c.fs),_n(c.via),inp.k||'']);
+          prev?prev.period||'':null,_n(c.fs),
+          _n(c.via),inp.k||''
+        ]);
       }
     });
     var ws=XLSX.utils.aoa_to_sheet(aoa),wb=XLSX.utils.book_new();
@@ -1830,8 +1879,10 @@ function expHist(){
     if(typeof XLSX==='undefined'){alert('XLSX-biblioteket er ikke lastet.');return;}
     var hist=getHist();
     if(!hist.length){alert('Ingen historikk å eksportere.');return;}
+    // Sort periods chronologically by snapshot id
     hist.sort(function(a,b){return(a.id||0)-(b.id||0);});
     var periods=hist.map(function(h){return h.period;});
+    // Build project map: ordreNr → {pl, type, kunde, data:{period:{via,dg,risk}}}
     var projMap={},projOrder=[];
     hist.forEach(function(h){
       h.projects.forEach(function(p){
@@ -1842,9 +1893,14 @@ function expHist(){
         projMap[p.ordreNr].data[h.period]={via:p.via,dg:p.dg,risk:p.risk||''};
       });
     });
+    // Header: Ordre, PL, Type, Kunde, then per-period VIA/DG%/Risiko, then delta cols
     var H=['Ordre','Prosjektleder','Type','Kunde'];
     periods.forEach(function(p){H.push('VIA '+p,'DG% '+p,'Risiko '+p);});
-    if(periods.length>=2){H.push('Δ VIA (siste)','Δ DG% (siste)');}
+    if(periods.length>=2){
+      H.push('Δ VIA (siste)');
+      H.push('Δ DG% (siste)');
+    }
+    // Build rows – one per project
     var aoa=[H];
     projOrder.forEach(function(nr){
       var proj=projMap[nr];
@@ -1858,8 +1914,10 @@ function expHist(){
       if(periods.length>=2){
         var last=proj.data[periods[periods.length-1]];
         var prev=proj.data[periods[periods.length-2]];
-        row.push((last&&last.via!=null&&prev&&prev.via!=null)?_n(last.via-prev.via):null);
-        row.push((last&&last.dg!=null&&prev&&prev.dg!=null)?_pct(last.dg-prev.dg):null);
+        var dVia=(last&&last.via!=null&&prev&&prev.via!=null)?_n(last.via-prev.via):null;
+        var dDg=(last&&last.dg!=null&&prev&&prev.dg!=null)?_pct(last.dg-prev.dg):null;
+        row.push(dVia);
+        row.push(dDg);
       }
       aoa.push(row);
     });
