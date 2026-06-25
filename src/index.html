@@ -1086,7 +1086,8 @@ function buildRangeSelectors(weeks){
     const o2=document.createElement('option'); o2.value=w; o2.textContent=label; to.appendChild(o2);
   });
   from.value = savedFrom && weeks.includes(savedFrom) ? savedFrom : weeks[0];
-  to.value   = savedTo   && weeks.includes(savedTo)   ? savedTo   : weeks[weeks.length-1];
+  const _curYrW=weeks.filter(w=>w.startsWith(`${new Date().getFullYear()}-W`));
+  to.value   = savedTo && weeks.includes(savedTo) ? savedTo : (_curYrW.length?_curYrW[_curYrW.length-1]:weeks[weeks.length-1]);
 }
 
 function applyRange(){
@@ -1104,7 +1105,7 @@ function resetRange(){
   const from = document.getElementById('rangeFrom');
   const to   = document.getElementById('rangeTo');
   if(from?.options.length) from.value = from.options[0].value;
-  if(to?.options.length)   to.value   = to.options[to.options.length-1].value;
+  if(to?.options.length){const _opts=Array.from(to.options),_rcy=new Date().getFullYear(),_last=_opts.filter(o=>o.value.startsWith(`${_rcy}-W`)).pop();to.value=_last?_last.value:to.options[to.options.length-1].value;}
   updateChart();
 }
 
@@ -1483,7 +1484,8 @@ function updateTable(){
     html+=`<tr class="sec-row"><td colspan="7">📅 ${co.navn}</td></tr>`;
     Object.entries(groups).forEach(([name,d])=>{
       const wn=d.weeks.map(w=>parseInt(w.split('-W')[1]));
-      const wStr=wn.length>1?`Uke ${Math.min(...wn)}–${Math.max(...wn)}`:`Uke ${wn[0]}`;
+      const _wkS=d.weeks.slice().sort(),_cy=new Date().getFullYear(),_sY=parseInt(_wkS[0].split('-W')[0]),_eY=parseInt(_wkS[_wkS.length-1].split('-W')[0]);
+      const wStr=wn.length>1?`Uke ${Math.min(...wn)}${_sY!==_cy&&_sY!==_eY?' '+_sY:''}–${Math.max(...wn)}${_eY!==_cy?' '+_eY:''}`:`Uke ${wn[0]}${_sY!==_cy?' '+_sY:''}`;
       const pct=Math.min(100,d.crew/15*100);
       html+=`<tr>
         <td><strong>${name}</strong></td>
@@ -1511,7 +1513,7 @@ function updateTable(){
       const wn=Object.keys(p.weeklyCrews).map(w=>parseInt(w.split('-W')[1]));
       const tot=Object.values(p.weeklyCrews).reduce((s,c)=>s+(parseInt(c)||0),0);
       const avg=wn.length?Math.round(tot/wn.length):0;
-      const wStr=wn.length>1?`Uke ${Math.min(...wn)}–${Math.max(...wn)}`:(wn.length?`Uke ${wn[0]}`:'—');
+      const wStr=(()=>{const _s=Object.keys(p.weeklyCrews).sort();if(!_s.length)return'—';const _cy=new Date().getFullYear(),_sy=parseInt(_s[0].split('-W')[0]),_ey=parseInt(_s[_s.length-1].split('-W')[0]);if(wn.length>1)return`Uke ${Math.min(...wn)}${_sy!==_cy&&_sy!==_ey?' '+_sy:''}–${Math.max(...wn)}${_ey!==_cy?' '+_ey:''}`;return`Uke ${wn[0]}${_sy!==_cy?' '+_sy:''}`})();
       const pct=Math.min(100,avg/15*100);
       const ci=companies.findIndex(c=>c.navn===p.company);
       const bc=ci>=0?col(ci):MANUAL_COLOR;
@@ -2287,7 +2289,8 @@ async function postToSharePointList(p){
     const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'--');
     const sumTxt=p.kontraktssum>0?'kr '+Math.round(p.kontraktssum).toLocaleString('no-NO'):'—';
     const url=`${GRAPH}/sites/${SP_SITE}/lists/${CONFIG.spKunngjøringer}/items`;
-    const r=await gFetch(url,{method:'POST',body:JSON.stringify({fields:{Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,Tekst:`${p.company} har vunnet et nytt prosjekt: ${p.name}. Kontraktssum: ${sumTxt}. Periode: ${period}.`}})});
+    const _oppDt=(p.createdAt||p.created)?new Date(p.createdAt||p.created).toLocaleDateString('no-NO'):'';
+    const r=await gFetch(url,{method:'POST',body:JSON.stringify({fields:{Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,Tekst:`${p.company} har vunnet et nytt prosjekt: ${p.name}. Kontraktssum: ${sumTxt}. Periode: ${period}.${_oppDt?' Opprettet: '+_oppDt+'.':''}`}})});
     if(!r||!r.ok)throw new Error('HTTP '+(r?.status||0));console.log('[Graph kunngjøringer] ✅ Sendt');
   }catch(e){console.error('[Graph Kunngjøringer] ❌',e.message);showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);}
 }
