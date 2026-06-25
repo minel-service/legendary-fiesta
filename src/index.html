@@ -12,7 +12,7 @@
     *{box-sizing:border-box;margin:0;padding:0}
     :root{color-scheme:light}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f3f8;color:#1C2344;min-height:100vh}h
-h
+hh
     /* ── Login screen ── */
     #loginScreen{position:fixed;inset:0;background:#1C2344;z-index:1000;displhay:flex;align-items:center;justify-content:center;padding:20px}
     .login-box{background:white;border-radius:20px;padding:36px 40px;width:700px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.3);animation:popIn .3s ease}
@@ -1088,6 +1088,8 @@ function buildRangeSelectors(weeks){
   from.value = savedFrom && weeks.includes(savedFrom) ? savedFrom : weeks[0];
   const _curYrW=weeks.filter(w=>w.startsWith(`${new Date().getFullYear()}-W`));
   to.value   = savedTo && weeks.includes(savedTo) ? savedTo : (_curYrW.length?_curYrW[_curYrW.length-1]:weeks[weeks.length-1]);
+    _rangeFrom = from.value;
+    _rangeTo   = to.value;
 }
 
 function applyRange(){
