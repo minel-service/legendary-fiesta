@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.15</title>
+<title>VIA QA – Minel AS v9.16</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -189,7 +189,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
-  <span class="hd-badge">v9.15</span>
+  <span class="hd-badge">v9.16</span>
 </header>
 
 <!-- START PANEL -->
@@ -450,7 +450,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.15 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.16 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -524,6 +524,7 @@ function detectUser(account){
       var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
     }
   } else {
+    // (DL branch below)
     // DL: hide PL card login button, show confirmation in DL card
     var loginBox2=document.getElementById('pl-login-box');if(loginBox2)loginBox2.style.display='none';
     var dlConf=document.getElementById('dl-login-confirm');
@@ -560,13 +561,22 @@ function loadDatasetJSON(file){
   };
   reader.readAsText(file);
 }
-function unlockPL(pl){
+async function unlockPL(pl){
   if(!_currentUser||!_currentUser.isDL){alert('Kun DL kan åpne for redigering.');return;}
   var stObj=getStatus();
   var period=_currentPeriod||document.getElementById('aperiod').textContent;
   var company=_currentEntity||document.getElementById('lentity').value||'';
   var k=period+'__'+company+'__'+pl;
   if(stObj[k]){delete stObj[k];localStorage.setItem(STATUS_KEY,JSON.stringify(stObj));}
+  // Slett SP STATUS-item permanent slik at reload ikke låser igjen
+  var existId=_spIds['_STATUS_'+pl];
+  if(existId){
+    try{
+      await spFetch(SP_GRAPH+'/items/'+existId,{method:'DELETE'});
+      delete _spIds['_STATUS_'+pl];
+      console.log('[SP] STATUS slettet for',pl);
+    }catch(e){console.warn('[SP] Kunne ikke slette STATUS:',e);}
+  }
   rStatus();rPOC();
 }
 
@@ -763,7 +773,14 @@ function spSaveDebounced(period,company,ordreNr,dg,k,kommentar,poc){
 async function spMarkDone(period,company,pl){
   try{
     var fields={Periode:period,Selskap:company,OrdreNr:'_STATUS_',Begrunnelse:pl,UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
-    await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+    var existId=_spIds['_STATUS_'+pl];
+    if(existId){
+      // PATCH eksisterende — unngår duplikate STATUS-rader
+      await spFetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});
+    } else {
+      var r=await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+      if(r&&r.ok){var j=await r.json();if(j.id)_spIds['_STATUS_'+pl]=j.id;}
+    }
   }catch(e){console.warn('[SP] MarkDone feilet:',e);}
 }
 // ════ END SHAREPOINT ════
@@ -1315,6 +1332,29 @@ function parseRows(rows,src,prd){
     while(s.options.length>1) s.remove(1);
     pls.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;s.appendChild(o);});
   });
+
+  // Auto-sett PL-filter etter login
+  if(_currentUser&&!_currentUser.isDL){
+    var myName=_currentUser.plName||'';
+    // Prøv eksakt match, deretter case-insensitiv
+    var match=pls.find(function(p){return p===myName;}) ||
+               pls.find(function(p){return p.toLowerCase()===myName.toLowerCase();}) ||
+               pls.find(function(p){
+                 // Fuzzy: første+siste ord matcher (håndterer mellomnavn-forskjeller)
+                 var pa=p.toLowerCase().split(' ');var na=myName.toLowerCase().split(' ');
+                 return pa[0]===na[0]&&pa[pa.length-1]===na[na.length-1];
+               });
+    if(match){
+      var ppSel=document.getElementById('pp');if(ppSel)ppSel.value=match;
+      var qpSel=document.getElementById('qp');if(qpSel)qpSel.value=match;
+      if(match!==myName)_currentUser.plName=match; // juster til datasettnavnet
+    } else if(myName){
+      // Navn fra Azure AD finnes ikke i datasett — vis advarsel
+      setTimeout(function(){
+        spShowError('⚠️ Ditt navn ('+myName+') ble ikke funnet i datasettet. Kontakt daglig leder for å sjekke at prosjektledernavn stemmer overens med Ordrestyring.');
+      },500);
+    }
+  }
   var qt=document.getElementById('qt');
   while(qt.options.length>1) qt.remove(1);
   types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;qt.appendChild(o);});
@@ -1997,82 +2037,4 @@ function saveSession(){
   }catch(e){console.warn('[Session] Save failed:',e);}
 }
 function resumeSession(){
-  var raw=localStorage.getItem(SESSION_KEY);if(!raw)return;
-  try{
-    var s=JSON.parse(raw);
-    ACTIVE=s.rows||[];POC=s.poi||{};DGI=s.dgi||{};
-    _currentPeriod=s.period||'';_currentEntity=s.entity||'';LOCKED=s.locked||false;
-    document.getElementById('atitle').textContent=s.entity||'';
-    document.getElementById('aperiod').textContent=s.period||'';
-    document.getElementById('lperiod').value=s.period||'';
-    if(LOCKED){document.getElementById('btnlock').textContent='✅ Låst: '+s.period;document.getElementById('btnlock').disabled=true;}
-    else{document.getElementById('btnlock').textContent='🔒 Lås periode';document.getElementById('btnlock').disabled=false;}
-    // Repopulate PL/type selects
-    var pls=[...new Set(ACTIVE.map(function(r){return r.pl;}))].filter(Boolean).sort();
-    var types=[...new Set(ACTIVE.map(function(r){return r.type;}))].filter(Boolean).sort();
-    ['qp','pp'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);pls.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});});
-    var qt=document.getElementById('qt');while(qt.options.length>1)qt.remove(1);types.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;qt.appendChild(o);});
-    detectGroups();
-    document.getElementById('startPanel').style.display='none';
-    document.getElementById('progressWrap').style.display='none';
-    document.getElementById('app').style.display='block';
-    window.scrollTo(0,0);
-    rDash();rQA();rRisk();rPOC();rHist();rStatus();
-    // Refresh DG/POC from SharePoint in background
-    if(_currentPeriod&&_currentEntity)spLoadAssessments(_currentPeriod,_currentEntity).then(function(ok){if(ok){rPOC();rStatus();}});
-    document.getElementById('resume-banner').style.display='none';
-  }catch(e){console.warn('[Session] Resume failed:',e);}
-}
-function clearSession(){
-  localStorage.removeItem(SESSION_KEY);
-  document.getElementById('resume-banner').style.display='none';
-}
-function checkResumeSession(){
-  var raw=localStorage.getItem(SESSION_KEY);
-  var banner=document.getElementById('resume-banner');
-  if(!raw||!banner)return;
-  try{
-    var s=JSON.parse(raw);
-    var ts=new Date(s.savedAt).toLocaleString('no-NO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-    var lck=s.locked?' ✅ Låst':'';
-    document.getElementById('resume-info').textContent=s.entity+' · '+s.period+lck+' · lagret '+ts;
-    banner.style.display='flex';
-  }catch(e){}
-}
-
-/* ============================================================
-   NAV & RESET
-   ============================================================ */
-function ST(n){
-  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('tab-'+n).classList.add('active');
-  document.querySelectorAll('.tab')[{dash:0,qa:1,risk:2,poc:3,status:4,hist:5}[n]].classList.add('active');
-  if(n==='status') rStatus();
-}
-function resetApp(){
-  ACTIVE=[];POC={};DGI={};LOCKED=false;BENCH={};
-  _currentPeriod='';_currentEntity='';
-  QS={col:6,asc:false};RS={col:8,asc:false};POCS={col:4,asc:false};DGS={col:5,asc:false};
-  HIDE_SETTLED=false;HIDE_SMALL=false;HIDE_SMALL_POC=false;
-  localStorage.removeItem(SESSION_KEY);
-  document.getElementById('btnlock').textContent='🔒 Lås periode';
-  document.getElementById('btnlock').disabled=false;
-  document.getElementById('app').style.display='none';
-  document.getElementById('startPanel').style.display='block';
-  window.scrollTo(0,0);
-}
-document.addEventListener('DOMContentLoaded',function(){checkResumeSession();});
-</script>
-<div id="report-overlay">
-  <div id="report-wrap">
-    <div id="report-toolbar">
-      <h2>📄 Perioderapport — kontroller før sending til regnskap</h2>
-      <button class="btn-print" onclick="window.print()">🖨️ Skriv ut / PDF</button>
-      <button class="btn-close-rpt" onclick="document.getElementById('report-overlay').classList.remove('open')">✕ Lukk</button>
-    </div>
-    <div id="print-report"></div>
-  </div>
-</div>
-</body>
-</html>
+ 
