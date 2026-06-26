@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.13</title>
+<title>VIA QA – Minel AS v9.14</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -189,7 +189,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
-  <span class="hd-badge">v9.13</span>
+  <span class="hd-badge">v9.14</span>
 </header>
 
 <!-- START PANEL -->
@@ -228,8 +228,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <!-- DL CARD: Daglig leder -->
     <div style="background:#fff;border-radius:16px;padding:36px 32px;box-shadow:0 4px 24px rgba(0,0,0,.10);text-align:center;">
       <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:10px;">Daglig leder</div>
-      <div style="font-size:2.5rem;margin-bottom:12px;">�
-</div>
+      <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
       <h2 style="color:#1a1a2e;margin:0 0 6px;font-size:1.2rem;">Hent perioderegnskap</h2>
       <p style="color:#666;font-size:.84rem;margin:0 0 20px;">Direkte fra Ordrestyring via API</p>
       <div id="dl-login-confirm" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-bottom:16px;text-align:center;"></div>
@@ -451,7 +450,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.13 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.14 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -613,9 +612,14 @@ async function spLoadAssessments(period,company){
   try{
     var tok=await getSpToken();if(!tok)return false;
     var filter=encodeURIComponent("fields/Periode eq '"+period+"' and fields/Selskap eq '"+company+"'");
-    var r=await fetch(SP_GRAPH+'/items?$expand=fields&$filter='+filter+'&$top=2000',{headers:{'Authorization':'Bearer '+tok}});
-    var j=await r.json();
-    (j.value||[]).forEach(function(item){
+    var allItems=[], url=SP_GRAPH+'/items?$expand=fields&$filter='+filter+'&$top=5000';
+    while(url){
+      var r=await fetch(url,{headers:{'Authorization':'Bearer '+tok}});
+      var j=await r.json();
+      (j.value||[]).forEach(function(i){allItems.push(i);});
+      url=j['@odata.nextLink']||null;
+    }
+    allItems.forEach(function(item){
       var f=item.fields||{};
       if(!f.OrdreNr)return;
       if(f.OrdreNr==='_STATUS_'){
@@ -631,7 +635,7 @@ async function spLoadAssessments(period,company){
         if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:null,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||null;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
       }
     });
-    console.log('[SP] Lastet',j.value&&j.value.length,'vurderinger for',period);
+    console.log('[SP] Lastet',allItems.length,'vurderinger for',period);
     return true;
   }catch(e){console.warn('[SP] Load feilet:',e);return false;}
 }
@@ -661,7 +665,17 @@ function plLoadDataset(company){
     if(!res){
       document.getElementById('startPanel').style.display='block';
       var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='block';
-      var loginBox=document.getElementById('pt.getElementById('aperiod').textContent,exported:new Date().toISOString(),exportedBy:_currentUser?_currentUser.name:'',rows:ACTIVE};
+      var loginBox=document.getElementById('pl-login-box');if(loginBox)loginBox.style.display='none';
+      var nd=document.getElementById('pl-no-data');if(nd){nd.style.display='block';nd.textContent='⚠️ Ingen datasett er delt ennå for dette selskapet. Kontakt din daglig leder.';}
+      var picker=document.getElementById('pl-co-picker');if(picker)picker.style.display='none';
+      var nm=document.getElementById('pl-no-data');if(nm){nm.style.display='block';nm.innerHTML='⚠️ Ingen datasett for <strong>'+company+'</strong> ennå. Kontakt din daglig leder, eller <a href="#" onclick="localStorage.removeItem(\'VIA_PL_COMPANY\');location.reload()">velg annet selskap</a>.';}
+    }
+  });
+}
+async function spSaveDataset(){
+  var tok=await getSpToken();if(!tok){alert('Innlogging kreves.');return;}
+  if(!ACTIVE.length){alert('Ingen data lastet inn ennå.');return;}
+  var data={src:document.getElementById('lentity').value,period:document.getElementById('aperiod').textContent,exported:new Date().toISOString(),exportedBy:_currentUser?_currentUser.name:'',rows:ACTIVE};
   try{
     var r=await fetch(spDriveUrl(data.src),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(r.ok){
@@ -692,26 +706,6 @@ async function spMarkDone(period,company,pl){
     var fields={Periode:period,Selskap:company,OrdreNr:'_STATUS_',Begrunnelse:pl,UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
     await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
   }catch(e){console.warn('[SP] MarkDone feilet:',e);}
-}
-// ════ END SHAREPOINT ════
-
-/* ============================================================
-   GLOBALS
-   ============================================================ */
-var ACTIVE = [], POC = {}, DGI = {}, LOCKED = false, BENCH = {};
-var _currentPeriod = '', _currentEntity = '';
-window.addEventListener('beforeunload', function(e){
-  if(ACTIVE.length){ e.preventDefault(); e.returnValue=''; }
-});
-var GROUPS = {};          // base ordreNr → [list of sub-ordreNr]
-var GRP_MODE = {};        // base ordreNr → 'samlet' | 'individuelt'
-var GRP_KEY = 'minel_via_grpmode_v1';
-var HIST_KEY = 'minel_via_history_v2';
-var STATUS_KEY = 'minel_via_status_v1';
-var SESSION_KEY = 'minel_via_session_v1';
-var HIDE_SETTLED = false, HIDE_SMALL = false, HIDE_SMALL_POC = false;
-var QS = {col:6,asc:false}, RS = {col:8,asc:false};
-var POCS = {ctch(e){console.warn('[SP] MarkDone feilet:',e);}
 }
 // ════ END SHAREPOINT ════
 
@@ -876,7 +870,7 @@ function buildBenchmarkFromHistory(){
 function fetchBenchmark(key){
   var histBench = buildBenchmarkFromHistory();
   if(Object.keys(histBench).length >= 2){
-    window._benchSource = 'historikk ('+getHist().length+' perioder(';
+    window._benchSource = 'historikk ('+getHist().length+' perioder)';
     return Promise.resolve(histBench);
   }
   window._benchSource = 'Ordrestyring API (historikk bygges opp)';
@@ -994,7 +988,7 @@ function markReady(){
     if(!confirm('Det gjenstår '+igjen+' ordre uten begrunnelse. Vil du likevel markere som ferdig?')) return;
   }
   saveStatus(pl,period,entity);spMarkDone(period,entity,pl).catch(function(e){console.warn('[SP] Status feilet:',e);});
-  alert('✅ '+pl+' er markert som ferdig for '+period+'%\nDaglig leder kan se status i Status-fanen.');
+  alert('✅ '+pl+' er markert som ferdig for '+period+'!\nDaglig leder kan se status i Status-fanen.');
   rStatus(); ST('status');
 }
 function rStatus(){
@@ -1326,7 +1320,7 @@ function rDash(){
   var _dgFall=_dg2.filter(function(r){var p=getPrevDG(r.ordreNr);var e=(DGI[r.ordreNr]&&DGI[r.ordreNr].dg>0)?DGI[r.ordreNr].dg/100:r.dg;return p&&e!=null&&(p.dg-e)>0.02;});
   if(_dgFall.length>0) fs.push('🔴 '+_dgFall.length+' ordre(r) har lavere DG% enn forrige periode.');
   if(_posVIARisk.length>0) fs.push('⚠️ '+_posVIARisk.length+' ordre(r) har positiv VIA over 50 000 kr (underbilling, samlet: '+NK(_posVIAkr)+') — vurder fakturering.');
-  if(_negVIA.length>0) fs.push('ℹ️ '+_negVIA.length+' ordre(r) med negativ VIA (aconto-overbilling: '+NK(_negVIAkr)+') — OK hvis aktive prosjekter.');
+  if(_negVIA.length>0) fs.push('ℹ️ '+_negVIA.length+' ordre(r) med negativ VIA (akonto-overbilling: '+NK(_negVIAkr)+') — OK hvis aktive prosjekter.');
   if(_manglerBegr>0) fs.push('⚠️ '+_manglerBegr+' MIDDELS/HØY-ordre mangler begrunnelse.');
   if(_lavMargin.length) fs.push('🔴 '+_lavMargin.length+' ordre(r) med under 10% margin og kostnader over 50 000 kr.');
   if(rnd>a.length*.3) fs.push('ℹ️ '+rnd+' ordrer har rund DG% — be PLene om presisering.');
@@ -1651,7 +1645,7 @@ function rPOC(){
           +(_tmOvr
             ?'<input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:_tmPct)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px"><span style="font-size:.8rem;color:#666">%</span>'
               +'<button onclick="resetTM(\''+r.ordreNr+'\')" style="font-size:.7rem;padding:1px 6px;background:var(--greenbg);color:var(--green);border:1px solid var(--green);border-radius:4px;cursor:pointer;line-height:1.6" title="Tilbake til Auto T&M">⚡</button>'
-            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for à overstyre"><span style="font-size:.8rem;color:var(--green)">% <span title="Hentet automatisk fra Ordrestyring" style="font-size:.65rem;background:var(--green);color:#fff;border-radius:3px;padding:0 3px;margin-left:1px;font-weight:700;letter-spacing:.3px">OS</span></span>'
+            :'<input class="pi" type="text" inputmode="numeric" value="'+_tmPct+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:52px;border-color:var(--green);color:var(--green);font-weight:600;" title="Auto T&M — rediger for å overstyre"><span style="font-size:.8rem;color:var(--green)">% <span title="Hentet automatisk fra Ordrestyring" style="font-size:.65rem;background:var(--green);color:#fff;border-radius:3px;padding:0 3px;margin-left:1px;font-weight:700;letter-spacing:.3px">OS</span></span>'
             )
           +'</div>'
         : '<div style="display:flex;align-items:center;gap:4px;"><input class="pi" type="text" inputmode="numeric" value="'+(inp.dg!=null?inp.dg:35)+'" '+dis+' onfocus="piFocus(this)" onblur="piBlur(this)" onchange="piChange(\''+r.ordreNr+'\',\'dg\',this)" style="width:56px"><span style="font-size:.8rem;color:#666">%</span></div>';
@@ -1665,7 +1659,7 @@ function rPOC(){
         '<td class="r">'+NK(r.fakt)+'</td>'+
         '<td>'+dgCell+'</td>'+
         '<td class="c">'+prevDGCell(r.ordreNr,c.dg)+'</td>'+
-        '<td class="r calc">'+NL(c.fs)+'</td>'+
+        '<td class="r calc">'+NK(c.fs)+'</td>'+
         '<td class="r '+(c.via==null?'':(c.via<0?'vneg':'vpos'))+'">'+NK(c.via)+'</td>'+
         '<td><input class="ci'+(warn?' req':'')+'" placeholder="'+(warn?'⚠️ Begrunnelse påkrevet':'Begrunnelse for DG%-estimat…')+'" value="'+(inp.k||'')+'" '+dis+' onchange="sD(\''+r.ordreNr+'\',\'k\',this.value)"></td>'+
         '<td class="c">'+rb(r.risk)+'</td>'+
