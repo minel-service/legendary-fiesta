@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.16</title>
+<title>VIA QA – Minel AS v9.17</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -189,7 +189,8 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
-  <span class="hd-badge">v9.16</span>
+  <span id="save-badge" style="display:none;font-size:.7rem;padding:2px 9px;border-radius:10px;margin-right:8px;font-weight:600;transition:opacity .4s;"></span>
+  <span class="hd-badge">v9.17</span>
 </header>
 
 <!-- START PANEL -->
@@ -450,7 +451,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.16 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.17 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -686,7 +687,7 @@ async function spLoadAssessments(period,company){
         _spIds['_STATUS_'+(f.Begrunnelse||'')]=item.id;
       } else {
         _spIds[f.OrdreNr]=item.id;
-        if(f.DG!=null){if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:parseFloat(f.DG)||35,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=parseFloat(f.DG)||35;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
+        if(f.DG!=null){var _dgVal=parseFloat(f.DG);if(isNaN(_dgVal))_dgVal=35;if(!DGI[f.OrdreNr])DGI[f.OrdreNr]={dg:_dgVal,k:f.Begrunnelse||''};else{DGI[f.OrdreNr].dg=_dgVal;if(f.Begrunnelse)DGI[f.OrdreNr].k=f.Begrunnelse;}}
         var _hasPoc=f.Kommentar||f.Timer!=null||f.Timekost!=null||f.Material!=null;
         if(_hasPoc){if(!POC[f.OrdreNr])POC[f.OrdreNr]={timer:0,tk:null,mat:0,k:''};if(f.Kommentar)POC[f.OrdreNr].k=f.Kommentar;if(f.Timer!=null)POC[f.OrdreNr].timer=parseFloat(f.Timer)||0;if(f.Timekost!=null)POC[f.OrdreNr].tk=parseFloat(f.Timekost)||null;if(f.Material!=null)POC[f.OrdreNr].mat=parseFloat(f.Material)||0;}
       }
@@ -694,6 +695,22 @@ async function spLoadAssessments(period,company){
     console.log('[SP] Lastet',allItems.length,'vurderinger for',period);
     return true;
   }catch(e){console.warn('[SP] Load feilet:',e);return false;}
+}
+
+var _saveBadgeTimer=null;
+function spShowSaveStatus(ok){
+  var el=document.getElementById('save-badge');
+  if(!el)return;
+  clearTimeout(_saveBadgeTimer);
+  if(ok){
+    el.textContent='✓ Lagret';
+    el.style.cssText='display:inline;font-size:.7rem;padding:2px 9px;border-radius:10px;margin-right:8px;font-weight:600;background:#d1fae5;color:#065f46;';
+    _saveBadgeTimer=setTimeout(function(){el.style.display='none';},3000);
+  } else {
+    el.textContent='⚠️ Lagring feilet';
+    el.style.cssText='display:inline;font-size:.7rem;padding:2px 9px;border-radius:10px;margin-right:8px;font-weight:600;background:#fee2e2;color:#991b1b;';
+    // Blir stående til neste vellykkede lagring
+  }
 }
 
 function spShowConflict(ordreNr){
@@ -718,11 +735,22 @@ async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar,
         spShowConflict(ordreNr);
         return;
       }
+      if(r&&r.status===404){
+        // Item slettet i SP siden sist innlasting — nullstill og POST på nytt
+        console.warn('[SP] 404 på PATCH',ordreNr,'— faller tilbake til POST');
+        delete _spIds[ordreNr]; delete _spEtags[existId];
+        var r2=await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+        if(r2&&r2.ok){var j2=await r2.json();if(j2.id){_spIds[ordreNr]=j2.id;if(j2['@odata.etag'])_spEtags[j2.id]=j2['@odata.etag'];}}
+        spShowSaveStatus(r2&&r2.ok);
+        return;
+      }
       // Oppdater ETag fra svar
       if(r&&r.ok){var newEtag=r.headers.get('ETag');if(newEtag)_spEtags[existId]=newEtag;}
+      spShowSaveStatus(r&&r.ok);
     } else {
       var r=await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
       if(r&&r.ok){var j=await r.json();if(j.id){_spIds[ordreNr]=j.id;if(j['@odata.etag'])_spEtags[j.id]=j['@odata.etag'];}}
+      spShowSaveStatus(r&&r.ok);
     }
   }catch(e){console.warn('[SP] Save feilet:',e);}
 }
@@ -1996,45 +2024,4 @@ function expHist(){
     // Build rows – one per project
     var aoa=[H];
     projOrder.forEach(function(nr){
-      var proj=projMap[nr];
-      var row=[nr,proj.pl,proj.type,proj.kunde];
-      periods.forEach(function(p){
-        var d=proj.data[p];
-        row.push(d?_n(d.via):null);
-        row.push(d&&d.dg!=null?_pct(d.dg):null);
-        row.push(d?d.risk:null);
-      });
-      if(periods.length>=2){
-        var last=proj.data[periods[periods.length-1]];
-        var prev=proj.data[periods[periods.length-2]];
-        var dVia=(last&&last.via!=null&&prev&&prev.via!=null)?_n(last.via-prev.via):null;
-        var dDg=(last&&last.dg!=null&&prev&&prev.dg!=null)?_pct(last.dg-prev.dg):null;
-        row.push(dVia);
-        row.push(dDg);
-      }
-      aoa.push(row);
-    });
-    var ws=XLSX.utils.aoa_to_sheet(aoa),wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Historikk');
-    _xlsxDownload(wb,'VIA_Historikk_'+new Date().toISOString().substring(0,10)+'.xlsx');
-  }catch(e){alert('Eksport feilet: '+e.message+'\n'+e.stack);}
-}
-function clearHist(){
-  if(confirm('Slette all historikk?')){ localStorage.removeItem(HIST_KEY); rHist(); }
-}
-
-/* ============================================================
-   SESSION PERSIST
-   ============================================================ */
-function saveSession(){
-  if(!ACTIVE.length)return;
-  try{
-    localStorage.setItem(SESSION_KEY,JSON.stringify({
-      savedAt:new Date().toISOString(),
-      period:_currentPeriod,entity:_currentEntity,locked:LOCKED,
-      rows:ACTIVE,poi:POC,dgi:DGI
-    }));
-  }catch(e){console.warn('[Session] Save failed:',e);}
-}
-function resumeSession(){
  
