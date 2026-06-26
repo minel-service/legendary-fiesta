@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.17</title>
+<title>VIA QA – Minel AS v9.18</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -190,7 +190,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
   <span id="save-badge" style="display:none;font-size:.7rem;padding:2px 9px;border-radius:10px;margin-right:8px;font-weight:600;transition:opacity .4s;"></span>
-  <span class="hd-badge">v9.17</span>
+  <span class="hd-badge">v9.18</span>
 </header>
 
 <!-- START PANEL -->
@@ -451,7 +451,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.17 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.18 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -1080,7 +1080,9 @@ function saveStatus(pl,period,entity){
   localStorage.setItem(STATUS_KEY,JSON.stringify(st));
 }
 function clearAllReady(){ localStorage.removeItem(STATUS_KEY); rStatus(); alert('Status nullstilt.'); }
-function markReady(){
+async function markReady(){
+  var btn = document.getElementById('ready-btn');
+  if(btn && btn.disabled) return; // blokkér dobbel-submit
   var pl = document.getElementById('pp').value||(_currentUser&&!_currentUser.isDL?_currentUser.plName:'');
   if(!pl){ alert('Velg prosjektleder i filteret øverst, eller logg inn for automatisk gjenkjenning.'); return; }
   var period = _currentPeriod || document.getElementById('aperiod').textContent;
@@ -1091,9 +1093,18 @@ function markReady(){
     var igjen = dgR.length - vurderte.length;
     if(!confirm('Det gjenstår '+igjen+' ordre uten begrunnelse. Vil du likevel markere som ferdig?')) return;
   }
-  saveStatus(pl,period,entity);spMarkDone(period,entity,pl).catch(function(e){console.warn('[SP] Status feilet:',e);});
-  alert('✅ '+pl+' er markert som ferdig for '+period+'!\nDaglig leder kan se status i Status-fanen.');
-  rStatus(); ST('status');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Lagrer…'; }
+  try{
+    saveStatus(pl,period,entity);
+    await spMarkDone(period,entity,pl);
+    if(btn){ btn.textContent='✅ Ferdig med mine vurderinger'; }
+    alert('✅ '+pl+' er markert som ferdig for '+period+'!\nDaglig leder kan se status i Status-fanen.');
+    rStatus(); ST('status');
+  }catch(e){
+    console.warn('[SP] markReady feilet:',e);
+    if(btn){ btn.disabled=false; btn.textContent='✅ Ferdig med mine vurderinger'; }
+    alert('⚠️ Feil ved lagring av status. Prøv igjen.');
+  }
 }
 function rStatus(){
   var st = getStatus();
@@ -1311,7 +1322,17 @@ function toggleGrpMode(base){
 
 function parseRows(rows,src,prd){
   localStorage.setItem('VIA_LOAD_TS',new Date().toISOString());
+  // Nullstill all periode-spesifikk state for å unngå krysskontaminering mellom perioder
   ACTIVE = rows;
+  DGI = {};
+  POC = {};
+  LOCKED = false;
+  _spIds = {};
+  _spEtags = {};
+  _spColsValidated = false;
+  // Tilbakestill UI-elementer som reflekterer låstatus
+  var btnlock = document.getElementById('btnlock');
+  if(btnlock){ btnlock.textContent='🔒 Lås periode'; btnlock.disabled=false; }
   detectGroups();
   // Build type averages
   var ts={},tc={};
@@ -2003,25 +2024,4 @@ function expHist(){
     // Sort periods chronologically by snapshot id
     hist.sort(function(a,b){return(a.id||0)-(b.id||0);});
     var periods=hist.map(function(h){return h.period;});
-    // Build project map: ordreNr → {pl, type, kunde, data:{period:{via,dg,risk}}}
-    var projMap={},projOrder=[];
-    hist.forEach(function(h){
-      h.projects.forEach(function(p){
-        if(!projMap[p.ordreNr]){
-          projMap[p.ordreNr]={pl:p.pl||'',type:p.type||'',kunde:p.kunde||'',data:{}};
-          projOrder.push(p.ordreNr);
-        }
-        projMap[p.ordreNr].data[h.period]={via:p.via,dg:p.dg,risk:p.risk||''};
-      });
-    });
-    // Header: Ordre, PL, Type, Kunde, then per-period VIA/DG%/Risiko, then delta cols
-    var H=['Ordre','Prosjektleder','Type','Kunde'];
-    periods.forEach(function(p){H.push('VIA '+p,'DG% '+p,'Risiko '+p);});
-    if(periods.length>=2){
-      H.push('Δ VIA (siste)');
-      H.push('Δ DG% (siste)');
-    }
-    // Build rows – one per project
-    var aoa=[H];
-    projOrder.forEach(function(nr){
- 
+    // Build project map: ordreNr → {pl, 
