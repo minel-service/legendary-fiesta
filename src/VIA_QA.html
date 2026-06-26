@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VIA QA – Minel AS v9.14</title>
+<title>VIA QA – Minel AS v9.15</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
@@ -189,7 +189,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
     <p>Datobegrenset perioderegnskap direkte fra Ordrestyring</p>
   </div>
   <span id="user-badge" style="font-size:.76rem;color:#ccc;margin-right:8px;white-space:nowrap;"></span>
-  <span class="hd-badge">v9.14</span>
+  <span class="hd-badge">v9.15</span>
 </header>
 
 <!-- START PANEL -->
@@ -450,7 +450,7 @@ footer{text-align:center;padding:14px;color:#888;font-size:.75rem;margin-top:20p
   </div>
 </div>
 
-<footer>Minel AS · VIA QA v9.14 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
+<footer>Minel AS · VIA QA v9.15 · Datobegrenset perioderegnskap · Data behandles lokalt</footer>
 
 <script>
 // ════ SHAREPOINT INTEGRASJON ════
@@ -467,16 +467,14 @@ function spHistUrl(company){
 }
 async function spSaveHist(entity){
   try{
-    var tok=await getSpToken();if(!tok)return;
     var hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
-    await fetch(spHistUrl(entity),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(hist)});
+    await spFetch(spHistUrl(entity),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(hist)});
     console.log('[SP] Historikk lagret til SharePoint for',entity);
   }catch(e){console.warn('[SP] Historikk-lagring feilet:',e);}
 }
 async function spLoadHist(entity){
   try{
-    var tok=await getSpToken();if(!tok)return false;
-    var r=await fetch(spHistUrl(entity),{headers:{'Authorization':'Bearer '+tok}});
+    var r=await spFetch(spHistUrl(entity));
     if(!r.ok)return false;
     var spHist=await r.json();
     if(!Array.isArray(spHist)||!spHist.length)return false;
@@ -492,7 +490,7 @@ async function spLoadHist(entity){
 }
 var MSAL_CFG={auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:'https://calm-plant-0bcddaa03.7.azurestaticapps.net/VIA_QA.html'},cache:{cacheLocation:'localStorage'}};
 var SP_SCOPES=['https://graph.microsoft.com/Sites.Selected'];
-var _msalApp=null,_spToken=null,_spUser='Ukjent',_spIds={},_spDebounce={};
+var _msalApp=null,_spUser='Ukjent',_spIds={},_spEtags={},_spDebounce={};
 var _currentUser=null;
 var DL_LIST={
   'oyvind.saethersmoen@minel.no':'__SUPER__',
@@ -592,36 +590,84 @@ async function loginPL(btn){
   }
 }
 async function getSpToken(){
+  // Alltid kall acquireTokenSilent — MSAL håndterer cache og refresh internt.
+  // Ikke cache token-strengen selv; det forhindrer automatisk fornyelse etter ~1t.
   try{
     if(typeof msal==='undefined') return null;
     await initMSAL();
     if(!_msalApp) return null;
-    if(_spToken)return _spToken;
     var accounts=_msalApp.getAllAccounts();
     if(accounts.length>0){
-      try{var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});_spToken=r.accessToken;detectUser(accounts[0]);return _spToken;}catch(e){}
+      try{
+        var r=await _msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accounts[0]});
+        detectUser(accounts[0]);
+        return r.accessToken;
+      }catch(e){console.warn('[SP] Silent refresh feilet, prøver popup:',e);}
     }
     try{
       var pr=await _msalApp.acquireTokenPopup({scopes:SP_SCOPES});
-      _spToken=pr.accessToken;detectUser(pr.account);return _spToken;
+      detectUser(pr.account);return pr.accessToken;
     }catch(pe){console.warn('[SP] Popup avvist:',pe);return null;}
   }catch(e){console.warn('[SP] MSAL feil:',e);return null;}
 }
 
+// Fetch-wrapper med automatisk 401-retry (token utløpt midt i økt)
+async function spFetch(url,opts){
+  var tok=await getSpToken();
+  if(!tok)return null;
+  opts=opts||{};
+  opts.headers=Object.assign({'Authorization':'Bearer '+tok},opts.headers||{});
+  var res=await fetch(url,opts);
+  if(res.status===401){
+    console.warn('[SP] 401 — henter nytt token og prøver igjen');
+    tok=await getSpToken();
+    if(!tok)return res;
+    opts.headers['Authorization']='Bearer '+tok;
+    res=await fetch(url,opts);
+  }
+  return res;
+}
+
+var SP_REQUIRED_FIELDS=['Periode','Selskap','OrdreNr','DG','Begrunnelse','Kommentar','UpdatedBy','UpdatedAt'];
+var _spColsValidated=false;
+
+function spShowError(msg){
+  var el=document.getElementById('sp-error-banner');
+  if(!el){el=document.createElement('div');el.id='sp-error-banner';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;padding:12px 20px;font-size:14px;font-weight:bold;text-align:center;';
+    document.body.appendChild(el);}
+  el.textContent=msg;el.style.display='block';
+}
+
 async function spLoadAssessments(period,company){
   try{
-    var tok=await getSpToken();if(!tok)return false;
     var filter=encodeURIComponent("fields/Periode eq '"+period+"' and fields/Selskap eq '"+company+"'");
     var allItems=[], url=SP_GRAPH+'/items?$expand=fields&$filter='+filter+'&$top=5000';
     while(url){
-      var r=await fetch(url,{headers:{'Authorization':'Bearer '+tok}});
+      var r=await spFetch(url);
+      if(!r){return false;}
+      if(!r.ok){console.warn('[SP] Load HTTP',r.status);return false;}
       var j=await r.json();
       (j.value||[]).forEach(function(i){allItems.push(i);});
       url=j['@odata.nextLink']||null;
     }
+    // Kolonnevalidering — kjøres én gang etter at vi har data
+    if(!_spColsValidated&&allItems.length>0){
+      var sampleFields=Object.keys(allItems[0].fields||{});
+      var missing=SP_REQUIRED_FIELDS.filter(function(f){return sampleFields.indexOf(f)<0;});
+      if(missing.length>0){
+        spShowError('⚠️ SharePoint-kolonner mangler: '+missing.join(', ')+' — kontakt administrator');
+        console.error('[SP] Manglende kolonner:',missing);
+      } else {
+        _spColsValidated=true;
+        console.log('[SP] Kolonnevalidering OK');
+      }
+    }
     allItems.forEach(function(item){
       var f=item.fields||{};
       if(!f.OrdreNr)return;
+      // Lagre ETag for optimistisk concurrent-write beskyttelse
+      if(item['@odata.etag'])_spEtags[item.id]=item['@odata.etag'];
       if(f.OrdreNr==='_STATUS_'){
         var stKey=(f.Periode||'')+'__'+(f.Selskap||'')+'__'+(f.Begrunnelse||'');
         var st=JSON.parse(localStorage.getItem(STATUS_KEY)||'{}');
@@ -640,17 +686,33 @@ async function spLoadAssessments(period,company){
   }catch(e){console.warn('[SP] Load feilet:',e);return false;}
 }
 
+function spShowConflict(ordreNr){
+  var msg='⚠️ Lagringskonflikt på ordre '+ordreNr+': en annen bruker har lagret etter du lastet siden. Last inn siden på nytt for å se siste versjon.';
+  if(confirm(msg+'\n\nTrykk OK for å laste inn på nytt, eller Avbryt for å beholde dine endringer (de vil overskrive).')){
+    location.reload();
+  }
+}
+
 async function spSaveAssessment(period,company,ordreNr,dg,begrunnelse,kommentar,poc){
   try{
-    var tok=await getSpToken();if(!tok)return;
     var fields={Periode:period,Selskap:company,OrdreNr:ordreNr,DG:dg!=null?dg:null,Begrunnelse:begrunnelse||'',Kommentar:kommentar||'',UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
     if(poc){fields.Timer=poc.timer!=null?poc.timer:0;fields.Timekost=poc.tk!=null?poc.tk:650;fields.Material=poc.mat!=null?poc.mat:0;}
     var existId=_spIds[ordreNr];
     if(existId){
-      await fetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(fields)});
+      var patchHeaders={'Content-Type':'application/json'};
+      var etag=_spEtags[existId];
+      if(etag)patchHeaders['If-Match']=etag;
+      var r=await spFetch(SP_GRAPH+'/items/'+existId+'/fields',{method:'PATCH',headers:patchHeaders,body:JSON.stringify(fields)});
+      if(r&&r.status===412){
+        console.warn('[SP] Konflikt (412) på',ordreNr,'— ETag mismatch');
+        spShowConflict(ordreNr);
+        return;
+      }
+      // Oppdater ETag fra svar
+      if(r&&r.ok){var newEtag=r.headers.get('ETag');if(newEtag)_spEtags[existId]=newEtag;}
     } else {
-      var r=await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
-      var j=await r.json();if(j.id)_spIds[ordreNr]=j.id;
+      var r=await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+      if(r&&r.ok){var j=await r.json();if(j.id){_spIds[ordreNr]=j.id;if(j['@odata.etag'])_spEtags[j.id]=j['@odata.etag'];}}
     }
   }catch(e){console.warn('[SP] Save feilet:',e);}
 }
@@ -673,11 +735,10 @@ function plLoadDataset(company){
   });
 }
 async function spSaveDataset(){
-  var tok=await getSpToken();if(!tok){alert('Innlogging kreves.');return;}
   if(!ACTIVE.length){alert('Ingen data lastet inn ennå.');return;}
   var data={src:document.getElementById('lentity').value,period:document.getElementById('aperiod').textContent,exported:new Date().toISOString(),exportedBy:_currentUser?_currentUser.name:'',rows:ACTIVE};
   try{
-    var r=await fetch(spDriveUrl(data.src),{method:'PUT',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(data)});
+    var r=await spFetch(spDriveUrl(data.src),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(r.ok){
       var btn=document.getElementById('share-btn');
       if(btn){btn.textContent='✅ Delt!';btn.style.background='var(--green)';setTimeout(function(){btn.textContent='📤 Del datasett';btn.style.background='';},3000);}
@@ -685,9 +746,8 @@ async function spSaveDataset(){
   }catch(e){alert('Nettverksfeil: '+e.message);}
 }
 async function spLoadDataset(company){
-  var tok=await getSpToken();if(!tok)return false;
   try{
-    var r=await fetch(spDriveUrl(company),{headers:{'Authorization':'Bearer '+tok}});
+    var r=await spFetch(spDriveUrl(company));
     if(!r.ok)return false;
     var data=await r.json();
     if(!data.rows||!data.period)return false;
@@ -702,9 +762,8 @@ function spSaveDebounced(period,company,ordreNr,dg,k,kommentar,poc){
 
 async function spMarkDone(period,company,pl){
   try{
-    var tok=await getSpToken();if(!tok)return;
     var fields={Periode:period,Selskap:company,OrdreNr:'_STATUS_',Begrunnelse:pl,UpdatedBy:_spUser,UpdatedAt:new Date().toISOString()};
-    await fetch(SP_GRAPH+'/items',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+    await spFetch(SP_GRAPH+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
   }catch(e){console.warn('[SP] MarkDone feilet:',e);}
 }
 // ════ END SHAREPOINT ════
