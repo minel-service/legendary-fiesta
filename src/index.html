@@ -730,7 +730,7 @@ async function fetchSelskap(co){
     const now = Date.now();
     const currentWkMonday = mondayOf(...wKey(new Date()).split('-W').map(Number));
     const fraInt = Math.floor(currentWkMonday.getTime() / 1000);
-    const tilInt = Math.floor((now + 150*864e5) / 1000);
+    const tilInt = Math.floor((now + 400*864e5) / 1000);
     // Bruk Azure Function proxy (API-nøkler server-side)
     const gqlUrl = '/api/ordrestyring-proxy';
     // Hent events via Azure Function proxy (API-nøkler er server-side)
@@ -764,7 +764,7 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] ✅ ${j.length} events`);
 
     const toMs = v => !v ? 0 : (v > 1e11 ? v : v * 1000);
-    const maxDate = new Date(now + 150*864e5);
+    const maxDate = new Date(now + 400*864e5);
 
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
@@ -2134,7 +2134,7 @@ function saveProject(){
     const idx=allProjects.findIndex(p=>p.id===editingId);
     if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,lastEditedBy:_u,lastEditedAt:_t};
   } else {
-    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
+    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,ordreNr,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
     allProjects.push(nyP);
     closeProjModal();
     renderAll();
