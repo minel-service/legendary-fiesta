@@ -2139,8 +2139,9 @@ function saveProject(){
     closeProjModal();
     renderAll();
     if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
+    postBjelle(nyP);
     saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
-      .then(ok=>{postBjelle(nyP);showToast(ok?'🔔 Kontrakt lagret og varslet!':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok);})
+      .then(ok=>showToast(ok?'🔔 Kontrakt lagret og varslet!':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok))
       .catch(()=>showToast('Lagret lokalt',false));
     return;
   }
