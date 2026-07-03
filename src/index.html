@@ -1569,10 +1569,14 @@ function updateTable(){
       const proj=allProjects.find(x=>x.id===id);
       if(!proj)return;
       if(proj.published&&!confirm(`"${proj.name}" er allerede publisert på intranettet.\nPublisere på nytt?`))return;
-      proj.published=true;
-      postToSharePointList(proj);
-      saveCompanyProjects(proj.company,allProjects.filter(p=>p.company===proj.company));
-      renderAll();
+      postToSharePointList(proj).then(ok=>{
+        if(ok){
+          proj.published=true;
+          saveCompanyProjects(proj.company,allProjects.filter(p=>p.company===proj.company));
+          renderAll();
+          showToast('🔔 Kunngjort på intranettet!',true);
+        }
+      });
     }
   };
 }
@@ -2149,11 +2153,18 @@ function saveProject(){
     closeProjModal();
     renderAll();
     if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-    nyP.published=true; // Marker som publisert slik at 📢-knappen ikke sender dobbelt
-    postBjelle(nyP);
+    // Lagre og kunngjør parallelt — sett published=true kun om SharePoint svarer ok
     saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
-      .then(ok=>showToast(ok?'🔔 Kontrakt lagret og varslet!':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok))
+      .then(ok=>showToast(ok?'Kontrakt lagret ✓':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok))
       .catch(()=>showToast('Lagret lokalt',false));
+    postBjelle(nyP).then(bjelleOk=>{
+      if(bjelleOk){
+        nyP.published=true;
+        saveCompanyProjects(company,allProjects.filter(p=>p.company===company));
+        renderAll();
+        showToast('🔔 Kunngjort på intranettet!',true);
+      }
+    });
     return;
   }
   closeProjModal();
@@ -2254,10 +2265,13 @@ function oreAdjustWeeks(id){
 // ════════════════════════════════════════════
 async function postBjelle(p){
   const tasks=[];
-  if(CONFIG.teamsWebhook)            tasks.push(postToTeams(p));
-  if(CONFIG.spKunngjøringer)         tasks.push(postToSharePointList(p));
-  if(tasks.length===0) return;
-  await Promise.allSettled(tasks);
+  if(CONFIG.teamsWebhook)    tasks.push(postToTeams(p));
+  if(CONFIG.spKunngjøringer) tasks.push(postToSharePointList(p));
+  if(tasks.length===0) return false;
+  const results=await Promise.allSettled(tasks);
+  // Returnerer true hvis SharePoint-kallet lyktes
+  const spIdx=CONFIG.teamsWebhook?1:0;
+  return CONFIG.spKunngjøringer ? results[spIdx]?.value===true : false;
 }
 
 async function postToTeams(p){
@@ -2305,8 +2319,10 @@ async function postToSharePointList(p){
     const url=`${GRAPH}/sites/${SP_SITE}/lists/${CONFIG.spKunngjøringer}/items`;
     const _oppDt=(p.createdAt||p.created)?new Date(p.createdAt||p.created).toLocaleDateString('no-NO'):'';
     const r=await gFetch(url,{method:'POST',body:JSON.stringify({fields:{Title:`🔔 Ny kontrakt: ${p.name} — ${p.company}`,Tekst:`${p.company} har vunnet et nytt prosjekt: ${p.name}. Kontraktssum: ${sumTxt}. Periode: ${period}.${_oppDt?' Opprettet: '+_oppDt+'.':''}`}})});
-    if(!r||!r.ok)throw new Error('HTTP '+(r?.status||0));console.log('[Graph kunngjøringer] ✅ Sendt');
-  }catch(e){console.error('[Graph Kunngjøringer] ❌',e.message);showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);}
+    if(!r||!r.ok)throw new Error('HTTP '+(r?.status||0));
+    console.log('[Graph kunngjøringer] ✅ Sendt');
+    return true;
+  }catch(e){console.error('[Graph Kunngjøringer] ❌',e.message);showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);return false;}
 }
 
 // STARTUP
