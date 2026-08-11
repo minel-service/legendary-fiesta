@@ -19,6 +19,27 @@ jobs:
         with:
           submodules: true
           lfs: false
+
+      - name: "SKUDDSIKKER SJEKK: Sites.Selected MÅ IKKE vaere i login-scopes"
+        run: |
+          echo "Sjekker at Sites.Selected ikke er lagt inn i _scopes (login-scope)..."
+          if grep -E "_scopes\s*=\s*\[.*Sites\.Selected" src/index.html; then
+            echo ""
+            echo "=========================================================="
+            echo "❌  DEPLOYMENT STOPPET — KRITISK KONFIGURASJONSFEIL"
+            echo "=========================================================="
+            echo "Sites.Selected er funnet i _scopes i src/index.html."
+            echo ""
+            echo "Dette blokkerer innlogging for ALLE 50 ansatte og krever"
+            echo "IT-admin-godkjenning fra Microsoft Azure AD."
+            echo ""
+            echo "LØSNING: Fjern Sites.Selected fra _scopes. Bruk spFetch()"
+            echo "for direkte SharePoint Graph-kall i stedet."
+            echo "=========================================================="
+            exit 1
+          fi
+          echo "✅  OK: Sites.Selected er ikke i login-scopes. Deployment fortsetter."
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1

@@ -10,9 +10,19 @@ foreach ($l in @(".git\index.lock", ".git\HEAD.lock", ".git\MERGE_HEAD")) {
 
 & $git fetch origin main
 
-# Tom commit for aa tvinge ny deploy av Kapasitetsprognosen
-& $git commit --allow-empty -m "chore: force redeploy kapasitetsprognose (avvikssystem overskrev)"
+# Commit eventuelle endringer
+$status = & $git status --porcelain
+if ($status) {
+    & $git add -A
+    & $git commit -m "fix: skuddsikre MSAL-scopes + historikk via bridge"
+    Write-Host "Endringer committed." -ForegroundColor Green
+} else {
+    # Tom commit for aa tvinge deploy om ingenting er endret
+    & $git commit --allow-empty -m "chore: force redeploy"
+    Write-Host "Ingen endringer - tom commit for aa tvinge deploy." -ForegroundColor Yellow
+}
+
 & $git push origin main
 
-Write-Host "`nFerdig! Kapasitetsprognosen deployes naa. Trykk Enter for aa lukke." -ForegroundColor Green
+Write-Host "`nFerdig! Appen deployes naa. Trykk Enter for aa lukke." -ForegroundColor Green
 Read-Host
