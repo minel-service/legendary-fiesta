@@ -1,28 +1,27 @@
-Set-Location "$PSScriptRoot"
+cd "$PSScriptRoot"
 
-$git = (Get-Item "$env:LOCALAPPDATA\GitHubDesktop\app-*\resources\app\git\cmd\git.exe" | Select-Object -Last 1).FullName
-Write-Host "Git: $git" -ForegroundColor Cyan
-
-# Fjern lock-filer
-foreach ($l in @(".git\index.lock", ".git\HEAD.lock", ".git\MERGE_HEAD")) {
-    if (Test-Path $l) { Remove-Item $l -Force; Write-Host "Fjernet: $l" -ForegroundColor Yellow }
+# Slett git lock-filer med force (cmd del /f omgår noen restricsjoner)
+$gitDir = Join-Path $PSScriptRoot ".git"
+$locks = @(
+    (Join-Path $gitDir "HEAD.lock"),
+    (Join-Path $gitDir "index.lock"),
+    (Join-Path $gitDir "objects\maintenance.lock")
+)
+foreach ($lock in $locks) {
+    if (Test-Path $lock) {
+        try {
+            cmd /c "del /f /q `"$lock`"" 2>$null
+            if (-not (Test-Path $lock)) {
+                Write-Host "Slettet: $lock" -ForegroundColor Yellow
+            } else {
+                Write-Host "Kunne ikke slette: $lock" -ForegroundColor Red
+            }
+        } catch {}
+    }
 }
 
-& $git fetch origin main
-
-# Commit eventuelle endringer
-$status = & $git status --porcelain
-if ($status) {
-    & $git add -A
-    & $git commit -m "fix: skuddsikre MSAL-scopes + historikk via bridge"
-    Write-Host "Endringer committed." -ForegroundColor Green
-} else {
-    # Tom commit for aa tvinge deploy om ingenting er endret
-    & $git commit --allow-empty -m "chore: force redeploy"
-    Write-Host "Ingen endringer - tom commit for aa tvinge deploy." -ForegroundColor Yellow
-}
-
-& $git push origin main
-
-Write-Host "`nFerdig! Appen deployes naa. Trykk Enter for aa lukke." -ForegroundColor Green
+git add src/index.html push-fix.ps1
+git commit -m "fix: tell aktive ansatte fra 4 uker tilbake (ikke bare fremtidige)"
+git push origin main
+Write-Host "Ferdig! Trykk Enter for aa lukke." -ForegroundColor Green
 Read-Host

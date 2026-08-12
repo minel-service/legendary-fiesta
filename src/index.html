@@ -742,7 +742,7 @@ async function fetchSelskap(co){
   try {
     const now = Date.now();
     const currentWkMonday = mondayOf(...wKey(new Date()).split('-W').map(Number));
-    const fraInt = Math.floor((currentWkMonday.getTime() - 56*864e5) / 1000); // 8 uker tilbake for å telle alle aktive ansatte
+    const fraInt = Math.floor((currentWkMonday.getTime() - 28*864e5) / 1000); // 4 uker tilbake for å telle alle aktive ansatte
     const tilInt = Math.floor((now + 400*864e5) / 1000);
     // Bruk Azure Function proxy (API-nøkler server-side)
     const gqlUrl = '/api/ordrestyring-proxy';
