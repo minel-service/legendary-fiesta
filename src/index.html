@@ -2619,6 +2619,7 @@ async function fetchOSEconomy(projects) {
       // Prøv både content og items — API bruker ett av disse
       const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
+      if (cases.length > 0) console.log(`[OS Økonomi sample] orderNumbers:`, cases.slice(0,5).map(c=>c.orderNumber));
       cases.forEach(c => {
         if (!ordreNrs.has(String(c.orderNumber))) return;
         const eco = c.economy;
