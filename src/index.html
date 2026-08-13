@@ -2569,6 +2569,7 @@ async function fetchOSEconomy(projects) {
       items {
         id
         caseNumber
+        reference
         economy {
           revenue
           revisedOffer
@@ -2588,23 +2589,18 @@ async function fetchOSEconomy(projects) {
         company: firstCompany,
         operationName: 'IntrospectCasesArgs',
         query: `query IntrospectCasesArgs {
-          q: __type(name:"Query") {
-            fields {
-              name
-              args { name type { name kind ofType { name kind } } }
-            }
-          }
-          ct: __type(name:"Case") { fields { name type { name kind ofType { name } } } }
+          fi: __type(name:"CaseFilterInput") { inputFields { name type { name kind ofType { name } } } }
+          se: __type(name:"Search") { inputFields { name type { name kind ofType { name } } } }
         }`,
         variables: {}
       })
     });
     if (introResp.ok) {
       const intro = await introResp.json();
-      const casesField = (intro.data?.q?.fields||[]).find(f=>f.name==='cases');
-      console.log('[OS cases args]:', JSON.stringify(casesField?.args||[]));
-      const ctFields = intro.data?.ct?.fields||[];
-      console.log('[OS Case fields]:', ctFields.map(f=>f.name).join(', '));
+      const fiFields = intro.data?.fi?.inputFields||[];
+      const seFields = intro.data?.se?.inputFields||[];
+      console.log('[OS CaseFilterInput]:', JSON.stringify(fiFields));
+      console.log('[OS Search]:', JSON.stringify(seFields));
     }
   } catch(e) { console.warn('[OS Introspection] feil:', e.message); }
 
@@ -2624,12 +2620,12 @@ async function fetchOSEconomy(projects) {
         if (result.errors) { console.warn('[OS Økonomi feil]', company, page, JSON.stringify(result.errors)); break; }
         const cases = result.data?.cases?.items || [];
         const hasMore = result.data?.cases?.hasMorePages;
-        if (page === 1) console.log(`[OS debug] ${company} side1 første 5:`, cases.slice(0,5).map(c=>`id=${c.id} caseNr=${c.caseNumber} req=${c.requisition}`));
+        if (page === 1) console.log(`[OS debug] ${company} side1 første 5:`, cases.slice(0,5).map(c=>`caseNr=${c.caseNumber} ref=${c.reference}`));
         cases.forEach(c => {
           const caseBase = String(c.caseNumber||'').split('-')[0];
-          const req = String(c.requisition||'');
+          const ref = String(c.reference||'');
           const matchKey = remaining.has(caseBase) ? caseBase
-            : remaining.has(req) ? req
+            : remaining.has(ref) ? ref
             : null;
           if (!matchKey) return;
           const eco = c.economy;
