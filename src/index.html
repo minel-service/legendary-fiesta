@@ -2568,7 +2568,7 @@ async function fetchOSEconomy(projects) {
   // pagination er påkrevd av API-et (type Pagination!)
   const gqlQuery = `query OsEkonomi {
     cases(pagination: {limit: 500}) {
-      results {
+      items {
         identifier
         name
         caseEconomy {
@@ -2615,7 +2615,7 @@ async function fetchOSEconomy(projects) {
       const result = await resp.json();
       if(result.errors) { console.warn('[OS Økonomi feil]', company, JSON.stringify(result.errors)); return; }
       // Prøv både content og items — API bruker ett av disse
-      const cases = result.data?.cases?.results || result.data?.cases?.items || result.data?.cases?.data || result.data?.cases?.nodes || [];
+      const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
       cases.forEach(c => {
         if (!ordreNrs.has(String(c.identifier))) return;
