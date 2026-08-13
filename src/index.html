@@ -2576,6 +2576,30 @@ async function fetchOSEconomy(projects) {
     }
   }`;
 
+  // Kjør introspection én gang for å finne tilgjengelige queries
+  const firstCompany = Object.keys(byCompany)[0];
+  try {
+    const introResp = await fetch(gqlUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        company: firstCompany,
+        operationName: 'Introspection',
+        query: `query Introspection { __schema { queryType { fields { name description args { name type { name kind ofType { name kind } } } } } } }`,
+        variables: {}
+      })
+    });
+    if (introResp.ok) {
+      const intro = await introResp.json();
+      const fields = intro.data?.__schema?.queryType?.fields || [];
+      console.log('[OS Introspection] Tilgjengelige queries:', fields.map(f=>f.name).join(', '));
+      // Logg også args for queries som kan inneholde økonomi
+      fields.filter(f=>/case|project|order|oppdrag|ekon/i.test(f.name)).forEach(f=>{
+        console.log(`[OS Introspection] ${f.name}(${f.args.map(a=>a.name+':'+a.type.name).join(', ')}): ${f.description||''}`);
+      });
+    }
+  } catch(e) { console.warn('[OS Introspection] feil:', e.message); }
+
   await Promise.allSettled(Object.entries(byCompany).map(async ([company, ordreNrs]) => {
     try {
       const resp = await fetch(gqlUrl, {
@@ -2585,6 +2609,7 @@ async function fetchOSEconomy(projects) {
       });
       if (!resp.ok) return;
       const result = await resp.json();
+      console.log(`[OS Økonomi rådata] ${company}:`, JSON.stringify(result).slice(0,500));
       const cases = result.data?.cases || [];
       cases.forEach(c => {
         if (!ordreNrs.has(c.identifier)) return;
