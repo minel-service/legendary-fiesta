@@ -2567,8 +2567,8 @@ async function fetchOSEconomy(projects) {
   // Hent alle cases per selskap og plukk ut de med kjent ordreNr
   // pagination er påkrevd av API-et (type Pagination!)
   const gqlQuery = `query OsEkonomi {
-    cases(pagination: {page: 0, size: 500}) {
-      content {
+    cases(pagination: {limit: 500}) {
+      results {
         identifier
         name
         caseEconomy {
@@ -2579,7 +2579,7 @@ async function fetchOSEconomy(projects) {
     }
   }`;
 
-  // Introspect CasePagination-typen for å finne riktig nested-felt (content/items/etc.)
+  // Introspect Pagination input og CasePagination output for å finne riktig struktur
   const firstCompany = Object.keys(byCompany)[0];
   try {
     const introResp = await fetch(gqlUrl, {
@@ -2587,15 +2587,20 @@ async function fetchOSEconomy(projects) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         company: firstCompany,
-        operationName: 'IntroCasePagination',
-        query: `query IntroCasePagination { __type(name:"CasePagination") { fields { name type { name kind ofType { name } } } } }`,
+        operationName: 'IntrospectTypes',
+        query: `query IntrospectTypes {
+          pag: __type(name:"Pagination") { inputFields { name type { name kind ofType { name } } } }
+          cp: __type(name:"CasePagination") { fields { name type { name kind ofType { name } } } }
+        }`,
         variables: {}
       })
     });
     if (introResp.ok) {
       const intro = await introResp.json();
-      const fields = intro.data?.__type?.fields || [];
-      console.log('[OS CasePagination fields]:', fields.map(f=>f.name+':'+f.type.name).join(', '));
+      const pagFields = intro.data?.pag?.inputFields || [];
+      const cpFields  = intro.data?.cp?.fields  || [];
+      console.log('[OS Pagination input fields]:', pagFields.map(f=>f.name+'('+f.type.name+')').join(', '));
+      console.log('[OS CasePagination fields]:', cpFields.map(f=>f.name+':'+f.type.name).join(', '));
     }
   } catch(e) { console.warn('[OS Introspection] feil:', e.message); }
 
@@ -2610,7 +2615,7 @@ async function fetchOSEconomy(projects) {
       const result = await resp.json();
       if(result.errors) { console.warn('[OS Økonomi feil]', company, JSON.stringify(result.errors)); return; }
       // Prøv både content og items — API bruker ett av disse
-      const cases = result.data?.cases?.content || result.data?.cases?.items || result.data?.cases?.results || [];
+      const cases = result.data?.cases?.results || result.data?.cases?.items || result.data?.cases?.data || result.data?.cases?.nodes || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
       cases.forEach(c => {
         if (!ordreNrs.has(String(c.identifier))) return;
