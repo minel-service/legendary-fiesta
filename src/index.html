@@ -1826,8 +1826,7 @@ function buildOreCard(p){
     ${p.ordreNr?'<div style="margin-top:6px;font-size:.75rem;color:#64748b">📋 Ordrenr\xa0(OS): <strong>'+p.ordreNr+'</strong>'+( viaInfoText(p)?'\xa0·\xa0<span style="color:#0f766e">'+viaInfoText(p)+'</span>':'')+'</div>':''}
     ${(()=>{
       if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Registrer ordrenr. (OS) for å se fakturert og gjenstående</div></div>`;
-      const key=viaKey(p.company||'',p.ordreNr);
-      const eco=window._osEconomy&&window._osEconomy[key];
+      const eco=window._osEconomy&&window._osEconomy[p.ordreNr];
       if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
       const pct=eco.revisedOffer>0?Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100)):0;
       const gj=Math.max(0,(eco.revisedOffer||0)-(eco.revenue||0));
@@ -2551,17 +2550,28 @@ async function fetchAllVIAData(projects){
 // ══ ORDRESTYRING ØKONOMI (erstatter VIA QA for gjenstående) ══
 window._osEconomy = {};
 
-// Henter CaseEconomy (fakturert + revidert tilbud) per selskap fra OS API
+// Henter CaseEconomy (fakturert + revidert tilbud) fra OS API
+// Søker ALLE selskaper for ALLE ordreNr (OS-casenummer er globale på tvers av selskaper)
 async function fetchOSEconomy(projects) {
-  const withOrdre = projects.filter(p => p.ordreNr && p.company);
+  const withOrdre = projects.filter(p => p.ordreNr);
   if (!withOrdre.length) return;
 
-  // Grupper ordreNr per selskap
-  const byCompany = {};
-  withOrdre.forEach(p => {
-    if (!byCompany[p.company]) byCompany[p.company] = new Set();
-    byCompany[p.company].add(p.ordreNr);
-  });
+  // Alle unike ordreNr på tvers av alle selskaper
+  const allOrdreNrs = [...new Set(withOrdre.map(p => p.ordreNr))];
+  const remaining = new Set(allOrdreNrs);
+
+  // Alle selskaper med OS-integrasjon
+  const byCompany = {
+    'Minel Gjøvik AS': remaining,
+    'Minel Kreativ Elektro Ski AS': remaining,
+    'Minel Elmontasje Elverum AS': remaining,
+    'Minel Elmontasje AS': remaining,
+    'Minel Gudbrandsdal AS': remaining,
+    'Minel Skogvang Installasjon AS': remaining,
+    'Minel Drøbak Elektriske AS': remaining,
+    'Minel Ainstall AS': remaining,
+    'Minel Land Elektriske AS': remaining,
+  };
 
   const gqlUrl = '/api/ordrestyring-proxy';
   // Hent alle cases per selskap og plukk ut de med kjent ordreNr
@@ -2634,7 +2644,7 @@ async function fetchOSEconomy(projects) {
           if (!matchKey) return;
           const eco = c.economy;
           if (!eco) return;
-          window._osEconomy[viaKey(company, matchKey)] = { revenue: eco.revenue ?? 0, revisedOffer: eco.revisedOffer ?? 0 };
+          window._osEconomy[matchKey] = { revenue: eco.revenue ?? 0, revisedOffer: eco.revisedOffer ?? 0 };
           console.log(`[OS Økonomi ✓] ${company} / ${matchKey}: fakturert=${eco.revenue}, revidert=${eco.revisedOffer}`);
           remaining.delete(matchKey);
         });
@@ -2649,8 +2659,7 @@ async function fetchOSEconomy(projects) {
 // Gjenstående = revidert tilbud - fakturert (fra OS)
 function calcGjenvaerende(project){
   if(!project.ordreNr) return null;
-  var key=viaKey(project.company||'',project.ordreNr);
-  var eco=window._osEconomy&&window._osEconomy[key];
+  var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco||eco.revisedOffer==null) return null;
   var gj=(eco.revisedOffer||0)-(eco.revenue||0);
   return gj>0?gj:0;
@@ -2659,8 +2668,7 @@ function calcGjenvaerende(project){
 // Faktisk fakturert beløp fra OS
 function calcFakturert(project){
   if(!project.ordreNr) return null;
-  var key=viaKey(project.company||'',project.ordreNr);
-  var eco=window._osEconomy&&window._osEconomy[key];
+  var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco) return null;
   return eco.revenue||0;
 }
@@ -2668,8 +2676,7 @@ function calcFakturert(project){
 // Andel fakturert i prosent (0-100)
 function calcFakturertPct(project){
   if(!project.ordreNr) return null;
-  var key=viaKey(project.company||'',project.ordreNr);
-  var eco=window._osEconomy&&window._osEconomy[key];
+  var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco||!eco.revisedOffer) return null;
   return Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100));
 }
