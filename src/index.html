@@ -2589,13 +2589,16 @@ async function fetchOSEconomy(projects) {
           return;
         }
         const items = result.data?.cases?.items || [];
-        // Filtrer: kun cases der base-nummeret er eksakt ordreNr (unngå at "38004" matcher "138004")
+        // Filtrer: kun cases der base-nummeret er eksakt ordreNr
         const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === String(ordreNr));
         if (matches.length > 0) {
-          const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0);
-          const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0);
+          // Bruk foreldresaken alene hvis den finnes (har aggregerte tall), ellers summer under-saker
+          const parent = matches.find(c => String(c.caseNumber) === String(ordreNr));
+          const useCases = parent ? [parent] : matches;
+          const revenue = useCases.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0);
+          const revisedOffer = useCases.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0);
           window._osEconomy[ordreNr] = { revenue, revisedOffer };
-          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue}, revidert=${revisedOffer} (${matches.length} saker)`);
+          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue}, revidert=${revisedOffer} (${parent?'forelder':''+useCases.length+' undersaker'})`);
         } else {
           console.log(`[OS Økonomi] ${company} / ${ordreNr}: fant ikke`);
         }
