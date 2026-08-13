@@ -2567,7 +2567,7 @@ async function fetchOSEconomy(projects) {
   // Hent alle cases per selskap og plukk ut de med kjent ordreNr
   // pagination er påkrevd av API-et (type Pagination!)
   const gqlQuery = `query OsEkonomi {
-    cases(pagination: {limit: 500}) {
+    cases(pagination: {page: 1, limit: 200}) {
       items {
         economy {
           revenue
@@ -2620,7 +2620,7 @@ async function fetchOSEconomy(projects) {
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
       cases.forEach(c => {
         if (!ordreNrs.has(String(c.identifier))) return;
-        const eco = c.caseEconomy;
+        const eco = c.economy;
         if (!eco) return;
         const key = viaKey(company, String(c.identifier));
         window._osEconomy[key] = { revenue: eco.revenue || 0, revisedOffer: eco.revisedOffer || 0 };
