@@ -2569,7 +2569,7 @@ async function fetchOSEconomy(projects) {
   const gqlQuery = `query OsEkonomi {
     cases(pagination: {page: 1, limit: 200}) {
       items {
-        orderNumber
+        caseNumber
         economy {
           revenue
           revisedOffer
@@ -2619,16 +2619,16 @@ async function fetchOSEconomy(projects) {
       // Prøv både content og items — API bruker ett av disse
       const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
-      if (cases.length > 0) console.log(`[OS Økonomi sample] orderNumbers:`, cases.slice(0,5).map(c=>c.orderNumber));
+      if (cases.length > 0) console.log(`[OS Økonomi sample] orderNumbers:`, cases.slice(0,5).map(c=>c.caseNumber));
       cases.forEach(c => {
-        if (!ordreNrs.has(String(c.orderNumber))) return;
+        if (!ordreNrs.has(String(c.caseNumber))) return;
         const eco = c.economy;
         if (!eco) return;
-        const key = viaKey(company, String(c.orderNumber));
+        const key = viaKey(company, String(c.caseNumber));
         const rev = eco.revenue ?? 0;
         const offer = eco.revisedOffer ?? 0;
         window._osEconomy[key] = { revenue: rev, revisedOffer: offer };
-        console.log(`[OS Økonomi ✓] ${company} / ${c.orderNumber}: fakturert=${rev}, revidert=${offer}`);
+        console.log(`[OS Økonomi ✓] ${company} / ${c.caseNumber}: fakturert=${rev}, revidert=${offer}`);
       });
     } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
   }));
