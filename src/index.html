@@ -2571,8 +2571,8 @@ async function fetchOSEconomy(projects) {
       items {
         orderNumber
         economy {
-          revenue { amount }
-          revisedOffer { amount }
+          revenue
+          revisedOffer
         }
       }
     }
@@ -2625,8 +2625,8 @@ async function fetchOSEconomy(projects) {
         const eco = c.economy;
         if (!eco) return;
         const key = viaKey(company, String(c.orderNumber));
-        const rev = eco.revenue?.amount ?? 0;
-        const offer = eco.revisedOffer?.amount ?? 0;
+        const rev = eco.revenue ?? 0;
+        const offer = eco.revisedOffer ?? 0;
         window._osEconomy[key] = { revenue: rev, revisedOffer: offer };
         console.log(`[OS Økonomi ✓] ${company} / ${c.orderNumber}: fakturert=${rev}, revidert=${offer}`);
       });
