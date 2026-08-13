@@ -2551,46 +2551,34 @@ async function fetchAllVIAData(projects){
 window._osEconomy = {};
 
 // Henter CaseEconomy (fakturert + revidert tilbud) fra OS API
-// Søker ALLE selskaper for ALLE ordreNr (OS-casenummer er globale på tvers av selskaper)
+// Henter CaseEconomy (fakturert + revidert tilbud) per selskap fra OS API
 async function fetchOSEconomy(projects) {
-  const withOrdre = projects.filter(p => p.ordreNr);
+  const withOrdre = projects.filter(p => p.ordreNr && p.company);
   if (!withOrdre.length) return;
 
-  // Alle unike ordreNr på tvers av alle selskaper
-  const allOrdreNrs = [...new Set(withOrdre.map(p => p.ordreNr))];
-  const remaining = new Set(allOrdreNrs);
-
-  // Alle selskaper med OS-integrasjon
-  const byCompany = {
-    'Minel Gjøvik AS': remaining,
-    'Minel Kreativ Elektro Ski AS': remaining,
-    'Minel Elmontasje Elverum AS': remaining,
-    'Minel Elmontasje AS': remaining,
-    'Minel Gudbrandsdal AS': remaining,
-    'Minel Skogvang Installasjon AS': remaining,
-    'Minel Drøbak Elektriske AS': remaining,
-    'Minel Ainstall AS': remaining,
-    'Minel Land Elektriske AS': remaining,
-  };
+  // Grupper ordreNr per selskap
+  const byCompany = {};
+  withOrdre.forEach(p => {
+    if (!byCompany[p.company]) byCompany[p.company] = new Set();
+    byCompany[p.company].add(p.ordreNr);
+  });
 
   const gqlUrl = '/api/ordrestyring-proxy';
-  // Hent alle cases per selskap og plukk ut de med kjent ordreNr
-  // pagination er påkrevd av API-et (type Pagination!)
   const gqlQuery = `query OsEkonomi {
     cases(pagination: {page: 1, limit: 200}) {
       items {
         id
         caseNumber
-        requisition
         economy {
           revenue
           revisedOffer
         }
       }
+      hasMorePages
     }
   }`;
 
-  // Introspect Pagination input og CasePagination output for å finne riktig struktur
+  // Introspect cases-query-argumenter for å se om vi kan filtrere på status
   const firstCompany = Object.keys(byCompany)[0];
   try {
     const introResp = await fetch(gqlUrl, {
@@ -2598,23 +2586,25 @@ async function fetchOSEconomy(projects) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         company: firstCompany,
-        operationName: 'IntrospectTypes',
-        query: `query IntrospectTypes {
-          cp: __type(name:"CasePagination") { fields { name type { name kind ofType { name } } } }
+        operationName: 'IntrospectCasesArgs',
+        query: `query IntrospectCasesArgs {
+          q: __type(name:"Query") {
+            fields {
+              name
+              args { name type { name kind ofType { name kind } } }
+            }
+          }
           ct: __type(name:"Case") { fields { name type { name kind ofType { name } } } }
-          eco: __type(name:"CaseEconomy") { fields { name type { name kind ofType { name } } } }
         }`,
         variables: {}
       })
     });
     if (introResp.ok) {
       const intro = await introResp.json();
-      const cpFields  = intro.data?.cp?.fields  || [];
-      const ctFields  = intro.data?.ct?.fields  || [];
-      const ecoFields = intro.data?.eco?.fields || [];
-      console.log('[OS CasePagination fields]:', cpFields.map(f=>f.name+':'+f.type.name).join(', '));
-      console.log('[OS Case fields]:', ctFields.map(f=>f.name+':'+f.type.name).join(', '));
-      console.log('[OS CaseEconomy fields]:', ecoFields.map(f=>f.name+':'+f.type.name).join(', '));
+      const casesField = (intro.data?.q?.fields||[]).find(f=>f.name==='cases');
+      console.log('[OS cases args]:', JSON.stringify(casesField?.args||[]));
+      const ctFields = intro.data?.ct?.fields||[];
+      console.log('[OS Case fields]:', ctFields.map(f=>f.name).join(', '));
     }
   } catch(e) { console.warn('[OS Introspection] feil:', e.message); }
 
