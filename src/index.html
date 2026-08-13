@@ -2612,7 +2612,7 @@ async function fetchOSEconomy(projects) {
     try {
       const remaining = new Set(ordreNrs);
       let page = 1;
-      while (remaining.size > 0 && page <= 20) {
+      while (remaining.size > 0 && page <= 500) {
         const pageQuery = gqlQuery.replace('page: 1,', `page: ${page},`);
         const resp = await fetch(gqlUrl, {
           method: 'POST',
@@ -2641,7 +2641,7 @@ async function fetchOSEconomy(projects) {
         if (!hasMore || cases.length === 0) break;
         page++;
       }
-      if (remaining.size > 0) console.log(`[OS Økonomi] ${company}: fant ikke`, [...remaining]);
+      if (remaining.size > 0) console.log(`[OS Økonomi] ${company}: fant ikke etter ${page-1} sider`, [...remaining]);
     } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
   }));
 }
