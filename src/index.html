@@ -2569,9 +2569,10 @@ async function fetchOSEconomy(projects) {
   const gqlQuery = `query OsEkonomi {
     cases(pagination: {page: 1, limit: 200}) {
       items {
+        orderNumber
         economy {
-          revenue
-          revisedOffer
+          revenue { amount }
+          revisedOffer { amount }
         }
       }
     }
@@ -2619,12 +2620,14 @@ async function fetchOSEconomy(projects) {
       const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
       cases.forEach(c => {
-        if (!ordreNrs.has(String(c.identifier))) return;
+        if (!ordreNrs.has(String(c.orderNumber))) return;
         const eco = c.economy;
         if (!eco) return;
-        const key = viaKey(company, String(c.identifier));
-        window._osEconomy[key] = { revenue: eco.revenue || 0, revisedOffer: eco.revisedOffer || 0 };
-        console.log(`[OS Økonomi ✓] ${company} / ${c.identifier}: fakturert=${eco.revenue}, revidert=${eco.revisedOffer}`);
+        const key = viaKey(company, String(c.orderNumber));
+        const rev = eco.revenue?.amount ?? 0;
+        const offer = eco.revisedOffer?.amount ?? 0;
+        window._osEconomy[key] = { revenue: rev, revisedOffer: offer };
+        console.log(`[OS Økonomi ✓] ${company} / ${c.orderNumber}: fakturert=${rev}, revidert=${offer}`);
       });
     } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
   }));
