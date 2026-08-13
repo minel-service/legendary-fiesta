@@ -2571,6 +2571,7 @@ async function fetchOSEconomy(projects) {
       items {
         id
         caseNumber
+        requisition
         economy {
           revenue
           revisedOffer
@@ -2624,7 +2625,12 @@ async function fetchOSEconomy(projects) {
         const cases = result.data?.cases?.items || [];
         const hasMore = result.data?.cases?.hasMorePages;
         cases.forEach(c => {
-          const matchKey = remaining.has(String(c.caseNumber)) ? String(c.caseNumber) : null;
+          const caseBase = String(c.caseNumber||'').split('-')[0];
+          const req = String(c.requisition||'');
+          const matchKey = remaining.has(caseBase) ? caseBase
+            : remaining.has(req) ? req
+            : remaining.has(String(c.id)) ? String(c.id)
+            : null;
           if (!matchKey) return;
           const eco = c.economy;
           if (!eco) return;
