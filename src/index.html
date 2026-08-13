@@ -2624,12 +2624,12 @@ async function fetchOSEconomy(projects) {
         if (result.errors) { console.warn('[OS Økonomi feil]', company, page, JSON.stringify(result.errors)); break; }
         const cases = result.data?.cases?.items || [];
         const hasMore = result.data?.cases?.hasMorePages;
+        if (page === 1) console.log(`[OS debug] ${company} side1 første 5:`, cases.slice(0,5).map(c=>`id=${c.id} caseNr=${c.caseNumber} req=${c.requisition}`));
         cases.forEach(c => {
           const caseBase = String(c.caseNumber||'').split('-')[0];
           const req = String(c.requisition||'');
           const matchKey = remaining.has(caseBase) ? caseBase
             : remaining.has(req) ? req
-            : remaining.has(String(c.id)) ? String(c.id)
             : null;
           if (!matchKey) return;
           const eco = c.economy;
