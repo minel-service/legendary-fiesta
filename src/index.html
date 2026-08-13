@@ -2570,7 +2570,7 @@ async function fetchOSEconomy(projects) {
     await Promise.allSettled([...ordreNrs].map(async (ordreNr) => {
       try {
         const searchQuery = `query OsEkonomiSearch {
-          cases(pagination: {page: 1, limit: 10}, search: {query: "${ordreNr}", fields: ["caseNumber"]}) {
+          cases(pagination: {page: 1, limit: 200}, search: {query: "${ordreNr}", fields: ["caseNumber"]}) {
             items {
               caseNumber
               economy { revenue revisedOffer }
@@ -2589,11 +2589,13 @@ async function fetchOSEconomy(projects) {
           return;
         }
         const items = result.data?.cases?.items || [];
-        console.log(`[OS Søk] ${company} / ${ordreNr}: ${items.length} treff`, items.map(c=>c.caseNumber));
-        const match = items.find(c => String(c.caseNumber||'').split('-')[0] === ordreNr || String(c.caseNumber) === ordreNr);
-        if (match?.economy) {
-          window._osEconomy[ordreNr] = { revenue: match.economy.revenue ?? 0, revisedOffer: match.economy.revisedOffer ?? 0 };
-          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${match.economy.revenue}, revidert=${match.economy.revisedOffer}`);
+        // Filtrer: kun cases der base-nummeret er eksakt ordreNr (unngå at "38004" matcher "138004")
+        const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === String(ordreNr));
+        if (matches.length > 0) {
+          const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0);
+          const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0);
+          window._osEconomy[ordreNr] = { revenue, revisedOffer };
+          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue}, revidert=${revisedOffer} (${matches.length} saker)`);
         } else {
           console.log(`[OS Økonomi] ${company} / ${ordreNr}: fant ikke`);
         }
