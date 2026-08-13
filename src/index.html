@@ -2569,6 +2569,7 @@ async function fetchOSEconomy(projects) {
   const gqlQuery = `query OsEkonomi {
     cases(pagination: {page: 1, limit: 200}) {
       items {
+        id
         caseNumber
         economy {
           revenue
@@ -2619,7 +2620,8 @@ async function fetchOSEconomy(projects) {
       // Prøv både content og items — API bruker ett av disse
       const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
-      if (cases.length > 0) console.log(`[OS Økonomi sample] orderNumbers:`, cases.slice(0,5).map(c=>c.caseNumber));
+      if (cases.length > 0) console.log(`[OS Økonomi sample] ${company}:`, cases.slice(0,5).map(c=>({id:c.id, caseNumber:c.caseNumber})));
+      console.log(`[OS Økonomi søker etter ordreNr]:`, [...ordreNrs]);
       cases.forEach(c => {
         if (!ordreNrs.has(String(c.caseNumber))) return;
         const eco = c.economy;
