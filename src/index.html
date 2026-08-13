@@ -1522,7 +1522,7 @@ function updateTable(){
         || (p.notes||'').toLowerCase().includes(_tblSearchTerm);
   });
   if(visMp.length>0){
-    if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>VIA QA</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
+    if(!html)html=`<table><thead><tr><th>Prosjekt</th><th>Selskap</th><th>Kontraktssum</th><th>Fakturert (OS)</th><th>Periode</th><th>Mannskap/uke</th><th></th></tr></thead><tbody>`;
     html+=`<tr class="sec-row"><td colspan="7">📝 Kontraherte prosjekter</td></tr>`;
     visMp.forEach(p=>{
       const wn=Object.keys(p.weeklyCrews).map(w=>parseInt(w.split('-W')[1]));
@@ -1539,12 +1539,14 @@ function updateTable(){
         <td>${p.company?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${bc};display:inline-block"></span>${p.company}</span>`:'<span style="color:#94a3b8;font-size:.78rem">—</span>'}</td>
         <td style="font-size:.82rem">${ks}${calcGjenvaerende(p)!=null?'<div style="font-size:.72rem;color:#1e40af;font-weight:600">kr '+calcGjenvaerende(p).toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår</div>':''}</td>
         <td style="font-size:.78rem;white-space:nowrap">${(()=>{
-  const via=viaInfoText(p);
+  if(!p.ordreNr) return '<span style="color:#cbd5e1">—</span>';
+  const fakt=calcFakturert(p);
   const gj=calcGjenvaerende(p);
-  if(!via&&!gj) return '<span style="color:#cbd5e1">—</span>';
-  const dgPart=via?'<span style="color:#0f766e">'+via+'</span>':'';
-  const gjPart=gj!=null?'<div style="color:#1e40af;font-weight:600">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår</div>':'';
-  return dgPart+gjPart;
+  const pct=calcFakturertPct(p);
+  if(fakt==null) return '<span style="color:#94a3b8;font-size:.72rem">Henter…</span>';
+  return '<span style="color:#1d4ed8;font-weight:600">kr '+fakt.toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>'
+    +(pct!=null?'<div style="margin-top:2px;height:3px;width:60px;background:#dbeafe;border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6"></div></div>':'')
+    +(gj!=null?'<div style="color:#64748b">'+pct+'% fakturert · <span style="color:#1e40af;font-weight:600">'+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' igjen</span></div>':'');
 })()}</td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${MANUAL_COLOR}"></div></div><span class="cnum">${avg}<span style="color:#94a3b8;font-weight:400;font-size:.74rem"> snitt</span></span></div></td>
@@ -1823,14 +1825,20 @@ function buildOreCard(p){
     </div>
     ${p.ordreNr?'<div style="margin-top:6px;font-size:.75rem;color:#64748b">📋 Ordrenr\xa0(OS): <strong>'+p.ordreNr+'</strong>'+( viaInfoText(p)?'\xa0·\xa0<span style="color:#0f766e">'+viaInfoText(p)+'</span>':'')+'</div>':''}
     ${(()=>{
-      const gj=calcGjenvaerende(p);
-      const via=viaInfoText(p);
-      if(!gj&&!via){return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">FERDIGGRAD &amp; GJENSTÅENDE (VIA QA)</div><div style="font-size:.75rem;color:#94a3b8">${p.ordreNr?'Ingen VIA QA-data ennå (ordrenr: '+p.ordreNr+')':'Registrer ordrenr. (OS) for å aktivere VIA QA'}</div></div>`;}
-      const dg=window._viaData&&window._viaData[viaKey(p.company||'',p.ordreNr||'')];
-      const dgPct=dg&&dg.dg!=null?(dg.dg>1?Math.round(dg.dg):Math.round(dg.dg*100)):null;
-      return '<div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-radius:6px;border-left:3px solid #16a34a">'
-        +(dgPct!=null?'<div style="font-size:.72rem;font-weight:700;color:#15803d;letter-spacing:.05em">FERDIGGRAD (VIA QA)</div><div style="font-size:1.1rem;font-weight:700;color:#15803d">'+dgPct+'%</div>':'')
-        +(gj!=null?'<div style="font-size:.78rem;color:#1e40af;font-weight:600;margin-top:2px">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår av tilbudssum</div>':'')
+      if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Registrer ordrenr. (OS) for å se fakturert og gjenstående</div></div>`;
+      const key=viaKey(p.company||'',p.ordreNr);
+      const eco=window._osEconomy&&window._osEconomy[key];
+      if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
+      const pct=eco.revisedOffer>0?Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100)):0;
+      const gj=Math.max(0,(eco.revisedOffer||0)-(eco.revenue||0));
+      return '<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border-radius:6px;border-left:3px solid #3b82f6">'
+        +'<div style="font-size:.72rem;font-weight:700;color:#1d4ed8;letter-spacing:.05em;margin-bottom:5px">ØKONOMI (ORDRESTYRING)</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px">'
+          +'<div><div style="font-size:.65rem;color:#64748b">Fakturert</div><div style="font-size:1rem;font-weight:800;color:#1e293b">kr '+eco.revenue.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:.65rem;color:#64748b">Gjenstående</div><div style="font-size:1rem;font-weight:800;color:'+(gj>0?'#1e40af':'#15803d')+'">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+        +'</div>'
+        +'<div style="height:5px;background:#dbeafe;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6;border-radius:3px;transition:width .5s"></div></div>'
+        +'<div style="font-size:.66rem;color:#64748b;margin-top:3px">'+pct+'% fakturert av kr '+( eco.revisedOffer||0).toLocaleString('no-NO',{maximumFractionDigits:0})+' (revidert tilbud)</div>'
         +'</div>';
     })()}
     <div style="margin-top:10px"><div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px">📝 Kommentar</div><textarea class="od-notes-inp" data-id="${p.id}" placeholder="Notater, spesielle avtaler, kontaktperson..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.78rem;color:#334155;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#C8102E'" onblur="this.style.borderColor='#e2e8f0';oreUpdateNotes(this.dataset.id,this.value)">${p.notes||''}</textarea></div>
@@ -2039,8 +2047,8 @@ async function initApp(){
         }catch(e){console.log('[AI Track] exception:',e.message);}
       })(20);
   allProjects = await loadAllProjects();
-  fetchAllVIAData(allProjects);
-  fetchVIAOrderList();
+  fetchOSEconomy(allProjects).then(()=>{updateOrdrereserve();updateTable();});
+  fetchVIAOrderList(); // beholdes for ordreNr autocomplete
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
@@ -2268,7 +2276,7 @@ function oreAdjustWeeks(id){
   }
   scheduleSave();
   renderOreDrawer();
-  updateOrdrereserve();fetchAllVIAData(allProjects).then(()=>updateOrdrereserve());updateChart();updateMonthlyChart();updateTable();
+  updateOrdrereserve();fetchOSEconomy(allProjects).then(()=>{updateOrdrereserve();updateTable();});updateChart();updateMonthlyChart();updateTable();
 }
 
 // ════════════════════════════════════════════
@@ -2540,31 +2548,89 @@ async function fetchAllVIAData(projects){
 }catch(e){console.warn('[VIA] fetchAllVIAData feil:',e);}
 }
 
-function calcGjenvaerende(project){
-  var k=project.kontraktssum||0;
-  if(!k||!project.ordreNr) return null;
-  var key=viaKey(project.company||'',project.ordreNr);
-  var via=window._viaData&&window._viaData[key];
-  if(!via) return null;
-  var dg=via.dg!=null?(via.dg>1?via.dg/100:via.dg):null;
-  if(via.timer>0&&via.tk!=null&&dg!=null&&dg<1){
-    var gjenK=via.timer*(via.tk||650)+(via.mat||0);
-    return Math.min(gjenK/(1-dg),k);
-  }
-  if(via.timer>0&&via.tk!=null) return via.timer*(via.tk||650)+(via.mat||0);
-  return null;
+// ══ ORDRESTYRING ØKONOMI (erstatter VIA QA for gjenstående) ══
+window._osEconomy = {};
+
+// Henter CaseEconomy (fakturert + revidert tilbud) per selskap fra OS API
+async function fetchOSEconomy(projects) {
+  const withOrdre = projects.filter(p => p.ordreNr && p.company);
+  if (!withOrdre.length) return;
+
+  // Grupper ordreNr per selskap
+  const byCompany = {};
+  withOrdre.forEach(p => {
+    if (!byCompany[p.company]) byCompany[p.company] = new Set();
+    byCompany[p.company].add(p.ordreNr);
+  });
+
+  const gqlUrl = '/api/ordrestyring-proxy';
+  // Hent alle cases per selskap og plukk ut de med kjent ordreNr
+  const gqlQuery = `query OsEkonomi {
+    cases {
+      identifier
+      name
+      caseEconomy {
+        revenue
+        revisedOffer
+      }
+    }
+  }`;
+
+  await Promise.allSettled(Object.entries(byCompany).map(async ([company, ordreNrs]) => {
+    try {
+      const resp = await fetch(gqlUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ company, operationName: 'OsEkonomi', query: gqlQuery, variables: {} })
+      });
+      if (!resp.ok) return;
+      const result = await resp.json();
+      const cases = result.data?.cases || [];
+      cases.forEach(c => {
+        if (!ordreNrs.has(c.identifier)) return;
+        const eco = c.caseEconomy;
+        if (!eco) return;
+        const key = viaKey(company, c.identifier);
+        window._osEconomy[key] = { revenue: eco.revenue || 0, revisedOffer: eco.revisedOffer || 0 };
+        console.log(`[OS Økonomi] ${company} / ${c.identifier}: fakturert=${eco.revenue}, revidert=${eco.revisedOffer}`);
+      });
+    } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
+  }));
 }
 
-function viaInfoText(project){
-  if(!project.ordreNr) return '';
+// Gjenstående = revidert tilbud - fakturert (fra OS)
+function calcGjenvaerende(project){
+  if(!project.ordreNr) return null;
   var key=viaKey(project.company||'',project.ordreNr);
-  var via=window._viaData&&window._viaData[key];
-  if(!via) return '';
-  var parts=[];
-  if(via.dg!=null) parts.push('DG '+(via.dg>1?Math.round(via.dg):Math.round(via.dg*100))+'%');
-  if(via.timer>0) parts.push(via.timer+'t gjenst.');
-  if(via.updatedAt) parts.push(new Date(via.updatedAt).toLocaleDateString('no-NO',{day:'numeric',month:'short'}));
-  return parts.join(' · ');
+  var eco=window._osEconomy&&window._osEconomy[key];
+  if(!eco||eco.revisedOffer==null) return null;
+  var gj=(eco.revisedOffer||0)-(eco.revenue||0);
+  return gj>0?gj:0;
+}
+
+// Faktisk fakturert beløp fra OS
+function calcFakturert(project){
+  if(!project.ordreNr) return null;
+  var key=viaKey(project.company||'',project.ordreNr);
+  var eco=window._osEconomy&&window._osEconomy[key];
+  if(!eco) return null;
+  return eco.revenue||0;
+}
+
+// Andel fakturert i prosent (0-100)
+function calcFakturertPct(project){
+  if(!project.ordreNr) return null;
+  var key=viaKey(project.company||'',project.ordreNr);
+  var eco=window._osEconomy&&window._osEconomy[key];
+  if(!eco||!eco.revisedOffer) return null;
+  return Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100));
+}
+
+// Kortfattet OS-info for inline-visning (erstatter viaInfoText)
+function viaInfoText(project){
+  var pct=calcFakturertPct(project);
+  if(pct==null) return '';
+  return pct+'% fakturert';
 }
 
 </script>
