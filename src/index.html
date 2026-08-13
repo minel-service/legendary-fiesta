@@ -2620,17 +2620,17 @@ async function fetchOSEconomy(projects) {
       // Prøv både content og items — API bruker ett av disse
       const cases = result.data?.cases?.items || [];
       console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
-      if (cases.length > 0) console.log(`[OS Økonomi sample] ${company}:`, cases.slice(0,5).map(c=>({id:c.id, caseNumber:c.caseNumber})));
-      console.log(`[OS Økonomi søker etter ordreNr]:`, [...ordreNrs]);
+      if (cases.length > 0) console.log(`[OS Økonomi sample] ${company}:`, cases.slice(0,5).map(c=>`id=${c.id} caseNr=${c.caseNumber}`).join(', '));
       cases.forEach(c => {
-        if (!ordreNrs.has(String(c.caseNumber))) return;
+        const matchKey = ordreNrs.has(String(c.id)) ? String(c.id) : ordreNrs.has(String(c.caseNumber)) ? String(c.caseNumber) : null;
+        if (!matchKey) return;
         const eco = c.economy;
         if (!eco) return;
-        const key = viaKey(company, String(c.caseNumber));
+        const key = viaKey(company, matchKey);
         const rev = eco.revenue ?? 0;
         const offer = eco.revisedOffer ?? 0;
         window._osEconomy[key] = { revenue: rev, revisedOffer: offer };
-        console.log(`[OS Økonomi ✓] ${company} / ${c.caseNumber}: fakturert=${rev}, revidert=${offer}`);
+        console.log(`[OS Økonomi ✓] ${company} / ${matchKey}: fakturert=${rev}, revidert=${offer}`);
       });
     } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
   }));
