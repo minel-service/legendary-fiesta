@@ -2565,18 +2565,21 @@ async function fetchOSEconomy(projects) {
 
   const gqlUrl = '/api/ordrestyring-proxy';
   // Hent alle cases per selskap og plukk ut de med kjent ordreNr
+  // pagination er påkrevd av API-et (type Pagination!)
   const gqlQuery = `query OsEkonomi {
-    cases {
-      identifier
-      name
-      caseEconomy {
-        revenue
-        revisedOffer
+    cases(pagination: {page: 0, size: 500}) {
+      content {
+        identifier
+        name
+        caseEconomy {
+          revenue
+          revisedOffer
+        }
       }
     }
   }`;
 
-  // Kjør introspection én gang for å finne tilgjengelige queries
+  // Introspect CasePagination-typen for å finne riktig nested-felt (content/items/etc.)
   const firstCompany = Object.keys(byCompany)[0];
   try {
     const introResp = await fetch(gqlUrl, {
@@ -2584,19 +2587,15 @@ async function fetchOSEconomy(projects) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         company: firstCompany,
-        operationName: 'Introspection',
-        query: `query Introspection { __schema { queryType { fields { name description args { name type { name kind ofType { name kind } } } } } } }`,
+        operationName: 'IntroCasePagination',
+        query: `query IntroCasePagination { __type(name:"CasePagination") { fields { name type { name kind ofType { name } } } } }`,
         variables: {}
       })
     });
     if (introResp.ok) {
       const intro = await introResp.json();
-      const fields = intro.data?.__schema?.queryType?.fields || [];
-      console.log('[OS Introspection] Tilgjengelige queries:', fields.map(f=>f.name).join(', '));
-      // Logg også args for queries som kan inneholde økonomi
-      fields.filter(f=>/case|project|order|oppdrag|ekon/i.test(f.name)).forEach(f=>{
-        console.log(`[OS Introspection] ${f.name}(${f.args.map(a=>a.name+':'+a.type.name).join(', ')}): ${f.description||''}`);
-      });
+      const fields = intro.data?.__type?.fields || [];
+      console.log('[OS CasePagination fields]:', fields.map(f=>f.name+':'+f.type.name).join(', '));
     }
   } catch(e) { console.warn('[OS Introspection] feil:', e.message); }
 
@@ -2609,15 +2608,17 @@ async function fetchOSEconomy(projects) {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      console.log(`[OS Økonomi rådata] ${company}:`, JSON.stringify(result).slice(0,500));
-      const cases = result.data?.cases || [];
+      if(result.errors) { console.warn('[OS Økonomi feil]', company, JSON.stringify(result.errors)); return; }
+      // Prøv både content og items — API bruker ett av disse
+      const cases = result.data?.cases?.content || result.data?.cases?.items || result.data?.cases?.results || [];
+      console.log(`[OS Økonomi] ${company}: ${cases.length} saker funnet`);
       cases.forEach(c => {
-        if (!ordreNrs.has(c.identifier)) return;
+        if (!ordreNrs.has(String(c.identifier))) return;
         const eco = c.caseEconomy;
         if (!eco) return;
-        const key = viaKey(company, c.identifier);
+        const key = viaKey(company, String(c.identifier));
         window._osEconomy[key] = { revenue: eco.revenue || 0, revisedOffer: eco.revisedOffer || 0 };
-        console.log(`[OS Økonomi] ${company} / ${c.identifier}: fakturert=${eco.revenue}, revidert=${eco.revisedOffer}`);
+        console.log(`[OS Økonomi ✓] ${company} / ${c.identifier}: fakturert=${eco.revenue}, revidert=${eco.revisedOffer}`);
       });
     } catch(e) { console.warn('[OS Økonomi]', company, e.message); }
   }));
