@@ -2982,8 +2982,9 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
       const nrNorm = nr.replace(/^0+/,'');
       const matches = items.filter(c => {
         const cn = String(c.caseNumber||'');
-        const base = cn.split(/[-_.]/)[0].replace(/^0+/,'');
-        return base === nrNorm || cn === nr;
+        // Sjekk om noen del (splittet på -._) matcher ordreNr — håndterer OS-37202-001, 37202-1, 37202.01 etc.
+        const parts = cn.split(/[-_.]/).map(p => p.replace(/^0+/,''));
+        return parts.some(p => p === nrNorm) || cn === nr;
       });
       if (!matches.length) return null;
       const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
@@ -2993,19 +2994,9 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
     } catch(e) { return null; }
   };
 
-  // Prøv primærselskapet
-  const primary = await doFetch(company);
-  if (primary) return primary;
-
-  // Fallback: ordreNr kan tilhøre et annet konsernselskap — prøv alle parallelt
-  const otherCos = [...new Set(Object.keys(FILE_MAP))].filter(c => c !== company);
-  if (!otherCos.length) { console.log(`[OS Økonomi] ${nr}: fant ikke`); return null; }
-  try {
-    const result = await Promise.any(otherCos.map(co =>
-      doFetch(co).then(r => { if(!r) throw new Error('miss'); console.log(`[OS Økonomi] ${nr} funnet via ${co}`); return r; })
-    ));
-    return result;
-  } catch { console.log(`[OS Økonomi] ${nr}: fant ikke i noe selskap`); return null; }
+  const result = await doFetch(company);
+  if (!result) console.log(`[OS Økonomi] ${company} / ${nr}: fant ikke`);
+  return result;
 }
 
 async function fetchOSEconomy(projects) {
