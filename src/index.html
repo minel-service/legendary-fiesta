@@ -172,6 +172,13 @@ hh
     .hint{font-size:.72rem;color:#94a3b8;margin-top:4px}
 
     /* ── Ordrereserve ── */
+    .ore-filter-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;align-items:center}
+    .ore-filter-sep{width:1px;height:18px;background:#e2e8f0;margin:0 2px}
+    .ore-chip{padding:3px 10px;border-radius:20px;border:1.5px solid #e2e8f0;font-size:.73rem;font-weight:600;color:#64748b;cursor:pointer;transition:all .15s;background:#fff;white-space:nowrap}
+    .ore-chip:hover{border-color:#C8102E;color:#C8102E}
+    .ore-chip.active{background:#1C2344;border-color:#1C2344;color:#fff}
+    .ore-chip.yr{background:#f1f5f9;border-color:#cbd5e1}
+    .ore-chip.yr.active{background:#1C2344;border-color:#1C2344;color:#fff}
     .ore-total{background:#1C2344;color:white;border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
     .ore-total-lbl{font-size:.78rem;opacity:.8;font-weight:600}
     .ore-total-val{font-size:1.9rem;font-weight:800;line-height:1}
@@ -496,6 +503,7 @@ async function fetchUserCompany() {
         <span class="ctitle">Kontraktsverdi per selskap</span>
         <div style="font-size:.72rem;color:#94a3b8">Kun manuelt registrerte kontrakter</div>
       </div>
+      <div id="oreFilterBar" class="ore-filter-bar"></div>
       <div id="ordreBody"><div class="empty-msg" style="padding:18px">Ingen kontraherte prosjekter registrert ennå.</div></div>
     </div>
 
@@ -1658,12 +1666,73 @@ function updateTable(){
 // ════════════════════════════════════════════
 // ORDRERESERVE
 // ════════════════════════════════════════════
+// ── Ordrereserve tidsfilter ──
+let _oreTimeFilter = null; // null = alle, eller {year, quarter} der quarter null = hele år
+
+function weekNumToQuarter(w){ return w<=13?1:w<=26?2:w<=39?3:4; }
+
+function projectInPeriod(project, filter){
+  if(!filter) return true;
+  const wks = Object.keys(project.weeklyCrews||{});
+  return wks.some(wk=>{
+    if((parseInt(project.weeklyCrews[wk])||0)===0) return false;
+    const m=wk.match(/^(\d{4})-W(\d+)$/);
+    if(!m) return false;
+    const yr=parseInt(m[1]), wn=parseInt(m[2]);
+    if(yr!==filter.year) return false;
+    return filter.quarter ? weekNumToQuarter(wn)===filter.quarter : true;
+  });
+}
+
+function initOreFilterBar(){
+  const bar=document.getElementById('oreFilterBar');
+  if(!bar) return;
+  const now=new Date();
+  const curYear=now.getFullYear();
+  const curQ=Math.ceil((now.getMonth()+1)/3);
+  const endYear=2027;
+
+  // Bygg chip-liste: [Alle] | år | kvartaler
+  const chips=[];
+  chips.push({label:'Alle', cls:'', filter:null});
+  chips.push({sep:true});
+
+  // Hele år
+  for(let y=curYear;y<=endYear;y++){
+    chips.push({label:String(y), cls:'yr', filter:{year:y,quarter:null}});
+  }
+  chips.push({sep:true});
+
+  // Kvartaler fra inneværende kvartal til Q4 2027
+  for(let y=curYear;y<=endYear;y++){
+    const startQ=(y===curYear)?curQ:1;
+    for(let q=startQ;q<=4;q++){
+      chips.push({label:`Q${q} '${String(y).slice(-2)}`, cls:'', filter:{year:y,quarter:q}});
+    }
+  }
+
+  bar.innerHTML=chips.map(c=>{
+    if(c.sep) return '<div class="ore-filter-sep"></div>';
+    const active=JSON.stringify(_oreTimeFilter)===JSON.stringify(c.filter)?'active':'';
+    return `<button class="ore-chip ${c.cls} ${active}" onclick="setOreTimeFilter(${JSON.stringify(c.filter)})">${c.label}</button>`;
+  }).join('');
+}
+
+function setOreTimeFilter(filter){
+  _oreTimeFilter=filter;
+  initOreFilterBar();
+  updateOrdrereserve();
+}
+
 function updateOrdrereserve(){
   const isAdmin=currentCompany==='__admin__';
   // Filtrer til aktuelle prosjekter (vis alle selskaper alltid — konsernperspektiv)
-  const visMp=isAdmin
+  const baseProjects=isAdmin
     ? allProjects
     : allProjects.filter(p=>!p.company||p.company===currentCompany);
+
+  // Tidsfilter: kun prosjekter med produksjonsaktivitet i valgt periode
+  const visMp=baseProjects.filter(p=>projectInPeriod(p,_oreTimeFilter));
 
   // Summer per selskap
   const byCo={};
@@ -1683,12 +1752,22 @@ function updateOrdrereserve(){
 
   const maxCo=Math.max(...companies.map(co=>byCo[co.navn]));
 
+  const periodLabel=(f)=>{
+    if(!f) return 'Minel Konsern';
+    if(!f.quarter) return `Minel Konsern — ${f.year}`;
+    return `Minel Konsern — Q${f.quarter} ${f.year}`;
+  };
+  const periodSub=(f)=>{
+    if(!f) return '';
+    const q=f.quarter?`Q${f.quarter} `:'';
+    return `med produksjon i ${q}${f.year}`;
+  };
   const adminClick=isAdmin?`onclick="openOreDrawer('__all__')" title="Klikk for å se og redigere alle kontrakter" style="cursor:pointer"`:'';
   let html=`<div class="ore-total" ${adminClick}>
     <div>
-      <div class="ore-total-lbl">Total ordrereserve — Minel Konsern</div>
+      <div class="ore-total-lbl">Total ordrereserve — ${periodLabel(_oreTimeFilter)}</div>
       <div class="ore-total-val">${formatKr(grandTotal)}</div>
-      <div style="font-size:.73rem;opacity:.75;margin-top:3px">${visMp.length} kontrakt${visMp.length!==1?'er':''}</div>
+      <div style="font-size:.73rem;opacity:.75;margin-top:3px">${visMp.length} kontrakt${visMp.length!==1?'er':''}${periodSub(_oreTimeFilter)?' '+periodSub(_oreTimeFilter):''}</div>
     </div>
       ${isAdmin?'<div style="font-size:.68rem;opacity:.65;margin-top:5px">▶ Klikk for å se alle kontrakter</div>':''}
   </div><div class="ore-grid">`;
@@ -2153,6 +2232,7 @@ function openOreDrawerNewProj(){
 // RENDER ALL
 // ════════════════════════════════════════════
 function renderAll(){
+  initOreFilterBar();
   updateStrip();updateStats();updateTabs();updateChart();updateMonthlyChart();updateOrdrereserve();updateTable();
   const sb=document.getElementById('snapBtn');if(sb)sb.style.display=currentCompany==='__admin__'?'':'none';
   if(selectedWeek)showWkDet(selectedWeek);
