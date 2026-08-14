@@ -690,7 +690,8 @@ function mergeProjectLists(spList, localList){
   // SP-prosjekter: foretrekk lokal hvis den er nyere
   spList.forEach(sp=>{
     const loc=localMap.get(sp.id);
-    if(loc&&(loc.lastEditedAt||'')>(sp.lastEditedAt||'')){
+    if(loc&&(loc.lastEditedAt||'')>=(sp.lastEditedAt||'')){
+      // >= : lokal vinner på like tidsstempel (inkl. begge null) — unngår at SP overskriver lokale endringer
       merged.push(loc);
     } else {
       merged.push(sp);
@@ -2498,9 +2499,13 @@ function saveProject(){
   const _u=auditUser(),_t=auditNow();
   if(editingId){
     const idx=allProjects.findIndex(p=>p.id===editingId);
-    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,lastEditedBy:_u,lastEditedAt:_t};
+    if(idx>=0){
+      allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,lastEditedBy:_u,lastEditedAt:_t};
+      if(avtaleType==='ramme') setAvtaleOverride(editingId,'ramme'); // sync override-nøkkel
+      else setAvtaleOverride(editingId,null);
+    }
   } else {
-    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
+    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,created:new Date().toISOString(),createdBy:_u,createdAt:_t,lastEditedBy:_u,lastEditedAt:_t};
     allProjects.push(nyP);
     closeProjModal();
     renderAll();
