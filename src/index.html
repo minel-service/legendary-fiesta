@@ -1609,7 +1609,7 @@ function updateOrdrereserve(){
   companies.forEach(co=>byCo[co.navn]=0);
   let grandTotal=0;
   visMp.forEach(p=>{
-    const v=p.kontraktssum||0;
+    const v=effectiveOrdreReserve(p);
     if(p.company&&byCo[p.company]!==undefined) byCo[p.company]+=v;
     grandTotal+=v;
   });
@@ -1704,7 +1704,7 @@ function renderOreDrawer(){
   if(!oreDrawerCo) return;
   const isAll=oreDrawerCo==='__all__';
   const projects=isAll?allProjects:allProjects.filter(p=>p.company===oreDrawerCo);
-  const total=projects.reduce((s,p)=>s+(p.kontraktssum||0),0);
+  const total=projects.reduce((s,p)=>s+effectiveOrdreReserve(p),0);
   document.getElementById('odCoSum').textContent=`${formatKr(total)} · ${projects.length} kontrakt${projects.length!==1?'er':''}`;
   const body=document.getElementById('oreDrawerBody');
   if(projects.length===0){
@@ -1720,7 +1720,7 @@ function renderOreDrawer(){
     companies.forEach((co,ci)=>{
       const coProjects=allProjects.filter(p=>p.company===co.navn);
       if(coProjects.length===0) return;
-      const coTotal=coProjects.reduce((s,p)=>s+(p.kontraktssum||0),0);
+      const coTotal=coProjects.reduce((s,p)=>s+effectiveOrdreReserve(p),0);
       html+=`<div class="od-co-group">`;
       html+=`<div class="od-co-section">`;
       html+=`<span style="width:10px;height:10px;border-radius:3px;background:${col(ci)};display:inline-block;flex-shrink:0"></span>`;
@@ -1828,16 +1828,17 @@ function buildOreCard(p){
       if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Registrer ordrenr. (OS) for å se fakturert og gjenstående</div></div>`;
       const eco=window._osEconomy&&window._osEconomy[p.ordreNr];
       if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
-      const pct=eco.revisedOffer>0?Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100)):0;
-      const gj=Math.max(0,(eco.revisedOffer||0)-(eco.revenue||0));
+      const base=calcBase(p);
+      const pct=base?Math.min(100,Math.round((eco.revenue||0)/base.val*100)):0;
+      const gj=base?Math.max(0,base.val-(eco.revenue||0)):null;
       return '<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border-radius:6px;border-left:3px solid #3b82f6">'
         +'<div style="font-size:.72rem;font-weight:700;color:#1d4ed8;letter-spacing:.05em;margin-bottom:5px">ØKONOMI (ORDRESTYRING)</div>'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px">'
-          +'<div><div style="font-size:.65rem;color:#64748b">Fakturert</div><div style="font-size:1rem;font-weight:800;color:#1e293b">kr '+eco.revenue.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
-          +'<div style="text-align:right"><div style="font-size:.65rem;color:#64748b">Gjenstående</div><div style="font-size:1rem;font-weight:800;color:'+(gj>0?'#1e40af':'#15803d')+'">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+          +'<div><div style="font-size:.65rem;color:#64748b">Fakturert</div><div style="font-size:1rem;font-weight:800;color:#1e293b">kr '+(eco.revenue||0).toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:.65rem;color:#64748b">Gjenstående</div><div style="font-size:1rem;font-weight:800;color:'+(gj!=null&&gj>0?'#1e40af':'#15803d')+'">'+(gj!=null?'kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0}):'—')+'</div></div>'
         +'</div>'
-        +'<div style="height:5px;background:#dbeafe;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6;border-radius:3px;transition:width .5s"></div></div>'
-        +'<div style="font-size:.66rem;color:#64748b;margin-top:3px">'+pct+'% fakturert av kr '+( eco.revisedOffer||0).toLocaleString('no-NO',{maximumFractionDigits:0})+' (revidert tilbud)</div>'
+        +(base?'<div style="height:5px;background:#dbeafe;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6;border-radius:3px;transition:width .5s"></div></div>'
+              +'<div style="font-size:.66rem;color:#64748b;margin-top:3px">'+pct+'% fakturert av kr '+base.val.toLocaleString('no-NO',{maximumFractionDigits:0})+' ('+base.label+')</div>':'')
         +'</div>';
     })()}
     <div style="margin-top:10px"><div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px">📝 Kommentar</div><textarea class="od-notes-inp" data-id="${p.id}" placeholder="Notater, spesielle avtaler, kontaktperson..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.78rem;color:#334155;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#C8102E'" onblur="this.style.borderColor='#e2e8f0';oreUpdateNotes(this.dataset.id,this.value)">${p.notes||''}</textarea></div>
@@ -2606,13 +2607,22 @@ async function fetchOSEconomy(projects) {
   }));
 }
 
-// Gjenstående = revidert tilbud - fakturert (fra OS)
+// Beregn grunnlag for gjenstående: revidert tilbud (OS) → kontraktssum (manuell) → null
+function calcBase(project){
+  var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
+  if(eco&&(eco.revisedOffer||0)>0) return {val:eco.revisedOffer,label:'revidert tilbud (OS)'};
+  if((project.kontraktssum||0)>0) return {val:project.kontraktssum,label:'kontraktssum'};
+  return null;
+}
+
+// Gjenstående = grunnlag - fakturert
 function calcGjenvaerende(project){
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
-  if(!eco||eco.revisedOffer==null) return null;
-  var gj=(eco.revisedOffer||0)-(eco.revenue||0);
-  return gj>0?gj:0;
+  if(!eco) return null;
+  var b=calcBase(project);
+  if(!b) return null;
+  return Math.max(0,b.val-(eco.revenue||0));
 }
 
 // Faktisk fakturert beløp fra OS
@@ -2627,11 +2637,23 @@ function calcFakturert(project){
 function calcFakturertPct(project){
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
-  if(!eco||!eco.revisedOffer) return null;
-  return Math.min(100,Math.round(eco.revenue/eco.revisedOffer*100));
+  if(!eco) return null;
+  var b=calcBase(project);
+  if(!b) return null;
+  return Math.min(100,Math.round((eco.revenue||0)/b.val*100));
 }
 
-// Kortfattet OS-info for inline-visning (erstatter viaInfoText)
+// Effektiv ordrereserve per prosjekt (gjenstående hvis OS-data finnes, ellers kontraktssum)
+function effectiveOrdreReserve(project){
+  var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
+  if(eco){
+    var b=calcBase(project);
+    if(b) return Math.max(0,b.val-(eco.revenue||0));
+  }
+  return project.kontraktssum||0;
+}
+
+// Kortfattet OS-info for inline-visning
 function viaInfoText(project){
   var pct=calcFakturertPct(project);
   if(pct==null) return '';
