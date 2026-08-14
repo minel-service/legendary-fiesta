@@ -2041,7 +2041,21 @@ function buildOreCard(p){
       const hasOvr=p.osRevenueOverride!=null;
       if(!p.ordreNr&&!hasOvr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Legg til ordrenr. over for å se fakturert og gjenstående</div></div>`;
       const eco=window._osEconomy&&p.ordreNr&&window._osEconomy[p.ordreNr];
-      if(!eco&&!hasOvr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
+      if(!eco&&!hasOvr) return '<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em">ØKONOMI (ORDRESTYRING)</div>'
+          +'<button onclick="startOsOverride(\''+p.id+'\')" style="font-size:.68rem;padding:2px 8px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:5px;cursor:pointer;font-weight:600">✏ Overstyr manuelt</button>'
+        +'</div>'
+        +'<div style="font-size:.75rem;color:#94a3b8;margin-bottom:6px">Henter økonomidata fra OS… (kan ta litt tid)</div>'
+        +'<div id="ose-inp-'+p.id+'" style="display:none">'
+          +'<div style="font-size:.7rem;color:#b45309;margin-bottom:4px;font-weight:600">Skriv inn fakturert beløp manuelt (kr):</div>'
+          +'<div style="display:flex;gap:5px">'
+            +'<input id="ose-val-'+p.id+'" type="text" placeholder="F.eks. 1 500 000" style="flex:1;padding:5px 8px;border:1.5px solid #f59e0b;border-radius:6px;font-size:.82rem;outline:none" onkeydown="if(event.key===\'Enter\')saveOsOverride(\''+p.id+'\')">'
+            +'<button onclick="saveOsOverride(\''+p.id+'\')" style="padding:5px 10px;background:#f59e0b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:700">Lagre</button>'
+            +'<button onclick="document.getElementById(\'ose-inp-'+p.id+'\').style.display=\'none\'" style="padding:5px 8px;background:#f1f5f9;border:none;border-radius:6px;cursor:pointer;font-size:.78rem">✕</button>'
+          +'</div>'
+        +'</div>'
+        +'</div>';
       const faktAmt=hasOvr?p.osRevenueOverride:(eco&&eco.revenue||0);
       const base=calcBase(p);
       const pct=base?Math.min(100,Math.round(faktAmt/base.val*100)):0;
@@ -2947,34 +2961,51 @@ window._osEconomy = {};
 async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
   const nr = String(singleNr).trim();
   if (!nr) return null;
+
+  // Intern hjelpefunksjon: hent for ett spesifikt selskap
+  const doFetch = async (co) => {
+    try {
+      const searchQuery = `query OsEkonomiSearch {
+        cases(pagination: {page: 1, limit: 200}, search: {query: "${nr}", fields: ["caseNumber"]}) {
+          items { caseNumber economy { revenue revisedOffer } }
+        }
+      }`;
+      const resp = await fetch(gqlUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ company: co, operationName: 'OsEkonomiSearch', query: searchQuery, variables: {} })
+      });
+      if (!resp.ok) return null;
+      const result = await resp.json();
+      if (result.errors) return null;
+      const items = result.data?.cases?.items || [];
+      const nrNorm = nr.replace(/^0+/,'');
+      const matches = items.filter(c => {
+        const cn = String(c.caseNumber||'');
+        const base = cn.split(/[-_.]/)[0].replace(/^0+/,'');
+        return base === nrNorm || cn === nr;
+      });
+      if (!matches.length) return null;
+      const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
+      const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
+      console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
+      return { revenue, revisedOffer };
+    } catch(e) { return null; }
+  };
+
+  // Prøv primærselskapet
+  const primary = await doFetch(company);
+  if (primary) return primary;
+
+  // Fallback: ordreNr kan tilhøre et annet konsernselskap — prøv alle parallelt
+  const otherCos = [...new Set(Object.keys(FILE_MAP))].filter(c => c !== company);
+  if (!otherCos.length) { console.log(`[OS Økonomi] ${nr}: fant ikke`); return null; }
   try {
-    const searchQuery = `query OsEkonomiSearch {
-      cases(pagination: {page: 1, limit: 200}, search: {query: "${nr}", fields: ["caseNumber"]}) {
-        items { caseNumber economy { revenue revisedOffer } }
-      }
-    }`;
-    const resp = await fetch(gqlUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ company, operationName: 'OsEkonomiSearch', query: searchQuery, variables: {} })
-    });
-    if (!resp.ok) return null;
-    const result = await resp.json();
-    if (result.errors) { console.warn('[OS Søk feil]', company, nr, result.errors[0]?.message); return null; }
-    const items = result.data?.cases?.items || [];
-    // Matcher caseNumber mot ordreNr: ignorer sub-nummer (37202-1, 37202.1, 37202_1) og ledende nuller
-    const nrNorm = nr.replace(/^0+/,'');
-    const matches = items.filter(c => {
-      const cn = String(c.caseNumber||'');
-      const base = cn.split(/[-_.]/)[0].replace(/^0+/,'');
-      return base === nrNorm || cn === nr;
-    });
-    if (!matches.length) { console.log(`[OS Økonomi] ${company} / ${nr}: fant ikke`); return null; }
-    const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
-    const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
-    console.log(`[OS Økonomi ✓] ${company} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
-    return { revenue, revisedOffer };
-  } catch(e) { console.warn('[OS Økonomi]', company, nr, e.message); return null; }
+    const result = await Promise.any(otherCos.map(co =>
+      doFetch(co).then(r => { if(!r) throw new Error('miss'); console.log(`[OS Økonomi] ${nr} funnet via ${co}`); return r; })
+    ));
+    return result;
+  } catch { console.log(`[OS Økonomi] ${nr}: fant ikke i noe selskap`); return null; }
 }
 
 async function fetchOSEconomy(projects) {
