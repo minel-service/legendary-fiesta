@@ -2575,6 +2575,8 @@ function saveProject(){
   renderAll();
   if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
   {const _co2=allProjects.find(p=>p.id===editingId)?.company;if(_co2)saveCompanyProjects(_co2,allProjects.filter(p=>p.company===_co2)).then(ok=>showToast(ok?'Kontrakt oppdatert ✓':'⚠️ Lokalt lagret',ok));}
+  // Hent OS-økonomidata for det redigerte prosjektet (inkl. kombinert ordreNr)
+  if(ordreNr&&company){const _ep=allProjects.find(p=>p.id===editingId);if(_ep)fetchOSEconomy([_ep]).then(()=>{updateOrdrereserve();updateTable();if(oreDrawerCo)renderOreDrawer();});}
 }
 
 function editProj(id){
@@ -2960,7 +2962,13 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
     const result = await resp.json();
     if (result.errors) { console.warn('[OS Søk feil]', company, nr, result.errors[0]?.message); return null; }
     const items = result.data?.cases?.items || [];
-    const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === nr);
+    // Matcher caseNumber mot ordreNr: ignorer sub-nummer (37202-1, 37202.1, 37202_1) og ledende nuller
+    const nrNorm = nr.replace(/^0+/,'');
+    const matches = items.filter(c => {
+      const cn = String(c.caseNumber||'');
+      const base = cn.split(/[-_.]/)[0].replace(/^0+/,'');
+      return base === nrNorm || cn === nr;
+    });
     if (!matches.length) { console.log(`[OS Økonomi] ${company} / ${nr}: fant ikke`); return null; }
     const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
     const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
