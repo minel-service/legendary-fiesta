@@ -662,19 +662,57 @@ function migrateAll(projects){
   if(!Array.isArray(projects)) return [];
   return projects.map(migrateProject).filter(p=>p.id && p.company);
 }
+// Slår sammen SharePoint- og localStorage-data — vinner per prosjekt = nyeste lastEditedAt
+function mergeProjectLists(spList, localList){
+  const spMap=new Map(spList.map(p=>[p.id,p]));
+  const localMap=new Map(localList.map(p=>[p.id,p]));
+  const merged=[];
+  // SP-prosjekter: foretrekk lokal hvis den er nyere
+  spList.forEach(sp=>{
+    const loc=localMap.get(sp.id);
+    if(loc&&(loc.lastEditedAt||'')>(sp.lastEditedAt||'')){
+      merged.push(loc);
+    } else {
+      merged.push(sp);
+    }
+  });
+  // Lokale prosjekter som ikke finnes i SP (ble ikke lagret pga. nettfeil)
+  localList.forEach(loc=>{
+    if(!spMap.has(loc.id)) merged.push(loc);
+  });
+  return merged;
+}
+
 async function loadCompanyProjects(company){
   const fn=FILE_MAP[company];if(!fn)return[];
   const url=`${BRIDGE_URL}/api/sp?file=${fn}`;
+  // Last lokal kopi først
+  let localData=[];
+  try{const ls=localStorage.getItem(lsKey(fn));if(ls)localData=migrateAll(JSON.parse(ls));}catch(_){}
   try{
     const r=await gFetch(url);
     if(!r||r.status===0)throw new Error('ingen token');
-    if(r.status===404)return[];
-    if(r.ok){const j=await r.json();if(Array.isArray(j)){const migrated=migrateAll(j);try{localStorage.setItem(lsKey(fn),JSON.stringify(migrated));}catch(_){}return migrated;}}
+    if(r.status===404)return localData;
+    if(r.ok){
+      const j=await r.json();
+      if(Array.isArray(j)){
+        const spData=migrateAll(j);
+        // Merge: SP og lokal — nyeste per prosjekt vinner
+        const merged=mergeProjectLists(spData,localData);
+        try{localStorage.setItem(lsKey(fn),JSON.stringify(merged));}catch(_){}
+        // Har lokal nyere data? Synk tilbake til SP stille i bakgrunnen
+        const mergedJson=JSON.stringify(merged);
+        if(mergedJson!==JSON.stringify(spData)){
+          console.log(`[Graph] ${company}: lokal data nyere enn SP — resyncer stille`);
+          saveCompanyProjects(company,merged);
+        }
+        return merged;
+      }
+    }
     throw new Error('HTTP '+r.status);
   }catch(e){
     console.warn(`[Graph] load ${company}: ${e.message}`);
-    try{const ls=localStorage.getItem(lsKey(fn));if(ls)return migrateAll(JSON.parse(ls));}catch(_){}
-    return[];
+    return localData;
   }
 }
 async function loadAllProjects(){
