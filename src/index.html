@@ -637,6 +637,11 @@ const FILE_MAP = {
 };
 function lsKey(fn){return 'minel_'+fn;}
 
+// ── Rammeavtale-override: eget LS-nøkkel uavhengig av SP-sync ──
+const LS_AVTALE_KEY='minel_avtale_overrides';
+function getAvtaleOverrides(){try{return JSON.parse(localStorage.getItem(LS_AVTALE_KEY)||'{}')}catch(_){return{}}}
+function setAvtaleOverride(id,val){const ov=getAvtaleOverrides();if(val===null)delete ov[id];else ov[id]=val;localStorage.setItem(LS_AVTALE_KEY,JSON.stringify(ov));}
+
 // ════ SKJEMAVERSJON OG MIGRERING ════
 // Øk SCHEMA_VERSION når du endrer datastrukturen
 // Legg til migrasjonssteg i migrateProject()
@@ -727,6 +732,9 @@ async function loadAllProjects(){
   const cos=Object.keys(FILE_MAP);
   const res=await Promise.allSettled(cos.map(co=>loadCompanyProjects(co)));
   let all=[];res.forEach((r,i)=>{if(r.status==='fulfilled')all=[...all,...r.value];else console.warn('[Graph] load feilet:',cos[i]);});
+  // Legg alltid lokale avtale-overrides oppå (overordner SP-data / merge-resultat)
+  const ov=getAvtaleOverrides();
+  if(Object.keys(ov).length>0) all=all.map(p=>ov.hasOwnProperty(p.id)?{...p,avtaleType:ov[p.id]}:p);
   return all;
 }
 async function saveCompanyProjects(company,projects){
@@ -1718,15 +1726,18 @@ function initOreFilterBar(){
     }
   }
 
+  // Koder filter som "år,kvartal" (eks. "2026,3") — unngår JSON-anførselstegn i onclick-attributt
   bar.innerHTML=chips.map(c=>{
     if(c.sep) return '<div class="ore-filter-sep"></div>';
     const active=JSON.stringify(_oreTimeFilter)===JSON.stringify(c.filter)?'active':'';
-    return `<button class="ore-chip ${c.cls} ${active}" onclick="setOreTimeFilter(${JSON.stringify(c.filter)})">${c.label}</button>`;
+    const enc=c.filter===null?'':`${c.filter.year},${c.filter.quarter||0}`;
+    return `<button class="ore-chip ${c.cls} ${active}" onclick="setOreTimeFilter('${enc}')">${c.label}</button>`;
   }).join('');
 }
 
-function setOreTimeFilter(filter){
-  _oreTimeFilter=filter;
+function setOreTimeFilter(enc){
+  if(!enc){_oreTimeFilter=null;}
+  else{const p=String(enc).split(',');const yr=parseInt(p[0])||0;const q=parseInt(p[1])||0;_oreTimeFilter={year:yr,quarter:q||null};}
   initOreFilterBar();
   updateOrdrereserve();
 }
@@ -2069,6 +2080,7 @@ function setAvtaleType(id,val){
   p.avtaleType=ny;
   if(val) p.ordreNr=null; // rammeavtale trenger ikke OS-ordrenr
   p.lastEditedBy=auditUser();p.lastEditedAt=auditNow();
+  setAvtaleOverride(id,ny); // ← persistent override uavhengig av SP-sync
   scheduleSave();
   renderOreDrawer();
   updateOrdrereserve();updateTable();
