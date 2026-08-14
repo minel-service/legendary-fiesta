@@ -667,6 +667,7 @@ function migrateProject(p){
   if(p.inOS === undefined)         p.inOS = false;
   if(p.warnDismissed === undefined) p.warnDismissed = false;
   if(p.avtaleType === undefined)    p.avtaleType = null; // null = standard, 'ramme' = rammeavtale/serviceavtale
+  if(p.osRevenueOverride === undefined) p.osRevenueOverride = null; // null = bruk OS, tall = manuelt overstyrt
   if(!p.created)    p.created = new Date().toISOString();
   if(!p.createdBy)  p.createdBy = null;
   if(!p.createdAt)  p.createdAt = p.created || null;
@@ -2036,21 +2037,40 @@ function buildOreCard(p){
           +'</div>'
           +'</div>';
       }
-      // ── Standard: vis fra OS ──
-      if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Legg til ordrenr. over for å se fakturert og gjenstående</div></div>`;
-      const eco=window._osEconomy&&window._osEconomy[p.ordreNr];
-      if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
+      // ── Standard: vis fra OS (med mulighet for manuell overstyring) ──
+      const hasOvr=p.osRevenueOverride!=null;
+      if(!p.ordreNr&&!hasOvr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Legg til ordrenr. over for å se fakturert og gjenstående</div></div>`;
+      const eco=window._osEconomy&&p.ordreNr&&window._osEconomy[p.ordreNr];
+      if(!eco&&!hasOvr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
+      const faktAmt=hasOvr?p.osRevenueOverride:(eco&&eco.revenue||0);
       const base=calcBase(p);
-      const pct=base?Math.min(100,Math.round((eco.revenue||0)/base.val*100)):0;
-      const gj=base?Math.max(0,base.val-(eco.revenue||0)):null;
-      return '<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border-radius:6px;border-left:3px solid #3b82f6">'
-        +'<div style="font-size:.72rem;font-weight:700;color:#1d4ed8;letter-spacing:.05em;margin-bottom:5px">ØKONOMI (ORDRESTYRING)</div>'
+      const pct=base?Math.min(100,Math.round(faktAmt/base.val*100)):0;
+      const gj=base?Math.max(0,base.val-faktAmt):null;
+      const bgC=hasOvr?'#fffbeb':'#f0f9ff', bdrC=hasOvr?'#f59e0b':'#3b82f6';
+      const hdC=hasOvr?'#b45309':'#1d4ed8', faktC=hasOvr?'#92400e':'#1e293b';
+      const barBg=hasOvr?'#fde68a':'#dbeafe', barFg=hasOvr?'#f59e0b':'#3b82f6';
+      return '<div style="margin-top:8px;padding:8px 10px;background:'+bgC+';border-radius:6px;border-left:3px solid '+bdrC+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+          +'<div style="font-size:.72rem;font-weight:700;color:'+hdC+';letter-spacing:.05em">ØKONOMI '+(hasOvr?'(MANUELT OVERSTYRT)':'(ORDRESTYRING)')+'</div>'
+          +(hasOvr
+            ?'<button onclick="setOsOverride(\''+p.id+'\',null)" title="Tilbakestill til OS-data" style="font-size:.68rem;padding:2px 8px;background:#fef3c7;color:#b45309;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font-weight:600">↩ Tilbakestill</button>'
+            :'<button onclick="startOsOverride(\''+p.id+'\')" style="font-size:.68rem;padding:2px 8px;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;border-radius:5px;cursor:pointer;font-weight:600">✏ Overstyr</button>')
+        +'</div>'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px">'
-          +'<div><div style="font-size:.65rem;color:#64748b">Fakturert</div><div style="font-size:1rem;font-weight:800;color:#1e293b">kr '+(eco.revenue||0).toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+          +'<div><div style="font-size:.65rem;color:#64748b">Fakturert'+(hasOvr?' <span style="color:#b45309;font-style:italic">(manuelt)</span>':'')+'</div><div style="font-size:1rem;font-weight:800;color:'+faktC+'">kr '+faktAmt.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
           +'<div style="text-align:right"><div style="font-size:.65rem;color:#64748b">Gjenstående</div><div style="font-size:1rem;font-weight:800;color:'+(gj!=null&&gj>0?'#1e40af':'#15803d')+'">'+(gj!=null?'kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0}):'—')+'</div></div>'
         +'</div>'
-        +(base?'<div style="height:5px;background:#dbeafe;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6;border-radius:3px;transition:width .5s"></div></div>'
-              +'<div style="font-size:.66rem;color:#64748b;margin-top:3px">'+pct+'% fakturert av kr '+base.val.toLocaleString('no-NO',{maximumFractionDigits:0})+' ('+base.label+')</div>':'')
+        +(base?'<div style="height:5px;background:'+barBg+';border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barFg+';border-radius:3px;transition:width .5s"></div></div>'
+              +'<div style="font-size:.66rem;color:#64748b;margin-top:3px">'+pct+'% fakturert av kr '+base.val.toLocaleString('no-NO',{maximumFractionDigits:0})+' ('+base.label+')'+(eco&&hasOvr?' · OS viste kr '+(eco.revenue||0).toLocaleString('no-NO',{maximumFractionDigits:0}):'')+'</div>':'')
+        // Skjult input for manuell overstyring
+        +'<div id="ose-inp-'+p.id+'" style="display:none;margin-top:8px">'
+          +'<div style="font-size:.7rem;color:#b45309;margin-bottom:4px;font-weight:600">Skriv inn korrekt fakturert beløp (kr):</div>'
+          +'<div style="display:flex;gap:5px">'
+            +'<input id="ose-val-'+p.id+'" type="text" placeholder="F.eks. 1 500 000" style="flex:1;padding:5px 8px;border:1.5px solid #f59e0b;border-radius:6px;font-size:.82rem;outline:none" onkeydown="if(event.key===\'Enter\')saveOsOverride(\''+p.id+'\')">'
+            +'<button onclick="saveOsOverride(\''+p.id+'\')" style="padding:5px 10px;background:#f59e0b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:700">Lagre</button>'
+            +'<button onclick="document.getElementById(\'ose-inp-'+p.id+'\').style.display=\'none\'" style="padding:5px 8px;background:#f1f5f9;border:none;border-radius:6px;cursor:pointer;font-size:.78rem">✕</button>'
+          +'</div>'
+        +'</div>'
         +'</div>';
     })()}
     <div style="margin-top:10px"><div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px">📝 Kommentar</div><textarea class="od-notes-inp" data-id="${p.id}" placeholder="Notater, spesielle avtaler, kontaktperson..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.78rem;color:#334155;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#C8102E'" onblur="this.style.borderColor='#e2e8f0';oreUpdateNotes(this.dataset.id,this.value)">${p.notes||''}</textarea></div>
@@ -2095,6 +2115,33 @@ function setAvtaleType(id,val){
   renderOreDrawer();
   updateOrdrereserve();updateTable();
   showToast(val?'📊 Rammeavtale aktivert — beregner automatisk':'↩️ Standard kontrakt');
+}
+
+// ── Manuell overstyring av fakturert beløp fra OS ──
+function startOsOverride(id){
+  const el=document.getElementById('ose-inp-'+id);
+  if(!el) return;
+  el.style.display='block';
+  const inp=document.getElementById('ose-val-'+id);
+  if(inp){inp.focus();inp.select();}
+}
+function saveOsOverride(id){
+  const inp=document.getElementById('ose-val-'+id);
+  if(!inp) return;
+  const raw=(inp.value||'').replace(/\s/g,'').replace(/,/g,'.').replace(/[^\d.]/g,'');
+  const val=parseFloat(raw);
+  if(isNaN(val)||val<0){inp.style.borderColor='#ef4444';setTimeout(()=>{inp.style.borderColor='#f59e0b';},1500);return;}
+  setOsOverride(id,Math.round(val));
+}
+function setOsOverride(id,val){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p) return;
+  p.osRevenueOverride=(val===null)?null:Math.round(val);
+  p.lastEditedBy=auditUser();p.lastEditedAt=auditNow();
+  scheduleSave();
+  renderOreDrawer();
+  updateOrdrereserve();updateTable();
+  showToast(val!=null?'✏️ Fakturert beløp overstyrt manuelt':'↩️ Tilbake til OS-data');
 }
 
 // ── Inline ordreNr-redigering fra drawer-kort ──
@@ -3020,9 +3067,10 @@ function calcGjenvaerende(project){
   return Math.max(0,b.val-(eco.revenue||0));
 }
 
-// Fakturert/forbrukt beløp
+// Fakturert/forbrukt beløp — sjekker manuell override først
 function calcFakturert(project){
   if(project.avtaleType==='ramme') return (project.kontraktssum||0)?calcRammeConsumed(project):null;
+  if(project.osRevenueOverride!=null) return project.osRevenueOverride; // manuell override vinner alltid
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco) return null;
@@ -3036,20 +3084,19 @@ function calcFakturertPct(project){
     if(!ks) return null;
     return Math.min(100,Math.round(calcRammeConsumed(project)/ks*100));
   }
-  if(!project.ordreNr) return null;
-  var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
-  if(!eco) return null;
+  var fakt=calcFakturert(project);
+  if(fakt==null) return null;
   var b=calcBase(project);
   if(!b) return null;
-  return Math.min(100,Math.round((eco.revenue||0)/b.val*100));
+  return Math.min(100,Math.round(fakt/b.val*100));
 }
 
-// Effektiv ordrereserve = kontraktssum - forbruk
+// Effektiv ordrereserve = kontraktssum - forbruk (bruker calcFakturert for å respektere override)
 function effectiveOrdreReserve(project){
   var ks=project.kontraktssum||0;
   if(project.avtaleType==='ramme') return Math.max(0,ks-calcRammeConsumed(project));
-  var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
-  if(eco&&ks>0) return Math.max(0,ks-(eco.revenue||0));
+  var fakt=calcFakturert(project);
+  if(fakt!=null&&ks>0) return Math.max(0,ks-fakt);
   return ks;
 }
 
