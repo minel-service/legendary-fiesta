@@ -2760,57 +2760,73 @@ window._osEconomy = {};
 
 // Henter CaseEconomy (fakturert + revidert tilbud) fra OS API
 // Henter CaseEconomy (fakturert + revidert tilbud) per selskap fra OS API
+// Henter økonomidata for ett enkelt ordreNr fra OS (intern hjelper)
+async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
+  const nr = String(singleNr).trim();
+  if (!nr) return null;
+  try {
+    const searchQuery = `query OsEkonomiSearch {
+      cases(pagination: {page: 1, limit: 200}, search: {query: "${nr}", fields: ["caseNumber"]}) {
+        items { caseNumber economy { revenue revisedOffer } }
+      }
+    }`;
+    const resp = await fetch(gqlUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ company, operationName: 'OsEkonomiSearch', query: searchQuery, variables: {} })
+    });
+    if (!resp.ok) return null;
+    const result = await resp.json();
+    if (result.errors) { console.warn('[OS Søk feil]', company, nr, result.errors[0]?.message); return null; }
+    const items = result.data?.cases?.items || [];
+    const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === nr);
+    if (!matches.length) { console.log(`[OS Økonomi] ${company} / ${nr}: fant ikke`); return null; }
+    const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
+    const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
+    console.log(`[OS Økonomi ✓] ${company} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
+    return { revenue, revisedOffer };
+  } catch(e) { console.warn('[OS Økonomi]', company, nr, e.message); return null; }
+}
+
 async function fetchOSEconomy(projects) {
   const withOrdre = projects.filter(p => p.ordreNr && p.company);
   if (!withOrdre.length) return;
 
-  // Grupper ordreNr per selskap
+  // Støtter flere ordreNr per prosjekt: "37202/36969" → ["37202","36969"]
+  // Splitter på / , ; eller mellomrom
+  const splitOrdreNr = raw => raw.split(/[\/,;\s]+/).map(s=>s.trim()).filter(Boolean);
+
+  // Grupper alle enkelt-ordreNr per selskap
   const byCompany = {};
   withOrdre.forEach(p => {
-    if (!byCompany[p.company]) byCompany[p.company] = new Set();
-    byCompany[p.company].add(p.ordreNr);
+    if (!byCompany[p.company]) byCompany[p.company] = new Map();
+    // Map: enkeltNr → originalNøkkel (p.ordreNr)
+    splitOrdreNr(p.ordreNr).forEach(nr => byCompany[p.company].set(nr, p.ordreNr));
   });
 
   const gqlUrl = '/api/ordrestyring-proxy';
 
-  // Søk direkte per ordreNr via search-argumentet — unngår paginering gjennom alle cases
-  await Promise.allSettled(Object.entries(byCompany).map(async ([company, ordreNrs]) => {
-    await Promise.allSettled([...ordreNrs].map(async (ordreNr) => {
-      try {
-        const searchQuery = `query OsEkonomiSearch {
-          cases(pagination: {page: 1, limit: 200}, search: {query: "${ordreNr}", fields: ["caseNumber"]}) {
-            items {
-              caseNumber
-              economy { revenue revisedOffer }
-            }
-          }
-        }`;
-        const resp = await fetch(gqlUrl, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ company, operationName: 'OsEkonomiSearch', query: searchQuery, variables: {} })
-        });
-        if (!resp.ok) return;
-        const result = await resp.json();
-        if (result.errors) {
-          console.warn('[OS Søk feil]', company, ordreNr, result.errors[0]?.message);
-          return;
-        }
-        const items = result.data?.cases?.items || [];
-        // Filtrer: kun cases der base-nummeret er eksakt ordreNr
-        const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === String(ordreNr));
-        if (matches.length > 0) {
-          // Summer ALLE treff (forelder + undersaker) — forelder + undersaker = totalt fakturert
-          // Money-scalar er i øre → del på 100 for NOK
-          const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
-          const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
-          window._osEconomy[ordreNr] = { revenue, revisedOffer };
-          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue.toLocaleString('nb-NO')}kr, revidert=${revisedOffer.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
-        } else {
-          console.log(`[OS Økonomi] ${company} / ${ordreNr}: fant ikke`);
-        }
-      } catch(e) { console.warn('[OS Økonomi]', company, ordreNr, e.message); }
-    }));
+  await Promise.allSettled(Object.entries(byCompany).map(async ([company, nrMap]) => {
+    // Hent alle enkelt-ordreNr parallelt
+    const entries = [...nrMap.entries()]; // [[enkeltNr, originalKey], ...]
+    const results = await Promise.allSettled(
+      entries.map(([nr]) => fetchSingleOSEconomy(company, nr, gqlUrl))
+    );
+    // Summer resultater per originalNøkkel (håndterer "37202/36969" → slår sammen)
+    const accumulated = {};
+    results.forEach((res, i) => {
+      const [nr, origKey] = entries[i];
+      if (res.status !== 'fulfilled' || !res.value) return;
+      if (!accumulated[origKey]) accumulated[origKey] = { revenue: 0, revisedOffer: 0, nrs: [] };
+      accumulated[origKey].revenue += res.value.revenue;
+      accumulated[origKey].revisedOffer += res.value.revisedOffer;
+      accumulated[origKey].nrs.push(nr);
+    });
+    Object.entries(accumulated).forEach(([key, val]) => {
+      window._osEconomy[key] = { revenue: val.revenue, revisedOffer: val.revisedOffer };
+      if (val.nrs.length > 1)
+        console.log(`[OS Økonomi ✓] ${company} / kombinert [${val.nrs.join('+')}]: fakturert=${val.revenue.toLocaleString('nb-NO')}kr`);
+    });
   }));
 }
 
