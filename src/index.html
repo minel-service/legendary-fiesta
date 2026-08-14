@@ -1882,7 +1882,7 @@ function buildOreCard(p){
           +'</div>'
           +'<div style="height:5px;background:#fde68a;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barCol+';border-radius:3px;transition:width .5s"></div></div>'
           +'<div style="font-size:.66rem;color:#92400e;margin-top:4px;background:#fef3c7;border-radius:4px;padding:4px 6px">'
-            +'💡 <strong>Rammeavtale:</strong> Forbruk beregnes automatisk — '+info.pastCrew+' av '+info.totalCrew+' mann-uker gjennomført ('+pct+'%). '
+            +'💡 <strong>Rammeavtale:</strong> Forbruk beregnes lineært — '+info.pastCrew+' av '+info.totalCrew+' uker gjennomført/pågående ('+pct+'%). '
             +'Ingen OS-kobling nødvendig.'
           +'</div>'
           +'</div>';
@@ -2765,26 +2765,40 @@ function calcBase(project){
   return null;
 }
 
-// ── Rammeavtale: beregn forbruk proporsjonalt med gjennomført mannskap ──
-// Formula: kontraktssum × (mannuker_gjennomført / mannuker_totalt)
+// ── Hjelper: konverter ukestreng til tall for sikker sammenligning ──
+// "2026-W08" → 202608, "2026-W33" → 202633  (unngår problemer med upaddet "W8" vs "W33")
+function wkToNum(wkStr){
+  var m=(wkStr||'').match(/^(\d{4})-W(\d+)$/);
+  return m?parseInt(m[1])*100+parseInt(m[2]):0;
+}
+
+// ── Rammeavtale: beregn forbruk lineært basert på antall uker gjennomført ──
+// Formula: kontraktssum × (uker_gjennomført_inkl_nå / aktive_uker_totalt)
+// - Teller kun uker med mannskap > 0 (filtrerer bort stale/tomme uker)
+// - Inneværende uke regnes som påløpt (arbeid pågår nå)
 function calcRammeConsumed(project){
   var ks=project.kontraktssum||0;
   if(!ks||!project.weeklyCrews) return 0;
-  var curWk=wKey(new Date());
-  var wks=Object.keys(project.weeklyCrews);
-  var totalCrew=wks.reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
-  if(!totalCrew) return 0;
-  var pastCrew=wks.filter(function(w){return w<curWk;}).reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
-  return Math.round(ks*pastCrew/totalCrew);
+  var curWkNum=wkToNum(wKey(new Date()));
+  // Kun aktive uker (mannskap > 0) — filtrerer bort nulluker og stale data
+  var activeWks=Object.keys(project.weeklyCrews).filter(function(w){
+    return (parseInt(project.weeklyCrews[w])||0)>0;
+  });
+  var totalWeeks=activeWks.length;
+  if(!totalWeeks) return 0;
+  // Uker t.o.m. inneværende uke regnes som forbrukt (≤)
+  var doneWeeks=activeWks.filter(function(w){return wkToNum(w)<=curWkNum;}).length;
+  return Math.round(ks*doneWeeks/totalWeeks);
 }
 
 function calcRammeInfo(project){
-  // Returnerer {pastCrew, totalCrew, curWk} for visning i drawer
-  var curWk=wKey(new Date());
-  var wks=Object.keys(project.weeklyCrews||{});
-  var totalCrew=wks.reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
-  var pastCrew=wks.filter(function(w){return w<curWk;}).reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
-  return {pastCrew:pastCrew,totalCrew:totalCrew};
+  var curWkNum=wkToNum(wKey(new Date()));
+  var activeWks=Object.keys(project.weeklyCrews||{}).filter(function(w){
+    return (parseInt((project.weeklyCrews||{})[w])||0)>0;
+  });
+  var totalWeeks=activeWks.length;
+  var doneWeeks=activeWks.filter(function(w){return wkToNum(w)<=curWkNum;}).length;
+  return {pastCrew:doneWeeks,totalCrew:totalWeeks};
 }
 
 // Gjenstående = grunnlag - fakturert (fra OS eller beregnet for rammeavtale)
