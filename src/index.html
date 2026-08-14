@@ -2592,22 +2592,12 @@ async function fetchOSEconomy(projects) {
         // Filtrer: kun cases der base-nummeret er eksakt ordreNr
         const matches = items.filter(c => String(c.caseNumber||'').split('-')[0] === String(ordreNr));
         if (matches.length > 0) {
-          // Under-saker (-N) = individuelle arbeidsordre med faktura
-          // Foreldresak = totalkontrakten med revidert tilbud
-          const parent = matches.find(c => String(c.caseNumber) === String(ordreNr));
-          const subCases = matches.filter(c => String(c.caseNumber).includes('-'));
+          // Summer ALLE treff (forelder + undersaker) — forelder + undersaker = totalt fakturert
           // Money-scalar er i øre → del på 100 for NOK
-          let revenue, revisedOffer;
-          if (subCases.length > 0) {
-            revenue = subCases.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
-            revisedOffer = parent ? (parent.economy?.revisedOffer ?? 0) / 100
-                                  : subCases.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
-          } else {
-            revenue = (matches[0]?.economy?.revenue ?? 0) / 100;
-            revisedOffer = (matches[0]?.economy?.revisedOffer ?? 0) / 100;
-          }
+          const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
+          const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
           window._osEconomy[ordreNr] = { revenue, revisedOffer };
-          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue}, revidert=${revisedOffer} (${subCases.length} undersaker, forelder=${!!parent})`);
+          console.log(`[OS Økonomi ✓] ${company} / ${ordreNr}: fakturert=${revenue.toLocaleString('nb-NO')}kr, revidert=${revisedOffer.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
         } else {
           console.log(`[OS Økonomi] ${company} / ${ordreNr}: fant ikke`);
         }
