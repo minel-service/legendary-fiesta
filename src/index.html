@@ -3083,18 +3083,17 @@ function calcRammeInfo(project){
   return {pastCrew:doneWeeks,totalCrew:totalWeeks};
 }
 
-// Gjenstående = grunnlag - fakturert (fra OS eller beregnet for rammeavtale)
+// Gjenstående = grunnlag - fakturert (bruker calcFakturert → respekterer manuell override)
 function calcGjenvaerende(project){
   if(project.avtaleType==='ramme'){
     var ks=project.kontraktssum||0;
     return ks?Math.max(0,ks-calcRammeConsumed(project)):null;
   }
-  if(!project.ordreNr) return null;
-  var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
-  if(!eco) return null;
+  var fakt=calcFakturert(project);
+  if(fakt==null) return null;
   var b=calcBase(project);
   if(!b) return null;
-  return Math.max(0,b.val-(eco.revenue||0));
+  return Math.max(0,b.val-fakt);
 }
 
 // Fakturert/forbrukt beløp — sjekker manuell override først
