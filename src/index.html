@@ -1537,16 +1537,25 @@ function updateTable(){
       html+=`<tr>
         <td><strong>${p.name}</strong></td>
         <td>${p.company?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${bc};display:inline-block"></span>${p.company}</span>`:'<span style="color:#94a3b8;font-size:.78rem">—</span>'}</td>
-        <td style="font-size:.82rem">${ks}${calcGjenvaerende(p)!=null?'<div style="font-size:.72rem;color:#1e40af;font-weight:600">kr '+calcGjenvaerende(p).toLocaleString('no-NO',{maximumFractionDigits:0})+' gjenstår</div>':''}</td>
-        <td style="font-size:.78rem;white-space:nowrap">${(()=>{
+        <td style="font-size:.82rem">${ks}</td>
+        <td style="font-size:.78rem;white-space:nowrap;min-width:160px">${(()=>{
   if(!p.ordreNr) return '<span style="color:#cbd5e1">—</span>';
   const fakt=calcFakturert(p);
   const gj=calcGjenvaerende(p);
   const pct=calcFakturertPct(p);
   if(fakt==null) return '<span style="color:#94a3b8;font-size:.72rem">Henter…</span>';
-  return '<span style="color:#1d4ed8;font-weight:600">kr '+fakt.toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>'
-    +(pct!=null?'<div style="margin-top:2px;height:3px;width:60px;background:#dbeafe;border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#3b82f6"></div></div>':'')
-    +(gj!=null?'<div style="color:#64748b">'+pct+'% fakturert · <span style="color:#1e40af;font-weight:600">'+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' igjen</span></div>':'');
+  const p0=pct||0;
+  const barCol=p0>=100?'#16a34a':p0>=75?'#2563eb':p0>=40?'#f59e0b':'#dc2626';
+  const barBg=p0>=100?'#dcfce7':p0>=75?'#dbeafe':p0>=40?'#fef3c7':'#fee2e2';
+  const pctCol=p0>=100?'#15803d':p0>=75?'#1d4ed8':p0>=40?'#b45309':'#b91c1c';
+  return '<div style="display:flex;align-items:center;gap:5px">'
+    +'<div style="flex:1;height:5px;background:'+barBg+';border-radius:3px;min-width:90px;overflow:hidden"><div style="height:100%;width:'+p0+'%;background:'+barCol+';border-radius:3px"></div></div>'
+    +'<span style="font-size:.7rem;font-weight:700;color:'+pctCol+';min-width:30px;text-align:right">'+p0+'%</span>'
+    +'</div>'
+    +'<div style="margin-top:3px;font-size:.73rem;display:flex;gap:4px;align-items:baseline">'
+    +'<span style="color:#1d4ed8;font-weight:600">kr '+fakt.toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>'
+    +(gj!=null?'<span style="color:#94a3b8">·</span><span style="color:#64748b">'+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' igjen</span>':'')
+    +'</div>';
 })()}</td>
         <td style="color:#64748b;font-size:.79rem">${wStr}</td>
         <td><div class="cbar"><div class="ctrack"><div class="cfill" style="width:${pct}%;background:${MANUAL_COLOR}"></div></div><span class="cnum">${avg}<span style="color:#94a3b8;font-weight:400;font-size:.74rem"> snitt</span></span></div></td>
