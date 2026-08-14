@@ -545,6 +545,17 @@ async function fetchUserCompany() {
       </div>
     </div>
     <div class="frow">
+      <div class="fg">
+        <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="pAvtaleType" onchange="toggleRammeavtale(this.checked)" style="width:16px;height:16px;accent-color:#C8102E;cursor:pointer;flex-shrink:0"/>
+          <span>Rammeavtale / løpende serviceavtale</span>
+        </label>
+        <div class="hint" id="rammeHint" style="display:none;background:#fff8f0;border-left:3px solid #f59e0b;padding:5px 8px;border-radius:4px;color:#92400e">
+          💡 Ordrereserven beregnes automatisk ukentlig basert på andel gjennomført mannskap — ingen OS-kobling nødvendig.
+        </div>
+      </div>
+    </div>
+    <div id="ordreNrRow" class="frow">
       <div class="fg" style="position:relative;">
         <label class="fl">Ordrenummer (OS)</label>
         <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value,document.getElementById('pCo')?.value||'')" autocomplete="off"/>
@@ -635,6 +646,7 @@ function migrateProject(p){
   if(p.notes === undefined)        p.notes = '';
   if(p.inOS === undefined)         p.inOS = false;
   if(p.warnDismissed === undefined) p.warnDismissed = false;
+  if(p.avtaleType === undefined)    p.avtaleType = null; // null = standard, 'ramme' = rammeavtale/serviceavtale
   if(!p.created)    p.created = new Date().toISOString();
   if(!p.createdBy)  p.createdBy = null;
   if(!p.createdAt)  p.createdAt = p.created || null;
@@ -1539,11 +1551,12 @@ function updateTable(){
         <td>${p.company?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:.77rem;font-weight:600;color:#374151"><span style="width:8px;height:8px;border-radius:3px;background:${bc};display:inline-block"></span>${p.company}</span>`:'<span style="color:#94a3b8;font-size:.78rem">—</span>'}</td>
         <td style="font-size:.82rem">${ks}</td>
         <td style="font-size:.78rem;white-space:nowrap;min-width:160px">${(()=>{
-  if(!p.ordreNr) return '<span style="color:#cbd5e1">—</span>';
+  const isRamme=p.avtaleType==='ramme';
+  if(!isRamme&&!p.ordreNr) return '<span style="color:#cbd5e1">—</span>';
   const fakt=calcFakturert(p);
   const gj=calcGjenvaerende(p);
   const pct=calcFakturertPct(p);
-  if(fakt==null) return '<span style="color:#94a3b8;font-size:.72rem">Henter…</span>';
+  if(!isRamme&&fakt==null) return '<span style="color:#94a3b8;font-size:.72rem">Henter…</span>';
   const p0=pct||0;
   const barCol=p0>=100?'#16a34a':p0>=75?'#2563eb':p0>=40?'#f59e0b':'#dc2626';
   const barBg=p0>=100?'#dcfce7':p0>=75?'#dbeafe':p0>=40?'#fef3c7':'#fee2e2';
@@ -1551,9 +1564,10 @@ function updateTable(){
   return '<div style="display:flex;align-items:center;gap:5px">'
     +'<div style="flex:1;height:5px;background:'+barBg+';border-radius:3px;min-width:90px;overflow:hidden"><div style="height:100%;width:'+p0+'%;background:'+barCol+';border-radius:3px"></div></div>'
     +'<span style="font-size:.7rem;font-weight:700;color:'+pctCol+';min-width:30px;text-align:right">'+p0+'%</span>'
+    +(isRamme?'<span style="font-size:.65rem;color:#b45309;background:#fef3c7;border-radius:3px;padding:0 3px" title="Beregnet basert på mannskap">beregnet</span>':'')
     +'</div>'
     +'<div style="margin-top:3px;font-size:.73rem;display:flex;gap:4px;align-items:baseline">'
-    +'<span style="color:#1d4ed8;font-weight:600">kr '+fakt.toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>'
+    +'<span style="color:#'+(isRamme?'b45309':'1d4ed8')+';font-weight:600">kr '+(fakt||0).toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>'
     +(gj!=null?'<span style="color:#94a3b8">·</span><span style="color:#64748b">'+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+' igjen</span>':'')
     +'</div>';
 })()}</td>
@@ -1833,6 +1847,8 @@ function buildOreCard(p){
       <label class="os-toggle"><input type="checkbox" ${p.inOS?'checked':''} onchange="setInOS('${p.id}',this.checked)"><span class="os-slider"></span></label>
     </div>
     ${(()=>{
+      // Rammeavtale: ikke relevant med ordreNr
+      if(p.avtaleType==='ramme') return '<div style="margin-top:6px;font-size:.72rem;color:#b45309;background:#fef3c7;border-radius:4px;padding:4px 8px">📋 Rammeavtale — ordrenr ikke nødvendig (beregnet automatisk)</div>';
       return '<div style="margin-top:8px">'
         +'<div style="font-size:.69rem;font-weight:700;color:#94a3b8;letter-spacing:.04em;margin-bottom:3px">ORDRENUMMER (OS)</div>'
         +'<div style="display:flex;gap:5px;align-items:center;position:relative">'
@@ -1851,6 +1867,28 @@ function buildOreCard(p){
         +'</div>';
     })()}
     ${(()=>{
+      // ── Rammeavtale: vis beregnet økonomi ──
+      if(p.avtaleType==='ramme'){
+        const ks=p.kontraktssum||0;
+        const consumed=calcRammeConsumed(p);
+        const gj=Math.max(0,ks-consumed);
+        const pct=ks?Math.min(100,Math.round(consumed/ks*100)):0;
+        const info=calcRammeInfo(p);
+        const barCol=pct>=100?'#16a34a':pct>=75?'#2563eb':pct>=40?'#f59e0b':'#dc2626';
+        return '<div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border-radius:6px;border-left:3px solid #f59e0b">'
+          +'<div style="font-size:.72rem;font-weight:700;color:#92400e;letter-spacing:.05em;margin-bottom:5px">📊 ØKONOMI (BEREGNET)</div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px">'
+            +'<div><div style="font-size:.65rem;color:#64748b">Forbrukt (beregnet)</div><div style="font-size:1rem;font-weight:800;color:#1e293b">kr '+consumed.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+            +'<div style="text-align:right"><div style="font-size:.65rem;color:#64748b">Gjenstående</div><div style="font-size:1rem;font-weight:800;color:'+(gj>0?'#1e40af':'#15803d')+'">kr '+gj.toLocaleString('no-NO',{maximumFractionDigits:0})+'</div></div>'
+          +'</div>'
+          +'<div style="height:5px;background:#fde68a;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barCol+';border-radius:3px;transition:width .5s"></div></div>'
+          +'<div style="font-size:.66rem;color:#92400e;margin-top:4px;background:#fef3c7;border-radius:4px;padding:4px 6px">'
+            +'💡 <strong>Rammeavtale:</strong> Forbruk beregnes automatisk — '+info.pastCrew+' av '+info.totalCrew+' mann-uker gjennomført ('+pct+'%). '
+            +'Ingen OS-kobling nødvendig.'
+          +'</div>'
+          +'</div>';
+      }
+      // ── Standard: vis fra OS ──
       if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Legg til ordrenr. over for å se fakturert og gjenstående</div></div>`;
       const eco=window._osEconomy&&window._osEconomy[p.ordreNr];
       if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
@@ -2199,6 +2237,12 @@ function closeProjModal(){
   editingId=null;
   document.getElementById('pOrdreNr').value='';
   document.getElementById('ordreNrSuggest').style.display='none';
+  document.getElementById('pAvtaleType').checked=false;
+  toggleRammeavtale(false);
+}
+function toggleRammeavtale(isRamme){
+  document.getElementById('ordreNrRow').style.display=isRamme?'none':'';
+  document.getElementById('rammeHint').style.display=isRamme?'block':'none';
 }
 
 function ovcClick(e){if(e.target===document.getElementById('projOverlay'))closeProjModal();}
@@ -2246,7 +2290,8 @@ function saveProject(){
   const company=document.getElementById('pCo').value;
   const kontraktssum=parseKrInput('pKontrakt');
   const notes=(document.getElementById('pNotes')?.value||'').trim();
-  const ordreNr=document.getElementById('pOrdreNr')?.value?.trim()||null;
+  const avtaleType=document.getElementById('pAvtaleType')?.checked?'ramme':null;
+  const ordreNr=avtaleType?null:(document.getElementById('pOrdreNr')?.value?.trim()||null);
   if(!name){alert('Prosjektnavn er åkrevd.');return;}
   if(!company){alert('Velg et selskap.');return;}
   // Tilgangskontroll: blokkér hvis brukeren prøver å lagre til annet selskap
@@ -2270,9 +2315,9 @@ function saveProject(){
   const _u=auditUser(),_t=auditNow();
   if(editingId){
     const idx=allProjects.findIndex(p=>p.id===editingId);
-    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,lastEditedBy:_u,lastEditedAt:_t};
+    if(idx>=0) allProjects[idx]={...allProjects[idx],name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,lastEditedBy:_u,lastEditedAt:_t};
   } else {
-    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,ordreNr,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
+    const nyP={id:uid(),name,company,weeklyCrews,kontraktssum,notes,ordreNr,avtaleType,created:new Date().toISOString(),createdBy:_u,createdAt:_t};
     allProjects.push(nyP);
     closeProjModal();
     renderAll();
@@ -2306,6 +2351,9 @@ function editProj(id){
   document.getElementById('pName').value=p.name;
   document.getElementById('pKontrakt').value=p.kontraktssum>0?Math.round(p.kontraktssum).toLocaleString('no-NO'):'';
   if(document.getElementById('pNotes')) document.getElementById('pNotes').value=p.notes||'';
+  const _isRamme=p.avtaleType==='ramme';
+  document.getElementById('pAvtaleType').checked=_isRamme;
+  toggleRammeavtale(_isRamme);
   document.getElementById('pOrdreNr').value=p.ordreNr||'';
   const sel=document.getElementById('pCo');
   sel.disabled=(currentCompany!=='__admin__');
@@ -2713,14 +2761,39 @@ async function fetchOSEconomy(projects) {
 }
 
 // Grunnlag for gjenstående: alltid manuell kontraktssum (pålitelig basis)
-// OS revidert tilbud vises kun som info i drawer, ikke som beregningsgrunnlag
 function calcBase(project){
   if((project.kontraktssum||0)>0) return {val:project.kontraktssum,label:'kontraktssum'};
   return null;
 }
 
-// Gjenstående = grunnlag - fakturert
+// ── Rammeavtale: beregn forbruk proporsjonalt med gjennomført mannskap ──
+// Formula: kontraktssum × (mannuker_gjennomført / mannuker_totalt)
+function calcRammeConsumed(project){
+  var ks=project.kontraktssum||0;
+  if(!ks||!project.weeklyCrews) return 0;
+  var curWk=wKey(new Date());
+  var wks=Object.keys(project.weeklyCrews);
+  var totalCrew=wks.reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
+  if(!totalCrew) return 0;
+  var pastCrew=wks.filter(function(w){return w<curWk;}).reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
+  return Math.round(ks*pastCrew/totalCrew);
+}
+
+function calcRammeInfo(project){
+  // Returnerer {pastCrew, totalCrew, curWk} for visning i drawer
+  var curWk=wKey(new Date());
+  var wks=Object.keys(project.weeklyCrews||{});
+  var totalCrew=wks.reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
+  var pastCrew=wks.filter(function(w){return w<curWk;}).reduce(function(s,w){return s+(parseInt(project.weeklyCrews[w])||0);},0);
+  return {pastCrew:pastCrew,totalCrew:totalCrew};
+}
+
+// Gjenstående = grunnlag - fakturert (fra OS eller beregnet for rammeavtale)
 function calcGjenvaerende(project){
+  if(project.avtaleType==='ramme'){
+    var ks=project.kontraktssum||0;
+    return ks?Math.max(0,ks-calcRammeConsumed(project)):null;
+  }
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco) return null;
@@ -2729,16 +2802,22 @@ function calcGjenvaerende(project){
   return Math.max(0,b.val-(eco.revenue||0));
 }
 
-// Faktisk fakturert beløp fra OS
+// Fakturert/forbrukt beløp
 function calcFakturert(project){
+  if(project.avtaleType==='ramme') return (project.kontraktssum||0)?calcRammeConsumed(project):null;
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco) return null;
   return eco.revenue||0;
 }
 
-// Andel fakturert i prosent (0-100)
+// Andel forbrukt i prosent (0-100)
 function calcFakturertPct(project){
+  if(project.avtaleType==='ramme'){
+    var ks=project.kontraktssum||0;
+    if(!ks) return null;
+    return Math.min(100,Math.round(calcRammeConsumed(project)/ks*100));
+  }
   if(!project.ordreNr) return null;
   var eco=window._osEconomy&&window._osEconomy[project.ordreNr];
   if(!eco) return null;
@@ -2747,9 +2826,10 @@ function calcFakturertPct(project){
   return Math.min(100,Math.round((eco.revenue||0)/b.val*100));
 }
 
-// Effektiv ordrereserve = kontraktssum - fakturert (0 dersom mer fakturert enn kontraktssum)
+// Effektiv ordrereserve = kontraktssum - forbruk
 function effectiveOrdreReserve(project){
   var ks=project.kontraktssum||0;
+  if(project.avtaleType==='ramme') return Math.max(0,ks-calcRammeConsumed(project));
   var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
   if(eco&&ks>0) return Math.max(0,ks-(eco.revenue||0));
   return ks;
