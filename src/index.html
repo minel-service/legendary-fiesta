@@ -1845,6 +1845,10 @@ function buildOreCard(p){
       <span class="os-toggle-lbl">🔄 I Ordrestyring${p.inOS?' — ekskludert fra prognose':''}</span>
       <label class="os-toggle"><input type="checkbox" ${p.inOS?'checked':''} onchange="setInOS('${p.id}',this.checked)"><span class="os-slider"></span></label>
     </div>
+    <div class="os-toggle-row" style="margin-top:4px">
+      <span class="os-toggle-lbl">📊 Rammeavtale / serviceavtale${p.avtaleType==='ramme'?' — beregnet automatisk':''}</span>
+      <label class="os-toggle"><input type="checkbox" ${p.avtaleType==='ramme'?'checked':''} onchange="setAvtaleType('${p.id}',this.checked)"><span class="os-slider"></span></label>
+    </div>
     ${(()=>{
       // Rammeavtale: ikke relevant med ordreNr
       if(p.avtaleType==='ramme') return '<div style="margin-top:6px;font-size:.72rem;color:#b45309;background:#fef3c7;border-radius:4px;padding:4px 8px">📋 Rammeavtale — ordrenr ikke nødvendig (beregnet automatisk)</div>';
@@ -1932,6 +1936,19 @@ function setInOS(id,val){
   renderOreDrawer();
   updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
   showToast(val?'✅ Satt til OS — ekskludert fra prognose':'↩️ Tilbake i manuell prognose');
+}
+function setAvtaleType(id,val){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p) return;
+  const ny=val?'ramme':null;
+  if(p.avtaleType===ny) return;
+  p.avtaleType=ny;
+  if(val) p.ordreNr=null; // rammeavtale trenger ikke OS-ordrenr
+  p.lastEditedBy=auditUser();p.lastEditedAt=auditNow();
+  scheduleSave();
+  renderOreDrawer();
+  updateOrdrereserve();updateTable();
+  showToast(val?'📊 Rammeavtale aktivert — beregner automatisk':'↩️ Standard kontrakt');
 }
 
 // ── Inline ordreNr-redigering fra drawer-kort ──
