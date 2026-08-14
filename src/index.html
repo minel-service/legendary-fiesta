@@ -1669,18 +1669,25 @@ function updateTable(){
 // ── Ordrereserve tidsfilter ──
 let _oreTimeFilter = null; // null = alle, eller {year, quarter} der quarter null = hele år
 
-function weekNumToQuarter(w){ return w<=13?1:w<=26?2:w<=39?3:4; }
+// Siste uke i et kvartal: Q1→13, Q2→26, Q3→39, Q4→53
+function quarterEndWeek(q){ return [13,26,39,53][q-1]||53; }
 
+// Grense-ukenummer for valgt periode (alt ≤ dette vises)
+function periodEndWkNum(filter){
+  if(!filter) return Infinity;
+  const endWk=filter.quarter?quarterEndWeek(filter.quarter):53;
+  return filter.year*100+endWk;
+}
+
+// Kumulativt filter: prosjektet har minst én aktiv uke FRA OG MED nå t.o.m. valgt periode
 function projectInPeriod(project, filter){
   if(!filter) return true;
-  const wks = Object.keys(project.weeklyCrews||{});
+  const ceiling=periodEndWkNum(filter);
+  const wks=Object.keys(project.weeklyCrews||{});
   return wks.some(wk=>{
     if((parseInt(project.weeklyCrews[wk])||0)===0) return false;
-    const m=wk.match(/^(\d{4})-W(\d+)$/);
-    if(!m) return false;
-    const yr=parseInt(m[1]), wn=parseInt(m[2]);
-    if(yr!==filter.year) return false;
-    return filter.quarter ? weekNumToQuarter(wn)===filter.quarter : true;
+    const n=wkToNum(wk);
+    return n>0 && n<=ceiling;
   });
 }
 
@@ -1760,7 +1767,7 @@ function updateOrdrereserve(){
   const periodSub=(f)=>{
     if(!f) return '';
     const q=f.quarter?`Q${f.quarter} `:'';
-    return `med produksjon i ${q}${f.year}`;
+    return `med produksjon frem til ${q}${f.year}`;
   };
   const adminClick=isAdmin?`onclick="openOreDrawer('__all__')" title="Klikk for å se og redigere alle kontrakter" style="cursor:pointer"`:'';
   let html=`<div class="ore-total" ${adminClick}>
