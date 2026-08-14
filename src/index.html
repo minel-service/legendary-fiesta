@@ -2607,10 +2607,9 @@ async function fetchOSEconomy(projects) {
   }));
 }
 
-// Beregn grunnlag for gjenstående: revidert tilbud (OS) → kontraktssum (manuell) → null
+// Grunnlag for gjenstående: alltid manuell kontraktssum (pålitelig basis)
+// OS revidert tilbud vises kun som info i drawer, ikke som beregningsgrunnlag
 function calcBase(project){
-  var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
-  if(eco&&(eco.revisedOffer||0)>0) return {val:eco.revisedOffer,label:'revidert tilbud (OS)'};
   if((project.kontraktssum||0)>0) return {val:project.kontraktssum,label:'kontraktssum'};
   return null;
 }
@@ -2643,14 +2642,12 @@ function calcFakturertPct(project){
   return Math.min(100,Math.round((eco.revenue||0)/b.val*100));
 }
 
-// Effektiv ordrereserve per prosjekt (gjenstående hvis OS-data finnes, ellers kontraktssum)
+// Effektiv ordrereserve = kontraktssum - fakturert (0 dersom mer fakturert enn kontraktssum)
 function effectiveOrdreReserve(project){
+  var ks=project.kontraktssum||0;
   var eco=window._osEconomy&&project.ordreNr&&window._osEconomy[project.ordreNr];
-  if(eco){
-    var b=calcBase(project);
-    if(b) return Math.max(0,b.val-(eco.revenue||0));
-  }
-  return project.kontraktssum||0;
+  if(eco&&ks>0) return Math.max(0,ks-(eco.revenue||0));
+  return ks;
 }
 
 // Kortfattet OS-info for inline-visning
