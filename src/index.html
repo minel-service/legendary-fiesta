@@ -171,6 +171,24 @@ hh
     .bpri:hover{opacity:.9}
     .hint{font-size:.72rem;color:#94a3b8;margin-top:4px}
 
+    /* ── Bruksanvisning modal ── */
+    .help-modal{width:780px;max-width:96vw;padding:32px 36px}
+    .help-section{margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid #f1f5f9}
+    .help-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .help-h{font-size:.87rem;font-weight:800;color:#1A2744;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+    .help-p{font-size:.82rem;color:#374151;line-height:1.68;margin:0 0 5px}
+    .help-chip{display:inline-flex;align-items:center;gap:3px;font-family:monospace;font-size:.79rem;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:5px;padding:1px 7px;color:#1e293b;white-space:nowrap}
+    .help-tag{display:inline-block;border-radius:4px;padding:1px 7px;font-size:.73rem;font-weight:700;margin:0 2px;white-space:nowrap}
+    .help-tag.blue{background:#dbeafe;color:#1e40af}
+    .help-tag.green{background:#d1fae5;color:#065f46}
+    .help-tag.amber{background:#fef3c7;color:#92400e}
+    .help-tag.red{background:#fee2e2;color:#991b1b}
+    .help-tag.gray{background:#f1f5f9;color:#475569}
+    .help-kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.8rem;margin-top:7px;align-items:baseline}
+    .help-kv dt{font-weight:700;color:#1e293b;white-space:nowrap}
+    .help-kv dd{color:#475569;margin:0;line-height:1.55}
+    .help-note{font-size:.78rem;color:#92400e;background:#fff8f0;border-left:3px solid #f59e0b;border-radius:4px;padding:7px 11px;margin-top:8px;line-height:1.55}
+
     /* ── Ordrereserve ── */
     .ore-filter-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;align-items:center}
     .ore-filter-sep{width:1px;height:18px;background:#e2e8f0;margin:0 2px}
@@ -435,6 +453,7 @@ async function fetchUserCompany() {
         <span id="whoName"></span>
         <span style="opacity:.6;font-size:.7rem">✕ bytt</span>
       </div>
+      <button class="hbtn" onclick="openHelp()" title="Bruksanvisning">📖 Hjelp</button>
       <button class="hbtn" onclick="window.print()" title="Skriv ut / lagre som PDF">🖨 PDF</button>
       <button class="hbtn" id="refreshBtn" onclick="refreshAll()">
         <span id="refreshIcon">🔄</span> Oppdater alle
@@ -604,6 +623,96 @@ async function fetchUserCompany() {
 
 <!-- ── SAVE TOAST ── -->
 <div class="save-toast" id="saveToast"><span id="toastIcon">💾</span><span id="toastMsg">Lagrer...</span></div>
+
+<!-- ── BRUKSANVISNING MODAL ── -->
+<div class="overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+  <div class="modal help-modal">
+    <div class="mtitle">📖 Bruksanvisning — Minel Kapasitetsprognose</div>
+
+    <div class="help-section">
+      <div class="help-h">🏠 Hva er dette?</div>
+      <p class="help-p">Minel Kapasitetsprognose er et internt styringsverktøy som kombinerer mannskapsprognose, kontraktsoppfølging og Ordrestyring-data i ett bilde. Applikasjonen lagrer data i SharePoint og lokalt i nettleseren slik at den alltid er tilgjengelig, selv uten nettforbindelse.</p>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">📊 Kapasitetsprognose — diagrammet</div>
+      <p class="help-p">Diagrammet viser forventet mannskapsbehov per uke eller måned basert på ukeregistreringer i timeregistreringssystemet.</p>
+      <dl class="help-kv">
+        <dt>Uker / Måneder</dt><dd>Bytt visning med knappene øverst til venstre i diagrammet.</dd>
+        <dt>Fra / Til</dt><dd>Bruk datovelgerne for å zoome inn på en ønsket periode, og klikk <em>OK</em>.</dd>
+        <dt>↺ Tilbakestill</dt><dd>Nullstiller datovelgerne tilbake til standardvisning.</dd>
+        <dt>Selskapsfilter</dt><dd>Klikk på et selskap i fanebladraden for å isolere ett selskap i diagrammet.</dd>
+      </dl>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">📋 Registrere og redigere kontrakter</div>
+      <p class="help-p">Alle manuelt registrerte kontrakter vises i <em>Ordrereserve</em>-seksjonen.</p>
+      <dl class="help-kv">
+        <dt>＋ Ny kontrakt</dt><dd>Klikk på den røde knappen nede til høyre for å legge til en ny kontrakt.</dd>
+        <dt>✏ Rediger</dt><dd>Åpne et prosjektkort ved å klikke på selskapskortet i ordrereserven, og klikk deretter <em>Rediger</em> øverst i skuffen. Her kan du endre navn, kontraktssum, OrdreNr og alle andre felter.</dd>
+        <dt>🗑 Slett</dt><dd>Sletting skjer via Rediger-knappen i prosjektkortet (skuffen). Kun tilgjengelig for admin.</dd>
+      </dl>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">🔄 Rammeavtale / løpende serviceavtale</div>
+      <p class="help-p">For rammeavtaler og løpende serviceavtaler der full kontraktssum ikke faktureres på én gang:</p>
+      <dl class="help-kv">
+        <dt>Aktivere</dt><dd>Huk av <em>Rammeavtale / løpende serviceavtale</em> i kontraktsskjemaet (eller via Rediger i prosjektkortet).</dd>
+        <dt>Beregning</dt><dd>Forbruk beregnes automatisk lineært: andel gjennomførte/pågående uker av total avtaleperiode × kontraktssum. Ingen OS-ordrenummer nødvendig.</dd>
+        <dt>Ordrereserven</dt><dd>Oppdateres ukentlig i takt med gjennomføring — viser gjenværende verdi i avtalen.</dd>
+      </dl>
+      <div class="help-note">💡 Rammeavtale-innstillingen lagres separat i nettleseren og mistes ikke ved oppdatering eller synkronisering mot SharePoint.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">🔗 Ordrestyring-kobling (OrdreNr)</div>
+      <p class="help-p">Legg inn OrdreNr fra Ordrestyring for å hente fakturert beløp automatisk og vise det i prosjektkortet.</p>
+      <dl class="help-kv">
+        <dt>Ett ordrenummer</dt><dd><span class="help-chip">37202</span></dd>
+        <dt>Flere ordrenummer</dt><dd>Separér med <span class="help-chip">/</span> <span class="help-chip">,</span> <span class="help-chip">;</span> eller mellomrom — f.eks. <span class="help-chip">37202/36969</span></dd>
+        <dt>Summering</dt><dd>Beløpene fra alle ordrenummer summeres og vises som ett fakturert beløp.</dd>
+      </dl>
+      <div class="help-note">⚠️ OrdreNr er unike per selskap. Å blande ordrenummer fra forskjellige selskaper gir feil resultat og støttes ikke.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">✏ Manuell overstyring av fakturert beløp</div>
+      <p class="help-p">Noen konsernprosjekter fremkommer ikke korrekt i Ordrestyring for alle selskaper. Da kan du legge inn beløpet manuelt.</p>
+      <dl class="help-kv">
+        <dt>Aktivere</dt><dd>Åpne prosjektkortet → finn <span class="help-tag blue">ØKONOMI (ORDRESTYRING)</span>-boksen → klikk <em>✏ Overstyr</em>.</dd>
+        <dt>Aktiv override</dt><dd>Boksen vises med <span class="help-tag amber">ØKONOMI (MANUELT OVERSTYRT)</span> i amber. Det opprinnelige OS-beløpet vises som referanse.</dd>
+        <dt>Tilbakestille</dt><dd>Klikk <em>↩ Tilbakestill</em> for å gå tilbake til automatisk OS-data.</dd>
+      </dl>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">📅 Kvartal/år-filter på ordrereserven</div>
+      <p class="help-p">Filterknappene over ordrereserven lar deg se kumulativt forbruk frem til og med en bestemt periode.</p>
+      <dl class="help-kv">
+        <dt><span class="help-tag gray">Alt</span></dt><dd>Viser total kontraktssum uavhengig av tidsperiode (standardvisning).</dd>
+        <dt>Kvartal (K1–K4)</dt><dd>Viser akkumulert forbruk til og med det valgte kvartalet for det valgte året.</dd>
+        <dt>Årsknapper</dt><dd>Velg år for kvartalsfilteret. Klikk på et år uten kvartal for å se hele årets forbruk.</dd>
+      </dl>
+      <p class="help-p" style="margin-top:6px">Nyttig for kvartalsvis rapportering til ledelse eller styret.</p>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">☁ SharePoint-synkronisering og lagring</div>
+      <p class="help-p">Alle data lagres dobbelt: i SharePoint (deles på tvers av brukere) og lokalt i nettleseren (offline-sikkerhet).</p>
+      <dl class="help-kv">
+        <dt><span class="help-tag green">☁ Synket</span></dt><dd>Siste lagring mot SharePoint var vellykket.</dd>
+        <dt><span class="help-tag gray">↻ Lagrer...</span></dt><dd>Synkronisering pågår.</dd>
+        <dt><span class="help-tag amber">⚠ Offline — kun lokalt</span></dt><dd>SharePoint var utilgjengelig. Endringer er tryggt lagret i nettleseren og synkes automatisk ved neste vellykkede forsøk.</dd>
+      </dl>
+    </div>
+
+    <div class="mfooter">
+      <button class="bpri" onclick="closeHelp()">Lukk</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── ORDRERESERVE DRAWER ── -->
 <div id="oreDrawerBackdrop" onclick="closeOreDrawer()"></div>
@@ -3135,6 +3244,10 @@ function viaInfoText(project){
   if(pct==null) return '';
   return pct+'% fakturert';
 }
+
+// ── Bruksanvisning ──
+function openHelp(){document.getElementById('helpOverlay').classList.add('open');}
+function closeHelp(){document.getElementById('helpOverlay').classList.remove('open');}
 
 </script>
 </body>
