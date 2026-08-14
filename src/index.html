@@ -253,6 +253,12 @@ hh
     /* ── Saving indicator ── */
     .save-toast{position:fixed;bottom:90px;right:28px;background:#1e293b;color:white;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:600;z-index:100;display:none;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
     .save-toast.show{display:flex;animation:fadeIn .2s ease}
+    /* ── SP-synkstatus i header ── */
+    .sp-status{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.71rem;font-weight:700;color:rgba(255,255,255,.75);border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);transition:all .4s;cursor:default;white-space:nowrap}
+    .sp-status.ok{color:#6ee7b7;border-color:rgba(110,231,183,.4);background:rgba(16,185,129,.15)}
+    .sp-status.offline{color:#fcd34d;border-color:rgba(252,211,77,.45);background:rgba(251,191,36,.15);animation:spPulse 1.4s ease-in-out infinite alternate}
+    .sp-status.syncing{color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.15)}
+    @keyframes spPulse{from{opacity:.8}to{opacity:1}}
 
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{display:inline-block;animation:spin 1s linear infinite}
@@ -423,6 +429,7 @@ async function fetchUserCompany() {
       </div>
     </div>
     <div class="hactions">
+      <div class="sp-status" id="spStatus" title="SharePoint-synkroniseringsstatus">☁ Starter...</div>
       <div class="who-pill" id="whoPill" onclick="logout()" title="Klikk for å bytte selskap">
         <span class="who-dot" id="whoDot"></span>
         <span id="whoName"></span>
@@ -713,6 +720,7 @@ async function loadCompanyProjects(company){
         // Merge: SP og lokal — nyeste per prosjekt vinner
         const merged=mergeProjectLists(spData,localData);
         try{localStorage.setItem(lsKey(fn),JSON.stringify(merged));}catch(_){}
+        setSpStatus('ok'); // SP-henting vellykket
         // Har lokal nyere data? Synk tilbake til SP stille i bakgrunnen
         const mergedJson=JSON.stringify(merged);
         if(mergedJson!==JSON.stringify(spData)){
@@ -751,7 +759,8 @@ async function saveCompanyProjects(company,projects){
     }catch(e){console.warn(`[Graph] save feil: ${e.message}`);}
     if(a<3)await new Promise(res=>setTimeout(res,800*a));
   }
-  console.warn(`[Graph] ${company} kun lokalt lagret`);return false;
+  console.warn(`[Graph] ${company} kun lokalt lagret`);
+  return false;
 }
 const COLORS=['#1A2744','#C8102E','#2d5a9e','#a01020','#3d7abf','#8b1a28','#5a8fc2','#c43040','#1e3a6e'];
 const MANUAL_COLOR='#0d9488'; // teal — gjennomgående farge for kontraherte prosjekter
@@ -2232,9 +2241,14 @@ function oreUpdateCrew(id,wk,val){
   }
 }
 
-function scheduleSave(){
+async function scheduleSave(){
   const cos=[...new Set(allProjects.map(p=>p.company).filter(Boolean))];
-  cos.forEach(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co)));
+  if(!cos.length) return;
+  setSpStatus('syncing');
+  const results=await Promise.allSettled(cos.map(co=>saveCompanyProjects(co,allProjects.filter(p=>p.company===co))));
+  const anyFailed=results.some(r=>r.status==='rejected'||(r.status==='fulfilled'&&r.value===false));
+  if(anyFailed){setSpStatus('offline');_showOfflineToast();}
+  else setSpStatus('ok');
 }
 
 function openOreDrawerNewProj(){
@@ -2312,7 +2326,23 @@ function showToast(msg,ok=true){
   document.getElementById('toastIcon').textContent=ok?'✅':'❌';
   document.getElementById('toastMsg').textContent=msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+  setTimeout(()=>t.classList.remove('show'),ok?2500:4500);
+}
+
+// ── SP-synkstatus-indikator i headeren ──
+function setSpStatus(state){ // 'ok' | 'offline' | 'syncing'
+  const el=document.getElementById('spStatus');if(!el)return;
+  el.className='sp-status '+state;
+  if(state==='ok')     el.innerHTML='☁ Synket';
+  else if(state==='syncing') el.innerHTML='<span class="spin">↻</span> Lagrer...';
+  else                 el.innerHTML='⚠ Offline — kun lokalt';
+}
+let _offlineToastTimer=null;
+function _showOfflineToast(){
+  clearTimeout(_offlineToastTimer);
+  _offlineToastTimer=setTimeout(()=>{
+    showToast('⚠️ SharePoint utilgjengelig — endringer er lagret lokalt og synkes automatisk ved neste vellykket forsøk',false);
+  },400); // debounce: vent til alle selskapers forsøk er ferdige
 }
 
 // ════════════════════════════════════════════
