@@ -1832,9 +1832,26 @@ function buildOreCard(p){
       <span class="os-toggle-lbl">🔄 I Ordrestyring${p.inOS?' — ekskludert fra prognose':''}</span>
       <label class="os-toggle"><input type="checkbox" ${p.inOS?'checked':''} onchange="setInOS('${p.id}',this.checked)"><span class="os-slider"></span></label>
     </div>
-    ${p.ordreNr?'<div style="margin-top:6px;font-size:.75rem;color:#64748b">📋 Ordrenr\xa0(OS): <strong>'+p.ordreNr+'</strong>'+( viaInfoText(p)?'\xa0·\xa0<span style="color:#0f766e">'+viaInfoText(p)+'</span>':'')+'</div>':''}
     ${(()=>{
-      if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Registrer ordrenr. (OS) for å se fakturert og gjenstående</div></div>`;
+      return '<div style="margin-top:8px">'
+        +'<div style="font-size:.69rem;font-weight:700;color:#94a3b8;letter-spacing:.04em;margin-bottom:3px">ORDRENUMMER (OS)</div>'
+        +'<div style="display:flex;gap:5px;align-items:center;position:relative">'
+        +`<input id="ordrenr-inp-${p.id}" value="${p.ordreNr||''}" placeholder="Skriv nr eller søk →" `
+        +'style="flex:1;font-size:.8rem;border:1.5px solid #e2e8f0;border-radius:6px;padding:5px 8px;outline:none;color:#1e293b;background:#fff;font-family:inherit" '
+        +`onfocus="this.style.borderColor='#C8102E'" `
+        +`onblur="this.style.borderColor='#e2e8f0';oreUpdateOrdreNr('${p.id}',this.value.trim())" `
+        +`onkeydown="if(event.key==='Enter')this.blur()"/>`
+        +(p.company
+          ? `<button onclick="searchOSOrdreNr('${p.id}')" style="background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:.72rem;font-weight:600;color:#475569;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fff0f3';this.style.borderColor='#C8102E';this.style.color='#C8102E'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#e2e8f0';this.style.color='#475569'">🔍 Søk i OS</button>`
+          : '<span style="font-size:.72rem;color:#94a3b8">Sett selskap for å søke</span>'
+        )
+        +`<div id="ordrenr-res-${p.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;max-height:200px;overflow-y:auto;margin-top:3px"></div>`
+        +'</div>'
+        +(p.ordreNr&&viaInfoText(p)?'<div style="margin-top:2px;font-size:.72rem;color:#0f766e">'+viaInfoText(p)+'</div>':'')
+        +'</div>';
+    })()}
+    ${(()=>{
+      if(!p.ordreNr) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Legg til ordrenr. over for å se fakturert og gjenstående</div></div>`;
       const eco=window._osEconomy&&window._osEconomy[p.ordreNr];
       if(!eco) return `<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #e2e8f0"><div style="font-size:.72rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:3px">ØKONOMI (ORDRESTYRING)</div><div style="font-size:.75rem;color:#94a3b8">Henter økonomidata fra OS…</div></div>`;
       const base=calcBase(p);
@@ -1879,6 +1896,85 @@ function setInOS(id,val){
   updateOrdrereserve();updateChart();updateMonthlyChart();updateTable();
   showToast(val?'✅ Satt til OS — ekskludert fra prognose':'↩️ Tilbake i manuell prognose');
 }
+
+// ── Inline ordreNr-redigering fra drawer-kort ──
+async function oreUpdateOrdreNr(id, val){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p) return;
+  const clean=val||null;
+  if((p.ordreNr||null)===clean) return;
+  p.ordreNr=clean;
+  p.lastEditedBy=auditUser(); p.lastEditedAt=auditNow();
+  scheduleSave();
+  if(clean&&p.company) await fetchOSEconomy([p]);
+  renderOreDrawer();
+  updateTable();
+  updateOrdrereserve();
+}
+
+// Søk i OS etter prosjektnavn for å finne ordrenr automatisk
+async function searchOSOrdreNr(id){
+  const p=allProjects.find(x=>x.id===id);
+  if(!p||!p.company){ showToast('Sett selskap på prosjektet først'); return; }
+  const resBox=document.getElementById('ordrenr-res-'+id);
+  if(!resBox) return;
+  resBox.innerHTML='<div style="padding:8px 10px;color:#64748b;font-size:.78rem">🔍 Søker i OS…</div>';
+  resBox.style.display='block';
+  // Klikk utenfor → lukk
+  setTimeout(()=>{
+    document.addEventListener('click',function _h(e){
+      if(!resBox.contains(e.target)){resBox.style.display='none';document.removeEventListener('click',_h);}
+    });
+  },100);
+  // Søk med de 3 første ordene fra prosjektnavnet
+  const q=(p.name||'').replace(/['"\\`]/g,'').split(/\s+/).slice(0,3).join(' ');
+  try {
+    const searchQuery=`query OsSøkCase {
+      cases(pagination:{page:1,limit:20},search:{query:"${q}",fields:["name"]}) {
+        items { caseNumber name economy { revenue } }
+      }
+    }`;
+    const resp=await fetch('/api/ordrestyring-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({company:p.company,operationName:'OsSøkCase',query:searchQuery,variables:{}})
+    });
+    if(!resp.ok){ resBox.innerHTML='<div style="padding:8px 10px;color:#dc2626;font-size:.77rem">Serverfeil ('+resp.status+')</div>'; return; }
+    const result=await resp.json();
+    if(result.errors){
+      // name-feltet støttes kanskje ikke — gi beskjed
+      resBox.innerHTML='<div style="padding:8px 10px;color:#94a3b8;font-size:.77rem">Navnesøk ikke tilgjengelig i OS. Skriv ordrenr manuelt.</div>';
+      return;
+    }
+    const items=result.data?.cases?.items||[];
+    // Vis kun parent cases (ingen bindestrek)
+    const parents=items.filter(c=>!String(c.caseNumber||'').includes('-'));
+    if(!parents.length){
+      resBox.innerHTML='<div style="padding:8px 10px;color:#94a3b8;font-size:.77rem">Ingen treff på «'+q+'». Skriv ordrenr direkte.</div>';
+      return;
+    }
+    resBox.innerHTML=parents.slice(0,8).map(c=>{
+      const cNr=String(c.caseNumber||'');
+      const rev=(c.economy?.revenue||0)/100;
+      const nm=c.name||'';
+      return `<div style="padding:7px 10px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:.78rem;transition:background .1s"
+                   onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''"
+                   onmousedown="event.preventDefault();oreSelectOrdreNr('${id}','${cNr}');document.getElementById('ordrenr-res-${id}').style.display='none'">
+        <strong style="color:#1e293b">${cNr}</strong>${nm?' <span style="color:#64748b;font-size:.73rem">· '+nm+'</span>':''}
+        ${rev>0?'<span style="float:right;color:#1d4ed8;font-size:.73rem">kr '+rev.toLocaleString('no-NO',{maximumFractionDigits:0})+'</span>':''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    resBox.innerHTML='<div style="padding:8px 10px;color:#dc2626;font-size:.77rem">Feil: '+e.message+'</div>';
+  }
+}
+
+function oreSelectOrdreNr(id,caseNr){
+  const inp=document.getElementById('ordrenr-inp-'+id);
+  if(inp) inp.value=caseNr;
+  oreUpdateOrdreNr(id,caseNr);
+}
+
 function dismissWarn(id){
   const p=allProjects.find(x=>x.id===id);
   if(!p) return;
