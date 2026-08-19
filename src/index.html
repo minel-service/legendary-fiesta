@@ -976,6 +976,11 @@ async function fetchSelskap(co){
       p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
         .forEach(nr => { ordreNrLookup[nr] = p.ordreNr; });
     });
+    console.log(`[${co.navn}] ordreNrLookup:`, Object.keys(ordreNrLookup).length ? Object.keys(ordreNrLookup) : 'ingen prosjekter med ordreNr');
+    // Eksempel på event-headere for diagnostikk
+    const hdrSample=[...new Set(j.map(o=>(o.header||'').trim()).filter(h=>/^\d/.test(h)))].slice(0,5);
+    if(hdrSample.length) console.log(`[${co.navn}] header-eksempler (starter med tall):`, hdrSample);
+    else console.log(`[${co.navn}] ingen events med tall-header funnet`);
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
