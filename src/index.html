@@ -1356,7 +1356,7 @@ function updateChart(){
       if(_visFilter&&p.company!==_visFilter)return;
       const contracted=parseInt(p.weeklyCrews?.[wk])||0;
       if(!contracted)return;
-      const nrs=splitOrdreNr(p.ordreNr).map(nr=>String(nr).replace(/^0+/,''));
+      const nrs=(p.ordreNr||'').split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean);
       const osSet=new Set();
       nrs.forEach(nr=>{if(_wbc[nr]?.[wk])_wbc[nr][wk].forEach(u=>osSet.add(u));});
       gap+=Math.max(0,contracted-osSet.size);
@@ -3304,7 +3304,7 @@ function calcOsGap(project){
   if(!project.ordreNr||project.avtaleType==='ramme') return null;
   const wbc=window._workersByCase;
   if(!wbc||!Object.keys(wbc).length) return null;
-  const nrs=splitOrdreNr(project.ordreNr).map(nr=>nr.replace(/^0+/,''));
+  const nrs=(project.ordreNr||'').split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean);
   const wks=Object.keys(project.weeklyCrews||{}).sort();
   if(!wks.length) return null;
   let totalContracted=0,totalOs=0,wksChecked=0;
