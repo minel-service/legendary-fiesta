@@ -977,10 +977,16 @@ async function fetchSelskap(co){
         .forEach(nr => { ordreNrLookup[nr] = p.ordreNr; });
     });
     console.log(`[${co.navn}] ordreNrLookup:`, Object.keys(ordreNrLookup).length ? Object.keys(ordreNrLookup) : 'ingen prosjekter med ordreNr');
-    // Eksempel på event-headere for diagnostikk
-    const hdrSample=[...new Set(j.map(o=>(o.header||'').trim()).filter(h=>/^\d/.test(h)))].slice(0,5);
-    if(hdrSample.length) console.log(`[${co.navn}] header-eksempler (starter med tall):`, hdrSample);
-    else console.log(`[${co.navn}] ingen events med tall-header funnet`);
+    // Diagnostikk: finn headers som matcher 5-sifret ordreNr-prefix
+    const hdr5 = [...new Set(j.map(o=>(o.header||'').trim()).filter(h=>/^\d{5}/.test(h)))].slice(0,5);
+    const hdrAll = [...new Set(j.map(o=>(o.header||'').trim()).filter(Boolean))].slice(0,8);
+    // Sjekk om noen kjente ordreNr dukker opp i text-feltet istedenfor header
+    const knownNrs = Object.keys(ordreNrLookup);
+    const textMatches = [...new Set(j.filter(o=>knownNrs.some(nr=>(o.text||'').includes(nr))).map(o=>o.text||''))].slice(0,3);
+    if(hdr5.length) console.log(`[${co.navn}] headers med 5-siffer prefix:`, hdr5);
+    else console.log(`[${co.navn}] ingen 5-siffer headers funnet`);
+    console.log(`[${co.navn}] header-utvalg (alle typer):`, hdrAll);
+    if(textMatches.length) console.log(`[${co.navn}] ordreNr funnet i text-felt:`, textMatches);
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
