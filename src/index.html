@@ -1031,12 +1031,12 @@ async function fetchSelskap(co){
       });
     if(Object.keys(companyOrdreNrMap).length){
       await Promise.all(Object.entries(companyOrdreNrMap).map(async ([nr,origKey])=>{
-        const wq=`query{cases(pagination:{page:1,limit:1},search:{query:"${nr}",fields:["caseNumber"]}){items{caseNumber events(between:{field:startTime,from:${fraInt},to:${tilInt}}){user{id}startTime stopTime}}}}`;
+        const wq=`query{events(between:{field:startTime,from:${fraInt},to:${tilInt}},caseNumber:"${nr}"){user{id}startTime stopTime}}`;
         try{
           const wr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:co.navn,query:wq})});
           const wj=await wr.json();
           if(wj.errors){console.warn(`[gap ${co.navn}/${nr}]`,wj.errors[0]?.message);return;}
-          const evs=wj.data?.cases?.items?.[0]?.events||[];
+          const evs=wj.data?.events||[];
           if(!workersByOrdre[origKey])workersByOrdre[origKey]={};
           evs.forEach(e=>{
             if(!e.user?.id)return;
