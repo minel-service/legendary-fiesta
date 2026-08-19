@@ -641,7 +641,8 @@ async function fetchUserCompany() {
         <dt>Uker / Måneder</dt><dd>Bytt visning med knappene øverst til venstre i diagrammet.</dd>
         <dt>Fra / Til</dt><dd>Bruk datovelgerne for å zoome inn på en ønsket periode, og klikk <em>OK</em>.</dd>
         <dt>↺ Tilbakestill</dt><dd>Nullstiller datovelgerne tilbake til standardvisning.</dd>
-        <dt>Selskapsfilter</dt><dd>Klikk på et selskap i fanebladraden for å isolere ett selskap i diagrammet.</dd>
+        <dt>Selskapsfilter</dt><dd>Klikk på et selskap i fanebladraden for å isolere ett selskap. Kun ved selskapsfilter vises bemanningsgap-linjen (oransje).</dd>
+        <dt>Oransje linje — Bemanningsgap</dt><dd>Vises kun per selskap. Viser totalt antall mann du har kontrahert på prosjekter der OS ikke bekrefter tilsvarende antall ressurser. Høy linje = manglende bemanning eller oppdatering av kortene.</dd>
       </dl>
     </div>
 
@@ -675,6 +676,18 @@ async function fetchUserCompany() {
         <dt>Summering</dt><dd>Beløpene fra alle ordrenummer summeres og vises som ett fakturert beløp.</dd>
       </dl>
       <div class="help-note">⚠️ OrdreNr er unike per selskap. Å blande ordrenummer fra forskjellige selskaper gir feil resultat og støttes ikke.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">🔵 I Ordrestyring — korrekt arbeidsflyt og bemanningsgap</div>
+      <p class="help-p">Modellen skiller mellom <strong>manuelt kontraherte prosjekter</strong> (grønn søyle) og prosjekter som er <strong>aktive i Ordrestyring</strong> (blå søyle). Det er avgjørende at kortene holdes oppdatert for at prognosene og gapberegningene skal stemme.</p>
+      <dl class="help-kv">
+        <dt>Steg 1 — Kontrakt registreres</dt><dd>Legg inn kontrakt manuelt med planlagt mannskap per uke. Vises som grønn søyle i diagrammet.</dd>
+        <dt>Steg 2 — Prosjektet startes i OS</dt><dd>Når prosjektet er opprettet i Ordrestyring og mannskap bookes der: åpne prosjektkortet og huk av <em>☑ I Ordrestyring</em>.</dd>
+        <dt>Steg 3 — Effekt av huking</dt><dd>Kontrakten forsvinner fra grønn søyle og telles nå kun via blå (Fra Ordrestyring). Bemanningsgap-beregningen deaktiveres for prosjektet — ingen dobbeltelling.</dd>
+        <dt>Bemanningsgap-varsel</dt><dd>Så lenge <em>I Ordrestyring</em> ikke er huket av, sammenligner modellen planlagt mannskap med faktisk antall i OS. Kortkortet viser ⚠️ Bemanningsgap eller 💡 Hint om å oppdatere kortet.</dd>
+      </dl>
+      <div class="help-note" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ <strong>Viktig:</strong> Glemmer du å huke av «I Ordrestyring» når prosjektet startes i OS, vil de samme personene telles dobbelt — både i blå og grønn søyle. Dette gir et feil bilde av ledig kapasitet og ordrereserven. Vær nøye med å oppdatere kortene løpende.</div>
     </div>
 
     <div class="help-section">
@@ -1411,7 +1424,7 @@ function updateChart(){
     {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
-  if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.13)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',fill:true,tension:0.3,stack:undefined,order:-2});
+  if(hasGap&&activeFilter!=='all') datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.13)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',fill:true,tension:0.3,stack:undefined,order:-2});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -1454,7 +1467,7 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
-  if(hasGap) lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
+  if(hasGap&&activeFilter!=='all') lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
@@ -2167,8 +2180,9 @@ function buildOreCard(p){
       const {contracted,osWorkers,wksChecked}=gap;
       if(wksChecked===0) return '';
       const diff=contracted-osWorkers;
-      if(diff<=0) return `<div style="margin-top:5px;font-size:.75rem;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;padding:5px 9px;color:#15803d;font-weight:600">✅ Bemanning OK — ${osWorkers} av ${contracted} mann i OS denne perioden</div>`;
-      return `<div style="margin-top:5px;font-size:.75rem;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;padding:5px 9px;color:#b91c1c;font-weight:600">⚠️ Bemanningsgap — ${osWorkers} av ${contracted} mann i OS · <strong>${diff} mann mangler</strong></div>`;
+      const inOsHint=(!p.inOS&&osWorkers>0)?`<div style="margin-top:4px;font-size:.72rem;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:4px;padding:5px 9px;color:#92400e">💡 Prosjektet har <strong>${osWorkers} mann registrert i OS</strong> — huk av <em>I Ordrestyring</em> på kortet for å unngå dobbeltelling i grafen</div>`:'';
+      if(diff<=0) return `<div style="margin-top:5px;font-size:.75rem;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;padding:5px 9px;color:#15803d;font-weight:600">✅ Bemanning OK — ${osWorkers} av ${contracted} mann i OS denne perioden</div>`+inOsHint;
+      return `<div style="margin-top:5px;font-size:.75rem;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;padding:5px 9px;color:#b91c1c;font-weight:600">⚠️ Bemanningsgap — ${osWorkers} av ${contracted} mann i OS · <strong>${diff} mann mangler</strong></div>`+inOsHint;
     })()}
     <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">${p.createdBy?`<span>✍️ ${p.createdBy}${p.createdAt?' '+new Date(p.createdAt).toLocaleDateString('no-NO'):''}</span>`:''  }${p.lastEditedBy?`<span>✏️ Endret: ${p.lastEditedBy}${p.lastEditedAt?' '+new Date(p.lastEditedAt).toLocaleDateString('no-NO'):''}</span>`:''}</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px">
