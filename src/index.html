@@ -967,57 +967,14 @@ async function fetchSelskap(co){
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
     const osOrderNames = new Set();
-    // workersByOrdre[origOrdreNr][wk] = Set<userId> — bygget fra event.header (starter med ordreNr)
+    // workersByOrdre[origOrdreNr][wk] = Set<userId> — bygges via API-spørring per ordreNr (etter events-loop)
     const workersByOrdre = {};
-    // Bygg oppslags-map: normalisert ordreNr → original ordreNr-nøkkel fra prosjekter
-    const ordreNrLookup = {};
-    allProjects.forEach(p => {
-      if(!p.ordreNr) return;
-      p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
-        .forEach(nr => { ordreNrLookup[nr] = p.ordreNr; });
-    });
-    console.log(`[${co.navn}] ordreNrLookup:`, Object.keys(ordreNrLookup).length ? Object.keys(ordreNrLookup) : 'ingen prosjekter med ordreNr');
-    // Diagnostikk: finn headers som matcher 5-sifret ordreNr-prefix
-    const hdr5 = [...new Set(j.map(o=>(o.header||'').trim()).filter(h=>/^\d{5}/.test(h)))].slice(0,5);
-    const hdrAll = [...new Set(j.map(o=>(o.header||'').trim()).filter(Boolean))].slice(0,8);
-    // Sjekk om noen kjente ordreNr dukker opp i text-feltet istedenfor header
-    const knownNrs = Object.keys(ordreNrLookup);
-    const textMatches = [...new Set(j.filter(o=>knownNrs.some(nr=>(o.text||'').includes(nr))).map(o=>o.text||''))].slice(0,3);
-    if(hdr5.length) console.log(`[${co.navn}] headers med 5-siffer prefix:`, hdr5);
-    else console.log(`[${co.navn}] ingen 5-siffer headers funnet`);
-    console.log(`[${co.navn}] header-utvalg (alle typer):`, hdrAll);
-    if(textMatches.length) console.log(`[${co.navn}] ordreNr funnet i text-felt:`, textMatches);
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
       const _role = o.user?.role || '';
       if (_role && !FELTARBEIDER_ROLLER.includes(_role)) return;
-      const hdr = (o.header||'').trim();
-      if (hdr) {
-        osOrderNames.add(hdr);
-        // header-format: "38093 - Prosjektnavn" — trekk ut ledende tall og match mot ordreNr
-        const hdrMatch = hdr.match(/^(\d+)/);
-        if (hdrMatch) {
-          const hdrNr = hdrMatch[1].replace(/^0+/,'');
-          const origKey = ordreNrLookup[hdrNr];
-          if (origKey) {
-            if (!workersByOrdre[origKey]) workersByOrdre[origKey] = {};
-            // Registrer for alle uker i event-perioden
-            const _s2 = toMs(o.startTime); const _e2 = toMs(o.stopTime||o.startTime);
-            const _sd2 = new Date(_s2); const _dow2 = _sd2.getDay();
-            const _mon2 = new Date(_sd2); _mon2.setDate(_mon2.getDate()-(_dow2===0?6:_dow2-1)); _mon2.setHours(0,0,0,0);
-            let _c2 = new Date(_mon2);
-            while(_c2 <= new Date(_e2) && _c2 <= maxDate){
-              if(_c2 >= currentWkMonday){
-                const _wk2 = wKey(_c2);
-                if(!workersByOrdre[origKey][_wk2]) workersByOrdre[origKey][_wk2]=new Set();
-                workersByOrdre[origKey][_wk2].add(tech);
-              }
-              _c2.setDate(_c2.getDate()+7);
-            }
-          }
-        }
-      }
+      if (o.header && o.header.trim()) osOrderNames.add(o.header.trim());
       const cat = categorizeHourType(o.hourType?.name);
       const startMs = toMs(o.startTime);
       const stopMs  = toMs(o.stopTime || o.startTime);
@@ -1064,9 +1021,43 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
-    const wboKeys=Object.keys(workersByOrdre);
-    if(wboKeys.length) console.log(`[${co.navn}] workersByOrdre:`, Object.fromEntries(wboKeys.map(k=>[k,Object.fromEntries(Object.entries(workersByOrdre[k]).map(([wk,s])=>[wk,s.size]))])));
-    else console.log(`[${co.navn}] workersByOrdre: ingen treff (header-format matcher ikke ordreNr?)`);
+    // API-basert bemanningsgap: hent workers per ordreNr via cases.items.events (målrettet per prosjekt)
+    const companyOrdreNrMap={};
+    allProjects
+      .filter(p=>p.company===co.navn&&p.ordreNr&&p.avtaleType!=='ramme'&&!p.inOS)
+      .forEach(p=>{
+        p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
+          .forEach(nr=>{companyOrdreNrMap[nr]=p.ordreNr;});
+      });
+    if(Object.keys(companyOrdreNrMap).length){
+      await Promise.all(Object.entries(companyOrdreNrMap).map(async ([nr,origKey])=>{
+        const wq=`query{cases(pagination:{page:1,limit:1},search:{query:"${nr}",fields:["caseNumber"]}){items{caseNumber events(between:{field:startTime,from:${fraInt},to:${tilInt}}){user{id}startTime stopTime}}}}`;
+        try{
+          const wr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:co.navn,query:wq})});
+          const wj=await wr.json();
+          if(wj.errors){console.warn(`[gap ${co.navn}/${nr}]`,wj.errors[0]?.message);return;}
+          const evs=wj.data?.cases?.items?.[0]?.events||[];
+          if(!workersByOrdre[origKey])workersByOrdre[origKey]={};
+          evs.forEach(e=>{
+            if(!e.user?.id)return;
+            const tech=String(e.user.id);
+            const sMs=toMs(e.startTime),eMs=toMs(e.stopTime||e.startTime);
+            const sd2=new Date(sMs),dow2=sd2.getDay();
+            const mon2=new Date(sd2);mon2.setDate(mon2.getDate()-(dow2===0?6:dow2-1));mon2.setHours(0,0,0,0);
+            let c2=new Date(mon2);
+            while(c2<=new Date(eMs)&&c2<=maxDate){
+              if(c2>=currentWkMonday){
+                const wk2=wKey(c2);
+                if(!workersByOrdre[origKey][wk2])workersByOrdre[origKey][wk2]=new Set();
+                workersByOrdre[origKey][wk2].add(tech);
+              }
+              c2.setDate(c2.getDate()+7);
+            }
+          });
+          console.log(`[gap ${co.navn}/${origKey}] ${evs.length} events`,Object.keys(workersByOrdre[origKey]||{}).length?Object.fromEntries(Object.entries(workersByOrdre[origKey]).map(([wk,s])=>[wk,s.size])):'(ingen data i perioden)');
+        }catch(ex){console.warn(`[gap ${co.navn}/${nr}] feilet:`,ex.message);}
+      }));
+    }
     return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre };
 
   } catch(e) {
