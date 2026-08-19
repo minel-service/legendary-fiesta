@@ -1346,12 +1346,32 @@ function updateChart(){
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
   const aggLed = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
+  // Bemanningsgap per uke: sum av (weeklyCrews - OS-workers) for alle prosjekter med ordreNr
+  const _wbc=window._workersByCase||{};
+  const _visFilter=activeFilter==='all'?null:activeFilter;
+  const aggGap=weeks.map(wk=>{
+    let gap=0;
+    allProjects.forEach(p=>{
+      if(p.inOS||p.avtaleType==='ramme'||!p.ordreNr)return;
+      if(_visFilter&&p.company!==_visFilter)return;
+      const contracted=parseInt(p.weeklyCrews?.[wk])||0;
+      if(!contracted)return;
+      const nrs=splitOrdreNr(p.ordreNr).map(nr=>String(nr).replace(/^0+/,''));
+      const osSet=new Set();
+      nrs.forEach(nr=>{if(_wbc[nr]?.[wk])_wbc[nr][wk].forEach(u=>osSet.add(u));});
+      gap+=Math.max(0,contracted-osSet.size);
+    });
+    return gap;
+  });
+  const hasGap=aggGap.some(g=>g>0);
+
   const datasets=[
     {label:'Fra Ordrestyring',      data:aggFraOS, backgroundColor:CAT_OPPDRAG, borderRadius:{topLeft:3,topRight:3}, borderSkipped:false, stack:'main'},
     {label:'Kontraherte prosjekter',data:aggContr, backgroundColor:MANUAL_COLOR, borderRadius:0, borderSkipped:false, stack:'main'},
     {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
+  if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.13)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#f97316',fill:true,tension:0.25,stack:undefined,order:-2});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -1370,10 +1390,12 @@ function updateChart(){
             const contr=aggContr[items[0].dataIndex];
             const led=aggLed[items[0].dataIndex];
             const aktive=fraOS+contr;
+            const gap=aggGap[items[0].dataIndex];
             const lines=['───────────────'];
             if(fraOS>0)  lines.push(`🔵 Fra OS: ${fraOS}`);
             if(contr>0)  lines.push(`🟩 Kontrahert: ${contr}`);
             if(led>0)    lines.push(`⚪ Ledig: ${led}`);
+            if(gap>0)    lines.push(`🟠 Bemanningsgap: ${gap} mann`);
             lines.push('───────────────');
             const tot=aktive+led;
             lines.push(`Aktive: ${aktive}${tot>0?` / ${tot}`:''}${tot>0?` (${Math.round(aktive/tot*100)}%)`:''}`);
@@ -1392,6 +1414,7 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
+  if(hasGap) lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
