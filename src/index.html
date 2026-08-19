@@ -967,8 +967,6 @@ async function fetchSelskap(co){
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
     const osOrderNames = new Set();
-    // workersByCase[normCaseNr][wk] = Set<userId> — for gap-beregning
-    const workersByCase = {};
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
@@ -983,21 +981,12 @@ async function fetchSelskap(co){
       const mon = new Date(sd);
       mon.setDate(mon.getDate() - (dow===0?6:dow-1));
       mon.setHours(0,0,0,0);
-      // Normaliser caseNumber for gap-oppslag (strip leading zeros, bruk alle deler)
-      const rawCase = o.case?.caseNumber ? String(o.case.caseNumber) : null;
-      const normCases = rawCase ? rawCase.split(/[-_.]/).map(p=>p.replace(/^0+/,'')).filter(Boolean) : [];
       let cur = new Date(mon);
       while(cur <= new Date(stopMs) && cur <= maxDate){
         if(cur >= currentWkMonday){
           const wk = wKey(cur);
           if(!weekData[wk]) weekData[wk] = {oppdrag:new Set(),intern:new Set(),fravaer:new Set()};
           weekData[wk][cat].add(tech);
-          // Track per case (alle normaliserte deler, f.eks. "41623" og "01" for "41623-01")
-          normCases.forEach(nc=>{
-            if(!workersByCase[nc]) workersByCase[nc]={};
-            if(!workersByCase[nc][wk]) workersByCase[nc][wk]=new Set();
-            workersByCase[nc][wk].add(tech);
-          });
         }
         cur.setDate(cur.getDate()+7);
       }
@@ -1030,7 +1019,7 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
-    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByCase };
+    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames] };
 
   } catch(e) {
     console.warn(`[${co.navn}] API feilet: ${e.message} — bruker demo-data`);
@@ -1369,7 +1358,8 @@ function updateChart(){
     {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
-  if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.13)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#f97316',fill:true,tension:0.25,stack:undefined,order:-2});
+  // Gap-linje: vises kun når vi har assignedCount fra OS (datakilde ikke klar ennå)
+  // if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',...});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -1412,7 +1402,7 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
-  if(hasGap) lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
+  // if(hasGap) lh+=... (gap-linje ikke aktiv ennå)
   document.getElementById('leg').innerHTML=lh;
 }
 
@@ -2798,25 +2788,9 @@ async function refreshAll(){
   renderAll();
   const results=await Promise.allSettled(companies.map(co=>fetchSelskap(co)));
   let ok=0,demo=0,err=0;
-  window._workersByCase={};
   results.forEach((res,i)=>{
     const co=companies[i];
-    if(res.status==='fulfilled'){
-      const {real,items,totalUsers,workersByCase}=res.value;
-      const st=real?'ok':'demo';
-      coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};
-      real?ok++:demo++;
-      // Slå sammen workers-per-case på tvers av selskaper
-      if(workersByCase){
-        Object.entries(workersByCase).forEach(([nc,weeks])=>{
-          if(!window._workersByCase[nc]) window._workersByCase[nc]={};
-          Object.entries(weeks).forEach(([wk,set])=>{
-            if(!window._workersByCase[nc][wk]) window._workersByCase[nc][wk]=new Set();
-            set.forEach(u=>window._workersByCase[nc][wk].add(u));
-          });
-        });
-      }
-    }
+    if(res.status==='fulfilled'){const {real,items,totalUsers}=res.value;const st=real?'ok':'demo';coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};real?ok++:demo++}
     else{coData[co.navn]={status:'err',items:[]};err++;console.error(co.navn,res.reason)}
   });
   document.getElementById('lastUpdated').textContent=`${new Date().toLocaleString('no-NO')} · ${ok} live, ${demo} demo${err?`, ${err} feil`:''}`;
@@ -3134,11 +3108,7 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
     try {
       const searchQuery = `query OsEkonomiSearch {
         cases(pagination: {page: 1, limit: 200}, search: {query: "${nr}", fields: ["caseNumber"]}) {
-          items {
-            caseNumber
-            economy { revenue revisedOffer }
-            workers { id }
-          }
+          items { caseNumber economy { revenue revisedOffer } }
         }
       }`;
       const resp = await fetch(gqlUrl, {
@@ -3161,11 +3131,8 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
       const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
       const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
       // Trekk ut unike tildelte brukere (assignments.user.id) på tvers av alle matchende saker
-      const assignedIds = new Set();
-      matches.forEach(c => (c.workers||[]).forEach(w => { if(w?.id) assignedIds.add(String(w.id)); }));
-      const assignedCount = assignedIds.size;
-      console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)${assignedCount?` · ${assignedCount} tildelt i OS`:' · ingen tildelt'}`);
-      return { revenue, revisedOffer, assignedCount, assignedIds };
+      console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
+      return { revenue, revisedOffer };
     } catch(e) { return null; }
   };
 
@@ -3203,14 +3170,13 @@ async function fetchOSEconomy(projects) {
     results.forEach((res, i) => {
       const [nr, origKey] = entries[i];
       if (res.status !== 'fulfilled' || !res.value) return;
-      if (!accumulated[origKey]) accumulated[origKey] = { revenue: 0, revisedOffer: 0, assignedCount: 0, nrs: [] };
+      if (!accumulated[origKey]) accumulated[origKey] = { revenue: 0, revisedOffer: 0, nrs: [] };
       accumulated[origKey].revenue += res.value.revenue;
       accumulated[origKey].revisedOffer += res.value.revisedOffer;
-      accumulated[origKey].assignedCount += res.value.assignedCount || 0;
       accumulated[origKey].nrs.push(nr);
     });
     Object.entries(accumulated).forEach(([key, val]) => {
-      window._osEconomy[key] = { revenue: val.revenue, revisedOffer: val.revisedOffer, assignedCount: val.assignedCount };
+      window._osEconomy[key] = { revenue: val.revenue, revisedOffer: val.revisedOffer };
       if (val.nrs.length > 1)
         console.log(`[OS Økonomi ✓] ${company} / kombinert [${val.nrs.join('+')}]: fakturert=${val.revenue.toLocaleString('nb-NO')}kr`);
     });
