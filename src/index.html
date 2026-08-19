@@ -936,6 +936,7 @@ async function fetchSelskap(co){
     const gqlQuery = `query KapPrognose($fra:Int!,$til:Int!){
       events(between:{field:startTime,from:$fra,to:$til}){
         identifier startTime stopTime header text
+        case { id caseNumber name }
         user{id fullName role}
         hourType{name}
       }
@@ -961,10 +962,13 @@ async function fetchSelskap(co){
     // totalUsers: bruk manuell CONFIG-verdi hvis satt, ellers telles fra events
     // (telles etter all data er prosessert nedenfor)
     console.log(`[${co.navn}] ✅ ${j.length} events`);
-    // ── DIAGNOSE: vis event-feltstruktur for å bekrefte ordreNr-felt ──
+    // ── DIAGNOSE: vis event-feltstruktur inkl. case-referanse ──
     if(j.length>0){
-      const sample=j.slice(0,3).map(o=>({identifier:o.identifier,header:o.header,text:(o.text||'').slice(0,60),user:o.user?.fullName}));
-      console.log(`[OS Diagnose ${co.navn}] Første events (identifier/header/text):`, sample);
+      // Vis de første 3 events MED case-kobling (feltarbeid), fallback til de 3 første
+      const withCase=j.filter(o=>o.case?.caseNumber);
+      const sample=(withCase.length?withCase.slice(0,3):j.slice(0,3))
+        .map(o=>({identifier:o.identifier,header:o.header,text:(o.text||'').slice(0,50),case:o.case,user:o.user?.fullName}));
+      console.log(`[OS Diagnose ${co.navn}] Events med case-felt (${withCase.length} av ${j.length} har case):`, sample);
     }
 
     const toMs = v => !v ? 0 : (v > 1e11 ? v : v * 1000);
