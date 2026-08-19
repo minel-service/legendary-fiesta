@@ -3137,7 +3137,7 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
           items {
             caseNumber
             economy { revenue revisedOffer }
-            assignments { user { id } }
+            workers { id }
           }
         }
       }`;
@@ -3162,7 +3162,7 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
       const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
       // Trekk ut unike tildelte brukere (assignments.user.id) på tvers av alle matchende saker
       const assignedIds = new Set();
-      matches.forEach(c => (c.assignments||[]).forEach(a => { if(a.user?.id) assignedIds.add(String(a.user.id)); }));
+      matches.forEach(c => (c.workers||[]).forEach(w => { if(w?.id) assignedIds.add(String(w.id)); }));
       const assignedCount = assignedIds.size;
       console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)${assignedCount?` · ${assignedCount} tildelt i OS`:' · ingen tildelt'}`);
       return { revenue, revisedOffer, assignedCount, assignedIds };
