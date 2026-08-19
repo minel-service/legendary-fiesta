@@ -1053,6 +1053,9 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
+    const wboKeys=Object.keys(workersByOrdre);
+    if(wboKeys.length) console.log(`[${co.navn}] workersByOrdre:`, Object.fromEntries(wboKeys.map(k=>[k,Object.fromEntries(Object.entries(workersByOrdre[k]).map(([wk,s])=>[wk,s.size]))])));
+    else console.log(`[${co.navn}] workersByOrdre: ingen treff (header-format matcher ikke ordreNr?)`);
     return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre };
 
   } catch(e) {
