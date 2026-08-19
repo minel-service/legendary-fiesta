@@ -1030,10 +1030,9 @@ async function fetchSelskap(co){
     // Gap-query: events med case.caseNumber, kun 12 uker fremover (kortere range → unngå timeout)
     // Abort etter 15 sek for å hindre at appen henger
     if(Object.keys(ordreNrLookup).length){
-      const gapTil=Math.floor((currentWkMonday.getTime()+12*7*864e5)/1000);
-      const gapQ=`query GapCheck{events(between:{field:startTime,from:${fraInt},to:${gapTil}}){case{caseNumber}user{id}startTime stopTime}}`;
+      const gapQ=`query GapCheck{events(between:{field:startTime,from:${fraInt},to:${tilInt}}){case{caseNumber}user{id}startTime stopTime}}`;
       const gapCtrl=new AbortController();
-      const gapTimer=setTimeout(()=>gapCtrl.abort(),15000);
+      const gapTimer=setTimeout(()=>gapCtrl.abort(),25000);
       try{
         const gr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},signal:gapCtrl.signal,body:JSON.stringify({company:co.navn,query:gapQ})});
         clearTimeout(gapTimer);
