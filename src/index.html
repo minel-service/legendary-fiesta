@@ -936,7 +936,7 @@ async function fetchSelskap(co){
     const gqlQuery = `query KapPrognose($fra:Int!,$til:Int!){
       events(between:{field:startTime,from:$fra,to:$til}){
         identifier startTime stopTime header text
-        case { id caseNumber name }
+        case { id caseNumber }
         user{id fullName role}
         hourType{name}
       }
