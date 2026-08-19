@@ -967,12 +967,46 @@ async function fetchSelskap(co){
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
     const osOrderNames = new Set();
+    // workersByOrdre[origOrdreNr][wk] = Set<userId> — bygget fra event.header (starter med ordreNr)
+    const workersByOrdre = {};
+    // Bygg oppslags-map: normalisert ordreNr → original ordreNr-nøkkel fra prosjekter
+    const ordreNrLookup = {};
+    allProjects.forEach(p => {
+      if(!p.ordreNr) return;
+      p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
+        .forEach(nr => { ordreNrLookup[nr] = p.ordreNr; });
+    });
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
       const _role = o.user?.role || '';
       if (_role && !FELTARBEIDER_ROLLER.includes(_role)) return;
-      if (o.header && o.header.trim()) osOrderNames.add(o.header.trim());
+      const hdr = (o.header||'').trim();
+      if (hdr) {
+        osOrderNames.add(hdr);
+        // header-format: "38093 - Prosjektnavn" — trekk ut ledende tall og match mot ordreNr
+        const hdrMatch = hdr.match(/^(\d+)/);
+        if (hdrMatch) {
+          const hdrNr = hdrMatch[1].replace(/^0+/,'');
+          const origKey = ordreNrLookup[hdrNr];
+          if (origKey) {
+            if (!workersByOrdre[origKey]) workersByOrdre[origKey] = {};
+            // Registrer for alle uker i event-perioden
+            const _s2 = toMs(o.startTime); const _e2 = toMs(o.stopTime||o.startTime);
+            const _sd2 = new Date(_s2); const _dow2 = _sd2.getDay();
+            const _mon2 = new Date(_sd2); _mon2.setDate(_mon2.getDate()-(_dow2===0?6:_dow2-1)); _mon2.setHours(0,0,0,0);
+            let _c2 = new Date(_mon2);
+            while(_c2 <= new Date(_e2) && _c2 <= maxDate){
+              if(_c2 >= currentWkMonday){
+                const _wk2 = wKey(_c2);
+                if(!workersByOrdre[origKey][_wk2]) workersByOrdre[origKey][_wk2]=new Set();
+                workersByOrdre[origKey][_wk2].add(tech);
+              }
+              _c2.setDate(_c2.getDate()+7);
+            }
+          }
+        }
+      }
       const cat = categorizeHourType(o.hourType?.name);
       const startMs = toMs(o.startTime);
       const stopMs  = toMs(o.stopTime || o.startTime);
@@ -1019,7 +1053,7 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
-    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames] };
+    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre };
 
   } catch(e) {
     console.warn(`[${co.navn}] API feilet: ${e.message} — bruker demo-data`);
@@ -1334,8 +1368,8 @@ function updateChart(){
   const maxKap = visCos.reduce((s,co)=>s+(coData[co.navn]?.totalUsers||co.maxAnsatte||0),0);
   const aggLed = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
-  // Bemanningsgap per uke: sum av (weeklyCrews - OS-workers) for alle prosjekter med ordreNr
-  const _oe=window._osEconomy||{};
+  // Bemanningsgap per uke: sum av (weeklyCrews - OS-workers fra event.header) for alle manuelle prosjekter
+  const _wbo=window._workersByOrdre||{};
   const _visFilter=activeFilter==='all'?null:activeFilter;
   const aggGap=weeks.map(wk=>{
     let gap=0;
@@ -1344,9 +1378,10 @@ function updateChart(){
       if(_visFilter&&p.company!==_visFilter)return;
       const contracted=parseInt(p.weeklyCrews?.[wk])||0;
       if(!contracted)return;
-      const eco=_oe[p.ordreNr];
-      if(!eco||eco.assignedCount==null)return;
-      gap+=Math.max(0,contracted-eco.assignedCount);
+      const wkMap=_wbo[p.ordreNr];
+      if(!wkMap)return;
+      const osCount=wkMap[wk]?wkMap[wk].size:0;
+      gap+=Math.max(0,contracted-osCount);
     });
     return gap;
   });
@@ -1358,8 +1393,7 @@ function updateChart(){
     {label:'Ledig',                 data:aggLed,   backgroundColor:CAT_LEDIG,   borderRadius:0, borderSkipped:false, stack:'main'},
   ];
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
-  // Gap-linje: vises kun når vi har assignedCount fra OS (datakilde ikke klar ennå)
-  // if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',...});
+  if(hasGap) datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.13)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',fill:true,tension:0.3,stack:undefined,order:-2});
 
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
@@ -1402,7 +1436,7 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:${MANUAL_COLOR}"></span>Kontrakter</span>`;
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
-  // if(hasGap) lh+=... (gap-linje ikke aktiv ennå)
+  if(hasGap) lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
@@ -2788,9 +2822,25 @@ async function refreshAll(){
   renderAll();
   const results=await Promise.allSettled(companies.map(co=>fetchSelskap(co)));
   let ok=0,demo=0,err=0;
+  window._workersByOrdre = {};
   results.forEach((res,i)=>{
     const co=companies[i];
-    if(res.status==='fulfilled'){const {real,items,totalUsers}=res.value;const st=real?'ok':'demo';coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};real?ok++:demo++}
+    if(res.status==='fulfilled'){
+      const {real,items,totalUsers,workersByOrdre}=res.value;
+      const st=real?'ok':'demo';
+      coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};
+      real?ok++:demo++;
+      // Merge workersByOrdre (Sets) inn i global lookup
+      if(workersByOrdre){
+        Object.entries(workersByOrdre).forEach(([ordreNr,wkMap])=>{
+          if(!window._workersByOrdre[ordreNr]) window._workersByOrdre[ordreNr]={};
+          Object.entries(wkMap).forEach(([wk,set])=>{
+            if(!window._workersByOrdre[ordreNr][wk]) window._workersByOrdre[ordreNr][wk]=new Set();
+            set.forEach(u=>window._workersByOrdre[ordreNr][wk].add(u));
+          });
+        });
+      }
+    }
     else{coData[co.navn]={status:'err',items:[]};err++;console.error(co.navn,res.reason)}
   });
   document.getElementById('lastUpdated').textContent=`${new Date().toLocaleString('no-NO')} · ${ok} live, ${demo} demo${err?`, ${err} feil`:''}`;
@@ -3271,21 +3321,33 @@ function effectiveOrdreReserve(project){
   return ks;
 }
 
-// Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs tildelte i OS (assignments fra cases-query)
-// Returnerer {contracted, osWorkers, wksChecked} eller null
+// Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs faktiske OS-folk per uke fra event.header
+// Returnerer {contracted, osWorkers, wksChecked, perWk} eller null
 function calcOsGap(project){
   if(!project.ordreNr||project.avtaleType==='ramme') return null;
-  const eco=window._osEconomy&&window._osEconomy[project.ordreNr];
-  if(!eco||eco.assignedCount==null) return null;
+  const wbo=window._workersByOrdre;
+  if(!wbo) return null;
+  const wkMap=wbo[project.ordreNr];
+  if(!wkMap||Object.keys(wkMap).length===0) return null;
   const wks=Object.keys(project.weeklyCrews||{}).sort();
   if(!wks.length) return null;
-  let totalContracted=0,wksChecked=0;
-  wks.forEach(wk=>{ const c=parseInt(project.weeklyCrews[wk])||0; if(c){totalContracted+=c;wksChecked++;} });
+  let totalContracted=0,totalOs=0,wksChecked=0;
+  const perWk=[];
+  wks.forEach(wk=>{
+    const c=parseInt(project.weeklyCrews[wk])||0;
+    if(!c) return;
+    const osCount=wkMap[wk]?wkMap[wk].size:0;
+    totalContracted+=c;
+    totalOs+=osCount;
+    wksChecked++;
+    perWk.push({wk,contracted:c,osWorkers:osCount});
+  });
   if(!wksChecked) return null;
   return {
     contracted: Math.round(totalContracted/wksChecked),
-    osWorkers:  eco.assignedCount,
-    wksChecked
+    osWorkers:  Math.round(totalOs/wksChecked),
+    wksChecked,
+    perWk
   };
 }
 
