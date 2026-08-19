@@ -1346,7 +1346,7 @@ function updateChart(){
   const aggLed = weeks.map((w,i)=>Math.max(0, maxKap - aggFraOS[i] - aggContr[i]));
 
   // Bemanningsgap per uke: sum av (weeklyCrews - OS-workers) for alle prosjekter med ordreNr
-  const _wbc=window._workersByCase||{};
+  const _oe=window._osEconomy||{};
   const _visFilter=activeFilter==='all'?null:activeFilter;
   const aggGap=weeks.map(wk=>{
     let gap=0;
@@ -1355,10 +1355,9 @@ function updateChart(){
       if(_visFilter&&p.company!==_visFilter)return;
       const contracted=parseInt(p.weeklyCrews?.[wk])||0;
       if(!contracted)return;
-      const nrs=(p.ordreNr||'').split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean);
-      const osSet=new Set();
-      nrs.forEach(nr=>{if(_wbc[nr]?.[wk])_wbc[nr][wk].forEach(u=>osSet.add(u));});
-      gap+=Math.max(0,contracted-osSet.size);
+      const eco=_oe[p.ordreNr];
+      if(!eco||eco.assignedCount==null)return;
+      gap+=Math.max(0,contracted-eco.assignedCount);
     });
     return gap;
   });
@@ -3135,7 +3134,11 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
     try {
       const searchQuery = `query OsEkonomiSearch {
         cases(pagination: {page: 1, limit: 200}, search: {query: "${nr}", fields: ["caseNumber"]}) {
-          items { caseNumber economy { revenue revisedOffer } }
+          items {
+            caseNumber
+            economy { revenue revisedOffer }
+            assignments { user { id } }
+          }
         }
       }`;
       const resp = await fetch(gqlUrl, {
@@ -3157,8 +3160,12 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
       if (!matches.length) return null;
       const revenue = matches.reduce((s, c) => s + (c.economy?.revenue ?? 0), 0) / 100;
       const revisedOffer = matches.reduce((s, c) => s + (c.economy?.revisedOffer ?? 0), 0) / 100;
-      console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)`);
-      return { revenue, revisedOffer };
+      // Trekk ut unike tildelte brukere (assignments.user.id) på tvers av alle matchende saker
+      const assignedIds = new Set();
+      matches.forEach(c => (c.assignments||[]).forEach(a => { if(a.user?.id) assignedIds.add(String(a.user.id)); }));
+      const assignedCount = assignedIds.size;
+      console.log(`[OS Økonomi ✓] ${co} / ${nr}: fakturert=${revenue.toLocaleString('nb-NO')}kr (${matches.length} saker)${assignedCount?` · ${assignedCount} tildelt i OS`:' · ingen tildelt'}`);
+      return { revenue, revisedOffer, assignedCount, assignedIds };
     } catch(e) { return null; }
   };
 
@@ -3196,13 +3203,14 @@ async function fetchOSEconomy(projects) {
     results.forEach((res, i) => {
       const [nr, origKey] = entries[i];
       if (res.status !== 'fulfilled' || !res.value) return;
-      if (!accumulated[origKey]) accumulated[origKey] = { revenue: 0, revisedOffer: 0, nrs: [] };
+      if (!accumulated[origKey]) accumulated[origKey] = { revenue: 0, revisedOffer: 0, assignedCount: 0, nrs: [] };
       accumulated[origKey].revenue += res.value.revenue;
       accumulated[origKey].revisedOffer += res.value.revisedOffer;
+      accumulated[origKey].assignedCount += res.value.assignedCount || 0;
       accumulated[origKey].nrs.push(nr);
     });
     Object.entries(accumulated).forEach(([key, val]) => {
-      window._osEconomy[key] = { revenue: val.revenue, revisedOffer: val.revisedOffer };
+      window._osEconomy[key] = { revenue: val.revenue, revisedOffer: val.revisedOffer, assignedCount: val.assignedCount };
       if (val.nrs.length > 1)
         console.log(`[OS Økonomi ✓] ${company} / kombinert [${val.nrs.join('+')}]: fakturert=${val.revenue.toLocaleString('nb-NO')}kr`);
     });
@@ -3297,30 +3305,20 @@ function effectiveOrdreReserve(project){
   return ks;
 }
 
-// Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs faktiske OS-workers fra events
-// Returnerer {contracted, osWorkers, wksChecked} for aktive/fremtidige uker, eller null
+// Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs tildelte i OS (assignments fra cases-query)
+// Returnerer {contracted, osWorkers, wksChecked} eller null
 function calcOsGap(project){
   if(!project.ordreNr||project.avtaleType==='ramme') return null;
-  const wbc=window._workersByCase;
-  if(!wbc||!Object.keys(wbc).length) return null;
-  const nrs=(project.ordreNr||'').split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean);
+  const eco=window._osEconomy&&window._osEconomy[project.ordreNr];
+  if(!eco||eco.assignedCount==null) return null;
   const wks=Object.keys(project.weeklyCrews||{}).sort();
   if(!wks.length) return null;
-  let totalContracted=0,totalOs=0,wksChecked=0;
-  wks.forEach(wk=>{
-    const contracted=parseInt(project.weeklyCrews[wk])||0;
-    if(!contracted) return;
-    // Tell unike workers i OS for dette ordreNr i denne uken
-    const osSet=new Set();
-    nrs.forEach(nr=>{if(wbc[nr]&&wbc[nr][wk]) wbc[nr][wk].forEach(u=>osSet.add(u));});
-    totalContracted+=contracted;
-    totalOs+=osSet.size;
-    wksChecked++;
-  });
+  let totalContracted=0,wksChecked=0;
+  wks.forEach(wk=>{ const c=parseInt(project.weeklyCrews[wk])||0; if(c){totalContracted+=c;wksChecked++;} });
   if(!wksChecked) return null;
   return {
     contracted: Math.round(totalContracted/wksChecked),
-    osWorkers:  Math.round(totalOs/wksChecked),
+    osWorkers:  eco.assignedCount,
     wksChecked
   };
 }
