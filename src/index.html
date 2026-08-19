@@ -962,21 +962,14 @@ async function fetchSelskap(co){
     // totalUsers: bruk manuell CONFIG-verdi hvis satt, ellers telles fra events
     // (telles etter all data er prosessert nedenfor)
     console.log(`[${co.navn}] ✅ ${j.length} events`);
-    // ── DIAGNOSE: vis event-feltstruktur inkl. case-referanse ──
-    if(j.length>0){
-      // Vis de første 3 events MED case-kobling (feltarbeid), fallback til de 3 første
-      const withCase=j.filter(o=>o.case?.caseNumber);
-      const sample=(withCase.length?withCase.slice(0,3):j.slice(0,3))
-        .map(o=>({identifier:o.identifier,header:o.header,text:(o.text||'').slice(0,50),case:o.case,user:o.user?.fullName}));
-      console.log(`[OS Diagnose ${co.navn}] Events med case-felt (${withCase.length} av ${j.length} har case):`, sample);
-    }
-
     const toMs = v => !v ? 0 : (v > 1e11 ? v : v * 1000);
     const maxDate = new Date(now + 400*864e5);
 
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
     const osOrderNames = new Set();
+    // workersByCase[normCaseNr][wk] = Set<userId> — for gap-beregning
+    const workersByCase = {};
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
@@ -991,12 +984,21 @@ async function fetchSelskap(co){
       const mon = new Date(sd);
       mon.setDate(mon.getDate() - (dow===0?6:dow-1));
       mon.setHours(0,0,0,0);
+      // Normaliser caseNumber for gap-oppslag (strip leading zeros, bruk alle deler)
+      const rawCase = o.case?.caseNumber ? String(o.case.caseNumber) : null;
+      const normCases = rawCase ? rawCase.split(/[-_.]/).map(p=>p.replace(/^0+/,'')).filter(Boolean) : [];
       let cur = new Date(mon);
       while(cur <= new Date(stopMs) && cur <= maxDate){
         if(cur >= currentWkMonday){
           const wk = wKey(cur);
           if(!weekData[wk]) weekData[wk] = {oppdrag:new Set(),intern:new Set(),fravaer:new Set()};
           weekData[wk][cat].add(tech);
+          // Track per case (alle normaliserte deler, f.eks. "41623" og "01" for "41623-01")
+          normCases.forEach(nc=>{
+            if(!workersByCase[nc]) workersByCase[nc]={};
+            if(!workersByCase[nc][wk]) workersByCase[nc][wk]=new Set();
+            workersByCase[nc][wk].add(tech);
+          });
         }
         cur.setDate(cur.getDate()+7);
       }
@@ -1029,7 +1031,7 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
-    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames] };
+    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByCase };
 
   } catch(e) {
     console.warn(`[${co.navn}] API feilet: ${e.message} — bruker demo-data`);
@@ -2095,6 +2097,16 @@ function buildOreCard(p){
       <span>\u{1F477} snitt ${avgCrew} mann/uke</span>
       <span>\u{1F4CA} ${wks.length} uke${wks.length!==1?'r':''}</span>
     </div>
+    ${(()=>{
+      if(!p.ordreNr||p.avtaleType==='ramme') return '';
+      const gap=calcOsGap(p);
+      if(!gap) return '';
+      const {contracted,osWorkers,wksChecked}=gap;
+      if(wksChecked===0) return '';
+      const diff=contracted-osWorkers;
+      if(diff<=0) return `<div style="margin-top:5px;font-size:.75rem;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;padding:5px 9px;color:#15803d;font-weight:600">✅ Bemanning OK — ${osWorkers} av ${contracted} mann i OS denne perioden</div>`;
+      return `<div style="margin-top:5px;font-size:.75rem;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;padding:5px 9px;color:#b91c1c;font-weight:600">⚠️ Bemanningsgap — ${osWorkers} av ${contracted} mann i OS · <strong>${diff} mann mangler</strong></div>`;
+    })()}
     <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">${p.createdBy?`<span>✍️ ${p.createdBy}${p.createdAt?' '+new Date(p.createdAt).toLocaleDateString('no-NO'):''}</span>`:''  }${p.lastEditedBy?`<span>✏️ Endret: ${p.lastEditedBy}${p.lastEditedAt?' '+new Date(p.lastEditedAt).toLocaleDateString('no-NO'):''}</span>`:''}</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px">
       <div class="od-crew-toggle" data-id="${p.id}" style="flex:1">
@@ -2765,9 +2777,25 @@ async function refreshAll(){
   renderAll();
   const results=await Promise.allSettled(companies.map(co=>fetchSelskap(co)));
   let ok=0,demo=0,err=0;
+  window._workersByCase={};
   results.forEach((res,i)=>{
     const co=companies[i];
-    if(res.status==='fulfilled'){const {real,items,totalUsers}=res.value;const st=real?'ok':'demo';coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};real?ok++:demo++}
+    if(res.status==='fulfilled'){
+      const {real,items,totalUsers,workersByCase}=res.value;
+      const st=real?'ok':'demo';
+      coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};
+      real?ok++:demo++;
+      // Slå sammen workers-per-case på tvers av selskaper
+      if(workersByCase){
+        Object.entries(workersByCase).forEach(([nc,weeks])=>{
+          if(!window._workersByCase[nc]) window._workersByCase[nc]={};
+          Object.entries(weeks).forEach(([wk,set])=>{
+            if(!window._workersByCase[nc][wk]) window._workersByCase[nc][wk]=new Set();
+            set.forEach(u=>window._workersByCase[nc][wk].add(u));
+          });
+        });
+      }
+    }
     else{coData[co.navn]={status:'err',items:[]};err++;console.error(co.navn,res.reason)}
   });
   document.getElementById('lastUpdated').textContent=`${new Date().toLocaleString('no-NO')} · ${ok} live, ${demo} demo${err?`, ${err} feil`:''}`;
@@ -3245,6 +3273,34 @@ function effectiveOrdreReserve(project){
   var fakt=calcFakturert(project);
   if(fakt!=null&&ks>0) return Math.max(0,ks-fakt);
   return ks;
+}
+
+// Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs faktiske OS-workers fra events
+// Returnerer {contracted, osWorkers, wksChecked} for aktive/fremtidige uker, eller null
+function calcOsGap(project){
+  if(!project.ordreNr||project.avtaleType==='ramme') return null;
+  const wbc=window._workersByCase;
+  if(!wbc||!Object.keys(wbc).length) return null;
+  const nrs=splitOrdreNr(project.ordreNr).map(nr=>nr.replace(/^0+/,''));
+  const wks=Object.keys(project.weeklyCrews||{}).sort();
+  if(!wks.length) return null;
+  let totalContracted=0,totalOs=0,wksChecked=0;
+  wks.forEach(wk=>{
+    const contracted=parseInt(project.weeklyCrews[wk])||0;
+    if(!contracted) return;
+    // Tell unike workers i OS for dette ordreNr i denne uken
+    const osSet=new Set();
+    nrs.forEach(nr=>{if(wbc[nr]&&wbc[nr][wk]) wbc[nr][wk].forEach(u=>osSet.add(u));});
+    totalContracted+=contracted;
+    totalOs+=osSet.size;
+    wksChecked++;
+  });
+  if(!wksChecked) return null;
+  return {
+    contracted: Math.round(totalContracted/wksChecked),
+    osWorkers:  Math.round(totalOs/wksChecked),
+    wksChecked
+  };
 }
 
 // Kortfattet OS-info for inline-visning
