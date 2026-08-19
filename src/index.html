@@ -967,8 +967,14 @@ async function fetchSelskap(co){
     // weekData[wk] = { oppdrag: Set<userId>, intern: Set<userId>, fravaer: Set<userId> }
     const weekData = {};
     const osOrderNames = new Set();
-    // workersByOrdre[origOrdreNr][wk] = Set<userId> — bygges via API-spørring per ordreNr (etter events-loop)
+    // workersByOrdre[origOrdreNr][wk] = Set<userId> — bygges via gap-query (se nedenfor)
     const workersByOrdre = {};
+    // Oppslags-map: normalisert ordreNr → original nøkkel, kun for DETTE selskapet
+    const ordreNrLookup = {};
+    allProjects.filter(p=>p.company===co.navn&&p.ordreNr).forEach(p=>{
+      p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
+        .forEach(nr=>{ordreNrLookup[nr]=p.ordreNr;});
+    });
     j.forEach(o => {
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
@@ -1021,25 +1027,24 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
-    // API-basert bemanningsgap: hent workers per ordreNr via cases.items.events (målrettet per prosjekt)
-    const companyOrdreNrMap={};
-    allProjects
-      .filter(p=>p.company===co.navn&&p.ordreNr&&p.avtaleType!=='ramme'&&!p.inOS)
-      .forEach(p=>{
-        p.ordreNr.split(/[\/,;\s]+/).map(s=>s.trim().replace(/^0+/,'')).filter(Boolean)
-          .forEach(nr=>{companyOrdreNrMap[nr]=p.ordreNr;});
-      });
-    if(Object.keys(companyOrdreNrMap).length){
-      await Promise.all(Object.entries(companyOrdreNrMap).map(async ([nr,origKey])=>{
-        const wq=`query{events(between:{field:startTime,from:${fraInt},to:${tilInt}},caseNumber:"${nr}"){user{id}startTime stopTime}}`;
-        try{
-          const wr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:co.navn,query:wq})});
-          const wj=await wr.json();
-          if(wj.errors){console.warn(`[gap ${co.navn}/${nr}]`,wj.errors[0]?.message);return;}
-          const evs=wj.data?.events||[];
-          if(!workersByOrdre[origKey])workersByOrdre[origKey]={};
-          evs.forEach(e=>{
-            if(!e.user?.id)return;
+    // Gap-query: events med case.caseNumber, kun 12 uker fremover (kortere range → unngå timeout)
+    // Abort etter 15 sek for å hindre at appen henger
+    if(Object.keys(ordreNrLookup).length){
+      const gapTil=Math.floor((currentWkMonday.getTime()+12*7*864e5)/1000);
+      const gapQ=`query GapCheck{events(between:{field:startTime,from:${fraInt},to:${gapTil}}){case{caseNumber}user{id}startTime stopTime}}`;
+      const gapCtrl=new AbortController();
+      const gapTimer=setTimeout(()=>gapCtrl.abort(),15000);
+      try{
+        const gr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},signal:gapCtrl.signal,body:JSON.stringify({company:co.navn,query:gapQ})});
+        clearTimeout(gapTimer);
+        const gj=await gr.json();
+        if(!gj.errors&&Array.isArray(gj.data?.events)){
+          gj.data.events.forEach(e=>{
+            const cn=e.case?.caseNumber;
+            if(!cn||!e.user?.id)return;
+            const normNr=String(cn).replace(/^0+/,'');
+            const origKey=ordreNrLookup[normNr];
+            if(!origKey)return;
             const tech=String(e.user.id);
             const sMs=toMs(e.startTime),eMs=toMs(e.stopTime||e.startTime);
             const sd2=new Date(sMs),dow2=sd2.getDay();
@@ -1048,15 +1053,24 @@ async function fetchSelskap(co){
             while(c2<=new Date(eMs)&&c2<=maxDate){
               if(c2>=currentWkMonday){
                 const wk2=wKey(c2);
+                if(!workersByOrdre[origKey])workersByOrdre[origKey]={};
                 if(!workersByOrdre[origKey][wk2])workersByOrdre[origKey][wk2]=new Set();
                 workersByOrdre[origKey][wk2].add(tech);
               }
               c2.setDate(c2.getDate()+7);
             }
           });
-          console.log(`[gap ${co.navn}/${origKey}] ${evs.length} events`,Object.keys(workersByOrdre[origKey]||{}).length?Object.fromEntries(Object.entries(workersByOrdre[origKey]).map(([wk,s])=>[wk,s.size])):'(ingen data i perioden)');
-        }catch(ex){console.warn(`[gap ${co.navn}/${nr}] feilet:`,ex.message);}
-      }));
+          const wboKeys2=Object.keys(workersByOrdre);
+          if(wboKeys2.length) console.log(`[gap ${co.navn}]`,Object.fromEntries(wboKeys2.map(k=>[k,Object.fromEntries(Object.entries(workersByOrdre[k]).map(([wk,s])=>[wk,s.size]))])));
+          else console.log(`[gap ${co.navn}] gap-query OK men ingen av ${gj.data.events.length} events tilhørte kjente ordreNr`);
+        }else if(gj.errors){
+          console.warn(`[gap ${co.navn}] GraphQL-feil:`,gj.errors[0]?.message);
+        }
+      }catch(ex){
+        clearTimeout(gapTimer);
+        if(ex.name==='AbortError') console.warn(`[gap ${co.navn}] timeout (>15s) — gap utilgjengelig`);
+        else console.warn(`[gap ${co.navn}] feil:`,ex.message);
+      }
     }
     return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre };
 
