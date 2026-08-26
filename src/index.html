@@ -3013,7 +3013,7 @@ async function fetchVIAOrderList(){
     const tok=await getSpToken();
     if(!tok) return;
     // Hent top 500 nyeste — kun OrdreNr og Selskap-feltene
-    const url=VIA_SP_GRAPH+'/items?expand=fields&$select=fields/OrdreNr,fields/Selskap&$orderby=lastModifiedDateTime desc&$top=500';
+    const url=VIA_SP_GRAPH+'/items?expand=fields&$select=fields/OrdreNr,fields/Selskap,fields/UpdatedAt&$orderby=fields/UpdatedAt desc&$top=500';
     const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
     if(!resp.ok) return;
     const data=await resp.json();
@@ -3099,7 +3099,7 @@ async function fetchVIAFerdiggrad(ordreNr,company){
     let filterStr=`fields/OrdreNr eq '${ordreNr}'`;
     if(company) filterStr+=` and fields/Selskap eq '${company}'`;
     const filter=encodeURIComponent(filterStr);
-    const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$top=1`;
+    const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$orderby=fields/UpdatedAt desc&$top=1`;
     const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
     if(!resp.ok){if(hint)hint.textContent='';return;}
     const data=await resp.json();
