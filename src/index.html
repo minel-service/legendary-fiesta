@@ -311,7 +311,7 @@ const CONFIG = {
     { navn: 'Minel Gjøvik AS',                apiKey: 'edewj6APD4wb8uD5', maxAnsatte: 0 },
     { navn: 'Minel Ainstall AS',              apiKey: 'OhCnVeTrqWU7dOK7', maxAnsatte: 0 },
     { navn: 'Minel Land Elektriske AS',       apiKey: 'yOVFmYixo35RnY6l', maxAnsatte: 0 },
-    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 0 },
+    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 0, ekstraRoller: ['Prosjektleder'] },
     { navn: 'Minel Gudbrandsdal AS',          apiKey: 'yEEdLNDUCssPuhOl', maxAnsatte: 0 },
   ],
 
@@ -992,7 +992,8 @@ async function fetchSelskap(co){
       const tech = o.user?.id != null ? String(o.user.id) : null;
       if (!tech) return;
       const _role = o.user?.role || '';
-      if (_role && !FELTARBEIDER_ROLLER.includes(_role)) return;
+      const _rollerForCo = [...FELTARBEIDER_ROLLER, ...(co.ekstraRoller||[])];
+      if (_role && !_rollerForCo.includes(_role)) return;
       if (o.header && o.header.trim()) osOrderNames.add(o.header.trim());
       const cat = categorizeHourType(o.hourType?.name);
       const startMs = toMs(o.startTime);
