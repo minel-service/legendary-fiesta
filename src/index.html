@@ -970,6 +970,9 @@ async function fetchSelskap(co){
     if (!Array.isArray(j)) throw new Error('Uventet svar fra events-query');
     const _allRoles=[...new Set(j.map(o=>o.user?.role||'(ingen)'))].sort();
     console.log('[OS-roller ' + co.navn + ']', _allRoles.join(', '));
+    // Midlertidig: finn Helge Skog for å sjekke rolle og tellestatus
+    const _helge=j.find(o=>o.user?.fullName&&o.user.fullName.toLowerCase().includes('helge'));
+    if(_helge) console.log(`[Helge-sjekk ${co.navn}] ${_helge.user.fullName} · rolle: "${_helge.user.role||'(ingen)'}" · telles: ${FELTARBEIDER_ROLLER.includes(_helge.user.role||'')?'JA':'NEI — ikke feltarbeider-rolle'}`);
 
     // totalUsers: bruk manuell CONFIG-verdi hvis satt, ellers telles fra events
     // (telles etter all data er prosessert nedenfor)
