@@ -970,9 +970,6 @@ async function fetchSelskap(co){
     if (!Array.isArray(j)) throw new Error('Uventet svar fra events-query');
     const _allRoles=[...new Set(j.map(o=>o.user?.role||'(ingen)'))].sort();
     console.log('[OS-roller ' + co.navn + ']', _allRoles.join(', '));
-    // Midlertidig: finn Helge Skog for å sjekke rolle og tellestatus
-    const _helge=j.find(o=>o.user?.fullName&&o.user.fullName.toLowerCase().includes('helge'));
-    if(_helge) console.log(`[Helge-sjekk ${co.navn}] ${_helge.user.fullName} · rolle: "${_helge.user.role||'(ingen)'}" · telles: ${FELTARBEIDER_ROLLER.includes(_helge.user.role||'')?'JA':'NEI — ikke feltarbeider-rolle'}`);
 
     // totalUsers: bruk manuell CONFIG-verdi hvis satt, ellers telles fra events
     // (telles etter all data er prosessert nedenfor)
@@ -1046,9 +1043,10 @@ async function fetchSelskap(co){
     // Gap-query: events med case.caseNumber, kun 12 uker fremover (kortere range → unngå timeout)
     // Abort etter 15 sek for å hindre at appen henger
     if(Object.keys(ordreNrLookup).length){
-      const gapQ=`query GapCheck{events(between:{field:startTime,from:${fraInt},to:${tilInt}}){case{caseNumber}user{id}startTime stopTime}}`;
+      const gapTil12=Math.floor((currentWkMonday.getTime()+12*7*864e5)/1000);
+      const gapQ=`query GapCheck{events(between:{field:startTime,from:${fraInt},to:${gapTil12}}){case{caseNumber}user{id}startTime stopTime}}`;
       const gapCtrl=new AbortController();
-      const gapTimer=setTimeout(()=>gapCtrl.abort(),25000);
+      const gapTimer=setTimeout(()=>gapCtrl.abort(),20000);
       try{
         const gr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},signal:gapCtrl.signal,body:JSON.stringify({company:co.navn,query:gapQ})});
         clearTimeout(gapTimer);
