@@ -329,7 +329,7 @@ const BRIDGE_URL = 'https://minel-sp-bridge.azurewebsites.net';
 // ⚠️  KRITISK ARKITEKTURREGEL — IKKE ENDRE UTEN Å FORSTÅ KONSEKVENSEN:
 // _scopes brukes ved loginRedirect. Sites.Selected MÅ ALDRI legges her — det
 // krever admin-consent fra IT for ALLE 50 ansatte og blokkerer innlogging.
-// SharePoint-kall (historikk, VIA QA, kunngjøringer) bruker spFetch() som
+// SharePoint-kall (historikk, kunngjøringer) bruker spFetch() som
 // henter Sites.Selected stille i bakgrunnen via acquireTokenSilent.
 let msalApp=null,_scopes=['User.Read'];
 // SKUDDSIKKER VAKT: fjern Sites.Selected automatisk om noen legger det tilbake
@@ -593,10 +593,8 @@ async function fetchUserCompany() {
     <div id="ordreNrRow" class="frow">
       <div class="fg" style="position:relative;">
         <label class="fl">Ordrenummer (OS)</label>
-        <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234" oninput="suggestOrdreNr(this.value)" onblur="if(!document.getElementById('ordreNrSuggest').matches(':hover'))fetchVIAFerdiggrad(this.value,document.getElementById('pCo')?.value||'')" autocomplete="off"/>
-        <div id="ordreNrSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:999;max-height:200px;overflow-y:auto;font-size:.85rem;"></div>
+        <input class="fi" id="pOrdreNr" type="text" placeholder="F.eks. 24-1234" autocomplete="off"/>
         <div class="hint">Legg inn når ordrenr i OS er tildelt</div>
-        <div id="viaHint" style="font-size:.78rem;color:#555;margin-top:4px;min-height:16px;"></div>
       </div>
     </div>
     <div class="frow">
@@ -2646,7 +2644,6 @@ async function initApp(){
       })(20);
   allProjects = await loadAllProjects();
   fetchOSEconomy(allProjects).then(()=>{updateOrdrereserve();updateTable();});
-  fetchVIAOrderList(); // beholdes for ordreNr autocomplete
   const sel=document.getElementById('pCo');
   sel.innerHTML='<option value="">— Velg selskap —</option>';
   companies.forEach(co=>{
@@ -3007,76 +3004,9 @@ async function postToSharePointList(p){
 async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
 
 
-// Henter alle unike OrdreNr + Selskap fra VIA QA SP-liste for autocomplete
-async function fetchVIAOrderList(){
-  try{
-    const tok=await getSpToken();
-    if(!tok) return;
-    // Hent top 500 nyeste — kun OrdreNr og Selskap-feltene
-    const url=VIA_SP_GRAPH+'/items?expand=fields&$select=fields/OrdreNr,fields/Selskap,fields/UpdatedAt&$orderby=fields/UpdatedAt desc&$top=500';
-    const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
-    if(!resp.ok) return;
-    const data=await resp.json();
-    // Dedupliser på OrdreNr+Selskap — behold siste per kombinasjon
-    const seen=new Set();
-    const orders=[];
-    (data.value||[]).forEach(item=>{
-      const f=item.fields||{};
-      const nr=f.OrdreNr||'';
-      const sel=f.Selskap||'';
-      if(!nr) return;
-      const key=sel+'__'+nr;
-      if(seen.has(key)) return;
-      seen.add(key);
-      orders.push({ordrenummer:nr, selskap:sel});
-    });
-    window._osOrders=orders;
-    console.log('[VIA] Lastet',orders.length,'unike ordrenumre fra VIA QA');
-  }catch(e){
-    console.warn('[VIA] fetchVIAOrderList feil:',e);
-  }
-}
-
-// ══ ORDRENR AUTOCOMPLETE + VIA QA INTEGRATION ══
-function suggestOrdreNr(val){
-  const box=document.getElementById('ordreNrSuggest');
-  if(!val||val.length<2){box.style.display='none';return;}
-  const orders=window._osOrders||[];
-  const co=(document.getElementById('pCo')?.value||'').toLowerCase();
-  const matches=orders.filter(o=>{
-    const nr=(o.ordrenummer||'').toLowerCase();
-    const sel=(o.selskap||'').toLowerCase();
-    // Filtrer på selskap hvis valgt, ellers vis alle
-    if(co && sel && !sel.includes(co) && !co.includes(sel)) return false;
-    return nr.includes(val.toLowerCase());
-  }).slice(0,10);
-  if(!matches.length){box.style.display='none';return;}
-  box.innerHTML=matches.map(o=>{
-    const nr=o.ordrenummer||'';
-    const sel=o.selskap||'';
-    return `<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0" onmousedown="selectOrdreNr('${nr}')">${nr}<span style="font-size:.8em;color:#888;margin-left:8px">${sel}</span></div>`;
-  }).join('');
-  box.style.display='block';
-}
-function selectOrdreNr(nr){
-  document.getElementById('pOrdreNr').value=nr;
-  document.getElementById('ordreNrSuggest').style.display='none';
-  // Hent selskap fra modal-dropdown
-  const co=document.getElementById('pCo')?.value||'';
-  fetchVIAFerdiggrad(nr,co);
-}
-
-// VIA QA SharePoint-konstanter
-var VIA_SP_SITE='elkonorno.sharepoint.com,adc2e55d-4cd5-4c6e-91be-90878d7b643e,66290674-a36d-40a1-a3b5-d90acfb04142';
-var VIA_SP_LIST='17a680a1-2dac-4cbb-ac95-69a707eb138c';
-var VIA_SP_GRAPH='https://graph.microsoft.com/v1.0/sites/'+VIA_SP_SITE+'/lists/'+VIA_SP_LIST;
-
-// Nøkkel: selskap__ordreNr — sikrer at samme ordreNr hos ulike selskap ikke blandes
-function viaKey(company,ordreNr){ return (company||'')+'__'+(ordreNr||''); }
-
 async function getSpToken(){
   // Ingen popup - acquireTokenSilent kun. Om det feiler vises INGEN consent-skjerm.
-  // Historikk går via bridge (gFetch). VIA QA og kunngjøringer feiler stille om Sites.Selected ikke er consented.
+  // Kunngjøringer (spFetch) feiler stille om Sites.Selected ikke er consented.
   const acc=msalApp.getAllAccounts()[0];
   if(!acc) return null;
   try{
@@ -3088,95 +3018,6 @@ async function getSpToken(){
   }
 }
 
-async function fetchVIAFerdiggrad(ordreNr,company){
-  const hint=document.getElementById('viaHint');
-  if(!ordreNr){if(hint)hint.textContent='';return;}
-  if(hint) hint.textContent='Henter VIA QA-data…';
-  try{
-    const tok=await getSpToken();
-    if(!tok){if(hint)hint.textContent='';return;}
-    // Filter på BÅDE OrdreNr og Selskap
-    let filterStr=`fields/OrdreNr eq '${ordreNr}'`;
-    if(company) filterStr+=` and fields/Selskap eq '${company}'`;
-    const filter=encodeURIComponent(filterStr);
-    const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$orderby=fields/UpdatedAt desc&$top=1`;
-    const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
-    if(!resp.ok){if(hint)hint.textContent='';return;}
-    const data=await resp.json();
-    const items=data.value||[];
-    if(!items.length){
-      // Prøv uten selskapsfilter som fallback
-      const url2=VIA_SP_GRAPH+`/items?expand=fields&$filter=${encodeURIComponent(`fields/OrdreNr eq '${ordreNr}'`)}&$orderby=fields/UpdatedAt desc&$top=1`;
-      const resp2=await fetch(url2,{headers:{Authorization:'Bearer '+tok}});
-      const data2=await resp2.json();
-      if(!(data2.value||[]).length){if(hint)hint.textContent='Ingen VIA QA-vurdering funnet';return;}
-      items.push(...(data2.value||[]));
-    }
-    const f=items[0].fields||{};
-    const dg=f.DG!=null?parseFloat(f.DG):null;
-    const timer=f.Timer!=null?parseFloat(f.Timer):0;
-    const tk=f.Timekost!=null?parseFloat(f.Timekost):null;
-    const mat=f.Material!=null?parseFloat(f.Material):0;
-    if(!window._viaData) window._viaData={};
-    const key=viaKey(company||f.Selskap||'',ordreNr);
-    window._viaData[key]={dg,timer,tk,mat,updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy,selskap:f.Selskap};
-    const parts=[];
-    if(dg!=null) parts.push('DG '+(dg>1?Math.round(dg):Math.round(dg*100))+'%');
-    if(timer>0) parts.push(timer+'t gjenst.');
-    if(hint) hint.textContent=parts.length?parts.join(' · '):'VIA QA funnet (ingen DG/timer)';
-  }catch(e){if(hint)hint.textContent='';}
-}
-
-async function fetchAllVIAData(projects){
-  if(!projects||!projects.length) return;
-  const withOrdre=projects.filter(p=>p.ordreNr);
-  if(!withOrdre.length) return;
-  try{
-    const tok=await getSpToken();
-    if(!tok) return;
-    if(!window._viaData) window._viaData={};
-    // Hent i grupper av 10 — filtrer på OrdreNr (og Selskap for sikkerhet)
-    for(let i=0;i<withOrdre.length;i+=10){
-      const batch=withOrdre.slice(i,i+10);
-      // Lag filter med BÅDE OrdreNr og Selskap per prosjekt
-      const filterParts=batch.map(p=>{
-        let f=`fields/OrdreNr eq '${p.ordreNr}'`;
-        if(p.company) f+=` and fields/Selskap eq '${p.company}'`;
-        return `(${f})`;
-      });
-      const filter=encodeURIComponent(filterParts.join(' or '));
-      const url=VIA_SP_GRAPH+`/items?expand=fields&$filter=${filter}&$top=100`;
-      const resp=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
-      if(!resp.ok) continue;
-      const data=await resp.json();
-      (data.value||[]).forEach(item=>{
-        const f=item.fields||{};
-        const nr=f.OrdreNr;
-        const sel=f.Selskap||'';
-        if(!nr) return;
-        const key=viaKey(sel,nr);
-        const existing=window._viaData[key];
-        const updAt=f.UpdatedAt?new Date(f.UpdatedAt):new Date(0);
-        const existAt=existing?.updatedAt?new Date(existing.updatedAt):new Date(0);
-        if(!existing||updAt>existAt){
-          window._viaData[key]={
-            dg:f.DG!=null?parseFloat(f.DG):null,
-            timer:f.Timer!=null?parseFloat(f.Timer):0,
-            tk:f.Timekost!=null?parseFloat(f.Timekost):null,
-            mat:f.Material!=null?parseFloat(f.Material):0,
-            updatedAt:f.UpdatedAt,updatedBy:f.UpdatedBy,selskap:sel
-          };
-        }
-      });
-    }
-  
-  // Populer _osOrders fra VIA-data (brukes i autocomplete)
-  window._osOrders=Object.keys(window._viaData).map(k=>{
-    const parts=k.split('__');
-    return {ordrenummer:parts[1]||k, selskap:parts[0]||''};
-  }).filter(o=>o.ordrenummer);
-}catch(e){console.warn('[VIA] fetchAllVIAData feil:',e);}
-}
 
 // ══ ORDRESTYRING ØKONOMI (erstatter VIA QA for gjenstående) ══
 window._osEconomy = {};
