@@ -1212,8 +1212,17 @@ function updateWhoBar(){
 // TOTALER
 // ════════════════════════════════════════════
 function buildTotals(){
-  // Finn lengste horisont: 20 uker ELLER lengste registrerte kontrakt — hva som er størst
-  const contractWeeks = allProjects.filter(p=>!p.inOS).flatMap(p=>Object.keys(p.weeklyCrews||{}));
+  // Splitt-punkt: OS er pålitelig de neste 3 ukene.
+  // inOS-prosjekter ekskluderes fra manuell prognose inntil dette punktet,
+  // men inkluderes fra uke 4 og ut (OS-ressurskalenderen er tom den veien).
+  const _splitDate=new Date();_splitDate.setDate(_splitDate.getDate()+3*7);
+  const inOsSplitWkNum=wkToNum(wKey(_splitDate));
+
+  // Finn lengste horisont: 20 uker ELLER lengste registrerte kontrakt (inkl. inOS etter split)
+  const contractWeeks = allProjects.flatMap(p=>{
+    if(!p.inOS) return Object.keys(p.weeklyCrews||{});
+    return Object.keys(p.weeklyCrews||{}).filter(w=>wkToNum(w)>inOsSplitWkNum);
+  });
   const maxContractWk = contractWeeks.length ? contractWeeks.sort().pop() : null;
   const baseWeeks = next20();
   const baseEnd = baseWeeks[baseWeeks.length-1];
@@ -1250,11 +1259,15 @@ function buildTotals(){
   });
   const manT={};weeks.forEach(w=>manT[w]=0);
   allProjects.forEach(p=>{
-    if(p.inOS) return;
     if(activeFilter!=='all'&&p.company&&p.company!==activeFilter)return;
-    Object.entries(p.weeklyCrews).forEach(([wk,c])=>{if(manT[wk]!==undefined)manT[wk]+=parseInt(c)||0});
+    Object.entries(p.weeklyCrews).forEach(([wk,c])=>{
+      if(manT[wk]===undefined)return;
+      // inOS-prosjekter: ekskluder fra manuell lag innenfor OS-horisonten (3 uker)
+      if(p.inOS && wkToNum(wk)<=inOsSplitWkNum)return;
+      manT[wk]+=parseInt(c)||0;
+    });
   });
-  return{weeks,byCo,manT};
+  return{weeks,byCo,manT,inOsSplitWkNum};
 }
 
 // ════════════════════════════════════════════
@@ -1376,7 +1389,7 @@ function resetRange(){
 }
 
 function updateChart(){
-  const{weeks:allWeeks,byCo,manT}=buildTotals();
+  const{weeks:allWeeks,byCo,manT,inOsSplitWkNum}=buildTotals();
   buildRangeSelectors(allWeeks);
   const fromWk=_rangeFrom||allWeeks[0];
   const toWk=_rangeTo||allWeeks[allWeeks.length-1];
@@ -1427,6 +1440,30 @@ function updateChart(){
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
   if(hasGap&&activeFilter!=='all') datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.13)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',fill:true,tension:0.3,stack:undefined,order:-2});
 
+  // Splittlinje-plugin: tegner stiplet linje mellom OS-horisont og kontraktshorisont
+  const splitLinePlugin={
+    id:'splitLine',
+    afterDraw(chart){
+      const splitIdx=weeks.findIndex(w=>wkToNum(w)>inOsSplitWkNum);
+      if(splitIdx<=0)return;
+      const{ctx,scales:{x,y}}=chart;
+      const xPos=x.getPixelForValue(splitIdx-0.5);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(xPos,y.top);
+      ctx.lineTo(xPos,y.bottom+22);
+      ctx.strokeStyle='rgba(100,116,139,0.55)';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([5,4]);
+      ctx.stroke();
+      ctx.fillStyle='rgba(100,116,139,0.8)';
+      ctx.font='500 10px Segoe UI,sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('← OS    Kontrakter →',xPos,y.bottom+20);
+      ctx.restore();
+    }
+  };
+
   if(chartInst)chartInst.destroy();
   const ctx=document.getElementById('chart').getContext('2d');
   chartInst=new Chart(ctx,{
@@ -1445,6 +1482,7 @@ function updateChart(){
             const led=aggLed[items[0].dataIndex];
             const aktive=fraOS+contr;
             const gap=aggGap[items[0].dataIndex];
+            const isOsZone=wkToNum(wk)<=inOsSplitWkNum;
             const lines=['───────────────'];
             if(fraOS>0)  lines.push(`🔵 Fra OS: ${fraOS}`);
             if(contr>0)  lines.push(`🟩 Kontrahert: ${contr}`);
@@ -1453,6 +1491,8 @@ function updateChart(){
             lines.push('───────────────');
             const tot=aktive+led;
             lines.push(`Aktive: ${aktive}${tot>0?` / ${tot}`:''}${tot>0?` (${Math.round(aktive/tot*100)}%)`:''}`);
+            if(isOsZone) lines.push('📡 OS-sone: I-OS-prosjekter telles i OS');
+            else         lines.push('📋 Kontraktsone: I-OS-prosjekter fra weeklyCrews');
             return lines;
           }
         }}
@@ -1461,7 +1501,8 @@ function updateChart(){
         x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
         y:{stacked:true,beginAtZero:true,title:{display:true,text:'Mannskap',color:'#94a3b8',font:{size:11}},ticks:{stepSize:5}}
       }
-    }
+    },
+    plugins:[splitLinePlugin]
   });
 
   let lh=`<span><span class="ldot" style="background:${CAT_OPPDRAG}"></span>Fra Ordrestyring</span>`;
@@ -1469,6 +1510,7 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
   if(hasGap&&activeFilter!=='all') lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
+  lh+=`<span style="color:#64748b;font-size:.72rem;opacity:.85" title="I-OS-prosjekter telles i OS-laget de første 3 ukene, deretter fra kontraktsdetaljene">📡 Stiplet linje: OS-horisont (3 uker)</span>`;
   document.getElementById('leg').innerHTML=lh;
 }
 
