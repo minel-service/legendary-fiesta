@@ -1887,6 +1887,8 @@ let _oreTimeFilter = null; // null = alle, eller {year, quarter} der quarter nul
 
 // Siste uke i et kvartal: Q1→13, Q2→26, Q3→39, Q4→53
 function quarterEndWeek(q){ return [13,26,39,53][q-1]||53; }
+// Første uke i et kvartal: Q1→1, Q2→14, Q3→27, Q4→40
+function quarterStartWeek(q){ return [1,14,27,40][q-1]||1; }
 
 // Grense-ukenummer for valgt periode (alt ≤ dette vises)
 function periodEndWkNum(filter){
@@ -1895,15 +1897,23 @@ function periodEndWkNum(filter){
   return filter.year*100+endWk;
 }
 
-// Kumulativt filter: prosjektet har minst én aktiv uke FRA OG MED nå t.o.m. valgt periode
+// Start-ukenummer for valgt periode
+function periodStartWkNum(filter){
+  if(!filter) return 0;
+  const startWk=filter.quarter?quarterStartWeek(filter.quarter):1;
+  return filter.year*100+startWk;
+}
+
+// Filter: prosjektet har minst én aktiv uke i valgt periode (mellom floor og ceiling)
 function projectInPeriod(project, filter){
   if(!filter) return true;
   const ceiling=periodEndWkNum(filter);
+  const floor=periodStartWkNum(filter);
   const wks=Object.keys(project.weeklyCrews||{});
   return wks.some(wk=>{
     if((parseInt(project.weeklyCrews[wk])||0)===0) return false;
     const n=wkToNum(wk);
-    return n>0 && n<=ceiling;
+    return n>0 && n>=floor && n<=ceiling;
   });
 }
 
@@ -2136,8 +2146,21 @@ function renderOreDrawer(){
 
 function buildOreCard(p){
   const wks=Object.keys(p.weeklyCrews||{}).sort();
-  const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
-  const period=wks.length>1?`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}`:(wks.length?`Uke ${wNums[0]}`:'—');
+  const curY=new Date().getFullYear();
+  const fstY=wks.length?parseInt(wks[0].split('-W')[0]):curY;
+  const lstY=wks.length?parseInt(wks[wks.length-1].split('-W')[0]):curY;
+  const fstWkN=wks.length?parseInt(wks[0].split('-W')[1]):0;
+  const lstWkN=wks.length?parseInt(wks[wks.length-1].split('-W')[1]):0;
+  let period;
+  if(!wks.length) period='—';
+  else if(fstY===lstY){
+    const wNums=wks.map(w=>parseInt(w.split('-W')[1]));
+    const mn=Math.min(...wNums),mx=Math.max(...wNums);
+    period=wks.length>1?`Uke ${mn}–${mx}${lstY!==curY?' '+lstY:''}`:`Uke ${mn}${lstY!==curY?' '+lstY:''}`;
+  } else {
+    // Kryssår: vis uke + årstall for både start og slutt
+    period=`Uke ${fstWkN}${fstY!==curY?' '+fstY:''}–${lstWkN} ${lstY}`;
+  }
   const totalCrew=Object.values(p.weeklyCrews||{}).reduce((s,v)=>s+(parseInt(v)||0),0);
   const avgCrew=wks.length?Math.round(totalCrew/wks.length):0;
   const crewCells=wks.map(wk=>{
@@ -2505,8 +2528,16 @@ function oreUpdateCrew(id,wk,val){
   const avg=wks.length?Math.round(tc/wks.length):0;
   const metaEl=document.querySelector(`#odc-${id} .od-c-meta`);
   if(metaEl){
-    const wNs=wks.map(w=>parseInt(w.split('-W')[1]));
-    const per=wks.length>1?`Uke ${Math.min(...wNs)}–${Math.max(...wNs)}`:(wks.length?`Uke ${wNs[0]}`:'—');
+    const wksSorted=Object.keys(p.weeklyCrews||{}).sort();
+    const _curY=new Date().getFullYear();
+    const _fY=wksSorted.length?parseInt(wksSorted[0].split('-W')[0]):_curY;
+    const _lY=wksSorted.length?parseInt(wksSorted[wksSorted.length-1].split('-W')[0]):_curY;
+    const _fW=wksSorted.length?parseInt(wksSorted[0].split('-W')[1]):0;
+    const _lW=wksSorted.length?parseInt(wksSorted[wksSorted.length-1].split('-W')[1]):0;
+    let per;
+    if(!wksSorted.length) per='—';
+    else if(_fY===_lY){const wNs=wksSorted.map(w=>parseInt(w.split('-W')[1]));const mn=Math.min(...wNs),mx=Math.max(...wNs);per=wksSorted.length>1?`Uke ${mn}–${mx}${_lY!==_curY?' '+_lY:''}`:`Uke ${mn}${_lY!==_curY?' '+_lY:''}`;}
+    else per=`Uke ${_fW}${_fY!==_curY?' '+_fY:''}–${_lW} ${_lY}`;
     metaEl.innerHTML=`<span>\u{1F4C5} ${per}</span><span>\u{1F477} snitt ${avg} mann/uke</span><span>\u{1F4CA} ${wks.length} uke${wks.length!==1?'r':''}</span>`;
   }
 }
@@ -2706,7 +2737,13 @@ function genWTbl(){
   if(!startVal||dur<1||dur>52){wrap.innerHTML='';return;}
   const start=new Date(startVal);
   const day=start.getDay();
-  start.setDate(start.getDate()+(day===0?-6:1-day));
+  // Rund til mandag — men aldri tilbake til forrige kalenderår
+  const backDays=(day===0?-6:1-day);
+  start.setDate(start.getDate()+backDays);
+  if(start.getFullYear()<new Date(startVal).getFullYear()){
+    // Oppgitt dato er i neste år men avrunding gikk tilbake — rund forover i stedet
+    start.setDate(start.getDate()+7);
+  }
   let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:6px">';
   for(let i=0;i<dur;i++){
     const d=new Date(start.getTime()+i*7*864e5);
