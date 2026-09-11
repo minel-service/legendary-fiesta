@@ -1738,12 +1738,15 @@ const HIST_FILE = 'kapasitet_historikk.json';
 async function saveHistorySnapshot(){
   try{
     const weekStr = wKey(new Date());
-    // Last eksisterende historikk
+    // Last eksisterende historikk — prøv server, fall tilbake på localStorage
     let history = [];
     try{
       const r = await gFetch(`${BRIDGE_URL}/api/sp?file=${HIST_FILE}`);
-      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) history=j; }
+      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)&&j.length) history=j; }
     }catch(_){}
+    if(!history.length){
+      try{const ls=localStorage.getItem('minel_historikk');if(ls){const j=JSON.parse(ls);if(Array.isArray(j))history=j;}}catch(_){}
+    }
     // Ikke lagre ny snapshot om det allerede finnes én for denne uken
     if(history.some(h=>h.week===weekStr)){
       console.log('[Historikk] Snapshot for',weekStr,'finnes allerede');
@@ -1776,9 +1779,17 @@ async function saveHistorySnapshot(){
 async function loadHistory(){
   try{
     const r=await gFetch(`${BRIDGE_URL}/api/sp?file=${HIST_FILE}`);
-    if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)) return j; }
+    if(r&&r.ok){
+      const j=await r.json();
+      // Kun returner hvis faktisk har innhold — tom array betyr «ikke funnet på server»
+      if(Array.isArray(j)&&j.length){
+        try{localStorage.setItem('minel_historikk',JSON.stringify(j));}catch(_){}
+        return j;
+      }
+    }
   }catch(_){}
-  try{const ls=localStorage.getItem('minel_historikk');if(ls)return JSON.parse(ls);}catch(_){}
+  // Fallback: bruk lokalt lagret historikk
+  try{const ls=localStorage.getItem('minel_historikk');if(ls){const j=JSON.parse(ls);if(Array.isArray(j)&&j.length)return j;}}catch(_){}
   return[];
 }
 
