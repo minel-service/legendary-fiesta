@@ -1844,7 +1844,19 @@ function updateTable(){
       const wn=Object.keys(p.weeklyCrews).map(w=>parseInt(w.split('-W')[1]));
       const tot=Object.values(p.weeklyCrews).reduce((s,c)=>s+(parseInt(c)||0),0);
       const avg=wn.length?Math.round(tot/wn.length):0;
-      const wStr=(()=>{const _s=Object.keys(p.weeklyCrews).sort();if(!_s.length)return'—';const _cy=new Date().getFullYear(),_sy=parseInt(_s[0].split('-W')[0]),_ey=parseInt(_s[_s.length-1].split('-W')[0]);if(wn.length>1)return`Uke ${Math.min(...wn)}${_sy!==_cy&&_sy!==_ey?' '+_sy:''}–${Math.max(...wn)}${_ey!==_cy?' '+_ey:''}`;return`Uke ${wn[0]}${_sy!==_cy?' '+_sy:''}`})();
+      const wStr=(()=>{
+        const _s=Object.keys(p.weeklyCrews).sort();
+        if(!_s.length)return'—';
+        const _cy=new Date().getFullYear();
+        const _sy=parseInt(_s[0].split('-W')[0]);
+        const _ey=parseInt(_s[_s.length-1].split('-W')[0]);
+        const _fw=parseInt(_s[0].split('-W')[1]);
+        const _lw=parseInt(_s[_s.length-1].split('-W')[1]);
+        if(_s.length===1)return`Uke ${_fw}${_sy!==_cy?' '+_sy:''}`;
+        if(_sy===_ey){const wNums=_s.map(w=>parseInt(w.split('-W')[1]));return`Uke ${Math.min(...wNums)}–${Math.max(...wNums)}${_ey!==_cy?' '+_ey:''}`;}
+        // Kryssår: vis første uke (med år om ikke inneværende) – siste uke + år
+        return`Uke ${_fw}${_sy!==_cy?' '+_sy:''}–${_lw} ${_ey}`;
+      })();
       const pct=Math.min(100,avg/15*100);
       const ci=companies.findIndex(c=>c.navn===p.company);
       const bc=ci>=0?col(ci):MANUAL_COLOR;
@@ -2017,7 +2029,7 @@ function updateOrdrereserve(){
   companies.forEach(co=>byCo[co.navn]=0);
   let grandTotal=0;
   visMp.forEach(p=>{
-    const v=effectiveOrdreReserve(p);
+    const v=effectiveOrdreReserveForPeriod(p,_oreTimeFilter);
     if(p.company&&byCo[p.company]!==undefined) byCo[p.company]+=v;
     grandTotal+=v;
   });
@@ -2038,7 +2050,7 @@ function updateOrdrereserve(){
   const periodSub=(f)=>{
     if(!f) return '';
     const q=f.quarter?`Q${f.quarter} `:'';
-    return `med produksjon frem til ${q}${f.year}`;
+    return `vektet mot produksjon i ${q}${f.year}`;
   };
   const adminClick=isAdmin?`onclick="openOreDrawer('__all__')" title="Klikk for å se og redigere alle kontrakter" style="cursor:pointer"`:'';
   let html=`<div class="ore-total" ${adminClick}>
@@ -3274,6 +3286,25 @@ function effectiveOrdreReserve(project){
   var fakt=calcFakturert(project);
   if(fakt!=null&&ks>0) return Math.max(0,ks-fakt);
   return ks;
+}
+
+// Periode-vektet ordrereserve: kun den andelen av gjenstående verdi som faller i valgt periode,
+// proporsjonalt med mannskapsuker i perioden vs. totalt.
+// Eksempel: prosjekt med 10 uker i 2026 og 40 uker i 2027 = 20% av gjenstående telles i 2026-filter.
+function effectiveOrdreReserveForPeriod(project, filter){
+  var total=effectiveOrdreReserve(project);
+  if(!filter||!total) return total;
+  var floor=periodStartWkNum(filter);
+  var ceiling=periodEndWkNum(filter);
+  var allWks=Object.keys(project.weeklyCrews||{}).filter(function(wk){return(parseInt(project.weeklyCrews[wk])||0)>0;});
+  if(!allWks.length) return total;
+  var totalCrew=allWks.reduce(function(s,wk){return s+(parseInt(project.weeklyCrews[wk])||0);},0);
+  if(!totalCrew) return total;
+  var periodCrew=allWks
+    .filter(function(wk){var n=wkToNum(wk);return n>=floor&&n<=ceiling;})
+    .reduce(function(s,wk){return s+(parseInt(project.weeklyCrews[wk])||0);},0);
+  if(!periodCrew) return 0;
+  return Math.round(total*periodCrew/totalCrew);
 }
 
 // Bemanningsgap: sammenlign weeklyCrews (kontraktert) vs faktiske OS-folk per uke fra event.header
