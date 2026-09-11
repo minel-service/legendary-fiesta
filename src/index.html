@@ -1449,17 +1449,23 @@ function updateChart(){
       const{ctx,scales:{x,y}}=chart;
       const xPos=x.getPixelForValue(splitIdx-0.5);
       ctx.save();
+      // Stiplet skillelinje — stopper ved x-aksen
       ctx.beginPath();
       ctx.moveTo(xPos,y.top);
-      ctx.lineTo(xPos,y.bottom+22);
-      ctx.strokeStyle='rgba(100,116,139,0.55)';
+      ctx.lineTo(xPos,y.bottom);
+      ctx.strokeStyle='rgba(100,116,139,0.45)';
       ctx.lineWidth=1.5;
       ctx.setLineDash([5,4]);
       ctx.stroke();
-      ctx.fillStyle='rgba(100,116,139,0.8)';
-      ctx.font='500 10px Segoe UI,sans-serif';
-      ctx.textAlign='center';
-      ctx.fillText('← OS    Kontrakter →',xPos,y.bottom+20);
+      ctx.setLineDash([]);
+      // Små etiketter i toppen av grafen, én på hver side
+      ctx.font='500 9.5px Segoe UI,sans-serif';
+      ctx.fillStyle='rgba(100,116,139,0.72)';
+      const _pad=7;
+      ctx.textAlign='right';
+      ctx.fillText('OS',xPos-_pad,y.top+13);
+      ctx.textAlign='left';
+      ctx.fillText('Kontrakter',xPos+_pad,y.top+13);
       ctx.restore();
     }
   };
