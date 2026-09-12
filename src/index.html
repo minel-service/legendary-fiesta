@@ -1733,24 +1733,43 @@ function filterTable(){
 }
 
 // ════ HISTORIKK — ukentlig snapshot ════
-const HIST_FILE = 'kapasitet_historikk.json';
+// Egen managed function i api/historikk (samme blob-lagring som broen, men
+// broen har en hardkodet hviteliste som aldri fikk historikkfilen inn og
+// svarte 400 «Invalid file». Se api/historikk/index.js.
+const HIST_URL = '/api/historikk';
 
 async function saveHistorySnapshot(){
   try{
     const weekStr = wKey(new Date());
     // Last eksisterende historikk — prøv server, fall tilbake på localStorage
     let history = [];
+    let serverHadde = false;
     try{
-      const r = await gFetch(`${BRIDGE_URL}/api/sp?file=${HIST_FILE}`);
-      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)&&j.length) history=j; }
+      const r = await gFetch(HIST_URL);
+      if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)&&j.length){ history=j; serverHadde=true; } }
     }catch(_){}
     if(!history.length){
       try{const ls=localStorage.getItem('minel_historikk');if(ls){const j=JSON.parse(ls);if(Array.isArray(j))history=j;}}catch(_){}
     }
-    // Ikke lagre ny snapshot om det allerede finnes én for denne uken
+    // Snapshot for denne uken finnes allerede
     if(history.some(h=>h.week===weekStr)){
+      const ukeNr=parseInt(weekStr.split('-W')[1]);
+      // Har serveren ingenting mens vi har lokal historikk? Dytt den opp (etterslep-synk)
+      if(!serverHadde && history.length){
+        try{
+          const r2=await gFetch(HIST_URL,
+            {method:'PUT',body:JSON.stringify(history),headers:{'Content-Type':'application/json'}});
+          if(r2&&r2.ok){
+            console.log('[Historikk] Lokal historikk synket til server:',history.length);
+            showToast('Historikk synket til server ('+history.length+' snapshots)',true);
+            renderHistoryTab();
+            return;
+          }
+          console.warn('[Historikk] server avviste synk: HTTP',r2?r2.status:'?');
+        }catch(e){console.warn('[Historikk] synk feilet:',e.message);}
+      }
       console.log('[Historikk] Snapshot for',weekStr,'finnes allerede');
-      showToast('Snapshot for uke '+parseInt(weekStr.split('-W')[1])+' finnes allerede');
+      showToast('Snapshot for uke '+ukeNr+' finnes allerede');
       renderHistoryTab();
       return;
     }
@@ -1771,10 +1790,27 @@ async function saveHistorySnapshot(){
     if(history.length>52) history=history.slice(0,52); // maks 1 år
     const payload=JSON.stringify(history);
     try{localStorage.setItem('minel_historikk',payload);}catch(_){}
-    await gFetch(`${BRIDGE_URL}/api/sp?file=${HIST_FILE}`,
-      {method:'PUT',body:payload,headers:{'Content-Type':'application/octet-stream'}});
-    console.log('[Historikk] Snapshot lagret for',weekStr);
-    showToast('Snapshot lagret for uke '+parseInt(weekStr.split('-W')[1]),true);
+    // Sjekk faktisk resultat — tidligere ble svaret ignorert, så en feilende
+    // server så ut som vellykket lagring.
+    const ukeNr=parseInt(weekStr.split('-W')[1]);
+    let serverOk=false, serverFeil='';
+    try{
+      const rPut=await gFetch(HIST_URL,
+        {method:'PUT',body:payload,headers:{'Content-Type':'application/json'}});
+      serverOk=!!(rPut&&rPut.ok);
+      if(!serverOk){
+        let detalj='';
+        if(rPut){ try{ detalj=((await rPut.text())||'').slice(0,80); }catch(_){} }
+        serverFeil='HTTP '+(rPut?rPut.status:'?')+(detalj?' '+detalj:'');
+      }
+    }catch(e){serverFeil=e.message;}
+    if(serverOk){
+      console.log('[Historikk] Snapshot lagret for',weekStr);
+      showToast('Snapshot lagret for uke '+ukeNr,true);
+    }else{
+      console.warn('[Historikk] kun lokalt lagret:',serverFeil);
+      showToast('Snapshot lagret lokalt — server svarte ikke ('+serverFeil+')',false);
+    }
     renderHistoryTab();
   }catch(e){
     console.warn('[Historikk] feilet:',e.message);
@@ -1784,7 +1820,7 @@ async function saveHistorySnapshot(){
 
 async function loadHistory(){
   try{
-    const r=await gFetch(`${BRIDGE_URL}/api/sp?file=${HIST_FILE}`);
+    const r=await gFetch(HIST_URL);
     if(r&&r.ok){
       const j=await r.json();
       // Kun returner hvis faktisk har innhold — tom array betyr «ikke funnet på server»

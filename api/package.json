@@ -1,0 +1,8 @@
+{
+  "name": "minel-prognose-api",
+  "version": "1.0.0",
+  "description": "Managed functions for kapasitetsprognosen",
+  "dependencies": {
+    "@azure/storage-blob": "^12.17.0"
+  }
+}
