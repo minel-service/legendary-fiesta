@@ -8,6 +8,9 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+  # Manuell kjoring fra Actions-fanen. Lagt til fordi GitHubs egen
+  # "Re-run jobs" svarte 500 da vi trengte den 13.09.2026.
+  workflow_dispatch:
 
 jobs:
   build_and_deploy_job:
