@@ -133,6 +133,13 @@ const OS_KEYS = {
   'Minel Skogvang Installasjon AS': process.env.ORDRESTYRING_SKOGVANG,
   'Minel Gudbrandsdal AS':          process.env.ORDRESTYRING_GUDBRANDSDAL,
 };
+// Ansatte som staar aktive i flere selskaper i Ordrestyring. Uten en avklaring
+// her ville de falt tilbake paa kontorsted, fordi vi ikke gjetter.
+// Avklart med Oyvind 13.09.2026.
+const FLERE_SELSKAP = {
+  'lars.aamodt@minel.no': 'Minel Land Elektriske AS',
+};
+
 const OS_URL = 'https://elkonor.ordrestyring.no/api/graphql';
 const ANSATT_TTL = 30 * 60 * 1000;
 let _ansattKart = null;      // { epost: selskap }  — tvetydige er utelatt
@@ -162,15 +169,17 @@ async function byggAnsattKart(context) {
     r.value.forEach(e => { (treff[e] = treff[e] || []).push(selskap); });
   });
   const kart = {};
-  let tvetydige = 0;
+  let tvetydige = 0, avklarte = 0;
   Object.entries(treff).forEach(([e, liste]) => {
     const unike = [...new Set(liste)];
-    // Staar en person i to selskaper kan vi ikke avgjoere. Da utelates de her
-    // og faller tilbake paa kontorsted, i stedet for aa gjette.
-    if (unike.length === 1) kart[e] = unike[0]; else tvetydige++;
+    if (unike.length === 1) { kart[e] = unike[0]; return; }
+    // Staar en person i to selskaper: bruk avklaringen om vi har en, ellers
+    // utelat dem og la kontorsted avgjoere. Vi gjetter aldri.
+    if (FLERE_SELSKAP[e]) { kart[e] = FLERE_SELSKAP[e]; avklarte++; }
+    else tvetydige++;
   });
   if (context && context.log) {
-    context.log(`[ansattkart] ${Object.keys(kart).length} e-poster fra ${res.filter(r => r.status === 'fulfilled').length}/${par.length} selskaper, ${tvetydige} tvetydige`);
+    context.log(`[ansattkart] ${Object.keys(kart).length} e-poster fra ${res.filter(r => r.status === 'fulfilled').length}/${par.length} selskaper, ${avklarte} avklarte, ${tvetydige} tvetydige`);
   }
   return kart;
 }
