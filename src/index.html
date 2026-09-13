@@ -932,6 +932,28 @@ function categorizeHourType(name) {
 }
 
 // ════════════════════════════════════════════
+// OS-HORISONT — hvor langt frem ressursplanleggeren faktisk er fylt ut
+// ════════════════════════════════════════════
+// Måles per selskap fra faktiske registreringer, ikke antatt.
+// Målt 13.09.2026 spriker feltet fra 1 uke (Land) til 5 uker (Elmontasje,
+// Elverum, Gudbrandsdal) — én felles grense traff derfor begge veier feil.
+// serie[u] = antall feltarbeidere med oppdrag i uke u (u=0 = inneværende uke).
+// Grensen settes der dekningen faller under 40 % av dagens nivå OG blir der i
+// minst to uker på rad; én stille enkeltuke skal ikke kutte horisonten.
+const OS_TERSKEL=0.40, OS_MIN_UKER=1, OS_MAKS_UKER=8, OS_STANDARD_UKER=3;
+function beregnOsHorisont(serie){
+  if(!Array.isArray(serie)||!serie.length) return OS_STANDARD_UKER;
+  // Inneværende uke kan være nesten omme; bruk beste av uke 0 og 1 som basis.
+  const basis=Math.max(serie[0]||0, serie[1]||0);
+  if(basis<=0) return OS_MIN_UKER;
+  const grense=basis*OS_TERSKEL;
+  for(let u=1;u<=OS_MAKS_UKER;u++){
+    if((serie[u]||0)<grense && (serie[u+1]||0)<grense) return Math.max(OS_MIN_UKER,u-1);
+  }
+  return OS_MAKS_UKER;
+}
+
+// ════════════════════════════════════════════
 // ORDRESTYRING API
 // ════════════════════════════════════════════
 // Roller som telles som feltarbeidere i kapasitetsprognosen
@@ -1040,6 +1062,16 @@ async function fetchSelskap(co){
     console.log(`[${co.navn}] Maks ansatte/uke: ${finalTotal}`);
 
     console.log(`[${co.navn}] ${mapped.map(m=>`${m.week}:${m.oppdrag}O/${m.intern}I/${m.fravaer}F`).join(' ')}`);
+
+    // Mål hvor langt frem OS-registreringene rekker for dette selskapet
+    const osSerie=new Array(OS_MAKS_UKER+2).fill(0);
+    mapped.forEach(m=>{
+      const mm=mondayOf(...m.week.split('-W').map(Number));
+      const u=Math.round((mm.getTime()-currentWkMonday.getTime())/(7*864e5));
+      if(u>=0&&u<osSerie.length) osSerie[u]=m.oppdrag;
+    });
+    const osHorisont=beregnOsHorisont(osSerie);
+    console.log(`[${co.navn}] OS-horisont: ${osHorisont} uker (serie ${osSerie.join(',')})`);
     // Gap-query: events med case.caseNumber, kun 12 uker fremover (kortere range → unngå timeout)
     // Abort etter 15 sek for å hindre at appen henger
     if(Object.keys(ordreNrLookup).length){
@@ -1085,7 +1117,7 @@ async function fetchSelskap(co){
         else console.warn(`[gap ${co.navn}] feil:`,ex.message);
       }
     }
-    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre };
+    return { real: true, totalUsers: finalTotal, items: mapped, orderNames: [...osOrderNames], workersByOrdre, osHorisont };
 
   } catch(e) {
     console.warn(`[${co.navn}] API feilet: ${e.message} — bruker demo-data`);
@@ -1212,16 +1244,26 @@ function updateWhoBar(){
 // TOTALER
 // ════════════════════════════════════════════
 function buildTotals(){
-  // Splitt-punkt: OS er pålitelig de neste 3 ukene.
-  // inOS-prosjekter ekskluderes fra manuell prognose inntil dette punktet,
-  // men inkluderes fra uke 4 og ut (OS-ressurskalenderen er tom den veien).
-  const _splitDate=new Date();_splitDate.setDate(_splitDate.getDate()+3*7);
-  const inOsSplitWkNum=wkToNum(wKey(_splitDate));
+  // Splitt-punkt per selskap: OS gjelder så langt registreringene faktisk
+  // rekker (målt i beregnOsHorisont), deretter overtar kontraktsdetaljene.
+  // inOS-prosjekter holdes utenfor manuell prognose inntil selskapets grense.
+  const splitPerCo={};
+  companies.forEach(co=>{
+    const uker=(coData[co.navn]&&coData[co.navn].osHorisont!=null)
+      ? coData[co.navn].osHorisont : OS_STANDARD_UKER;
+    const d=new Date(); d.setDate(d.getDate()+uker*7);
+    splitPerCo[co.navn]={uker, wkNum:wkToNum(wKey(d))};
+  });
+  const splitFor=nav=>(splitPerCo[nav]||{wkNum:wkToNum(wKey(new Date(Date.now()+OS_STANDARD_UKER*7*864e5)))}).wkNum;
+  // Grense for prosjekter uten selskap, og for horisontberegningen under
+  const inOsSplitWkNum=Math.max(...Object.values(splitPerCo).map(s=>s.wkNum),
+    wkToNum(wKey(new Date(Date.now()+OS_STANDARD_UKER*7*864e5))));
 
   // Finn lengste horisont: 20 uker ELLER lengste registrerte kontrakt (inkl. inOS etter split)
   const contractWeeks = allProjects.flatMap(p=>{
     if(!p.inOS) return Object.keys(p.weeklyCrews||{});
-    return Object.keys(p.weeklyCrews||{}).filter(w=>wkToNum(w)>inOsSplitWkNum);
+    const gr=p.company?splitFor(p.company):inOsSplitWkNum;
+    return Object.keys(p.weeklyCrews||{}).filter(w=>wkToNum(w)>gr);
   });
   const maxContractWk = contractWeeks.length ? contractWeeks.sort().pop() : null;
   const baseWeeks = next20();
@@ -1262,12 +1304,12 @@ function buildTotals(){
     if(activeFilter!=='all'&&p.company&&p.company!==activeFilter)return;
     Object.entries(p.weeklyCrews).forEach(([wk,c])=>{
       if(manT[wk]===undefined)return;
-      // inOS-prosjekter: ekskluder fra manuell lag innenfor OS-horisonten (3 uker)
-      if(p.inOS && wkToNum(wk)<=inOsSplitWkNum)return;
+      // inOS-prosjekter: ekskluder fra manuell lag innenfor SELSKAPETS OS-horisont
+      if(p.inOS && wkToNum(wk)<=(p.company?splitFor(p.company):inOsSplitWkNum))return;
       manT[wk]+=parseInt(c)||0;
     });
   });
-  return{weeks,byCo,manT,inOsSplitWkNum};
+  return{weeks,byCo,manT,inOsSplitWkNum,splitPerCo};
 }
 
 // ════════════════════════════════════════════
@@ -1389,7 +1431,7 @@ function resetRange(){
 }
 
 function updateChart(){
-  const{weeks:allWeeks,byCo,manT,inOsSplitWkNum}=buildTotals();
+  const{weeks:allWeeks,byCo,manT,inOsSplitWkNum,splitPerCo}=buildTotals();
   buildRangeSelectors(allWeeks);
   const fromWk=_rangeFrom||allWeeks[0];
   const toWk=_rangeTo||allWeeks[allWeeks.length-1];
@@ -1440,32 +1482,43 @@ function updateChart(){
   if(maxKap>0) datasets.push({type:'line',label:`Maks (${maxKap})`,data:weeks.map(()=>maxKap),borderColor:'#C8102E',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0,stack:undefined,order:-1});
   if(hasGap&&activeFilter!=='all') datasets.push({type:'line',label:'Bemanningsgap',data:aggGap,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.13)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',fill:true,tension:0.3,stack:undefined,order:-2});
 
-  // Splittlinje-plugin: tegner stiplet linje mellom OS-horisont og kontraktshorisont
+  // Splittlinje: ett selskap gir én skarp grense. «Alle selskaper» har ni
+  // ulike grenser, og da tegnes et bånd fra første til siste i stedet —
+  // å vise én linje der ville vært misvisende.
+  const _splitNums=activeFilter!=='all'
+    ? [ (splitPerCo[activeFilter]||{}).wkNum ].filter(Boolean)
+    : Object.values(splitPerCo||{}).map(s=>s.wkNum).filter(Boolean);
   const splitLinePlugin={
     id:'splitLine',
     afterDraw(chart){
-      const splitIdx=weeks.findIndex(w=>wkToNum(w)>inOsSplitWkNum);
-      if(splitIdx<=0)return;
+      if(!_splitNums.length)return;
+      const idxFor=n=>weeks.findIndex(w=>wkToNum(w)>n);
+      const iFra=idxFor(Math.min(..._splitNums));
+      const iTil=idxFor(Math.max(..._splitNums));
+      if(iFra<=0)return;
       const{ctx,scales:{x,y}}=chart;
-      const xPos=x.getPixelForValue(splitIdx-0.5);
+      const xFra=x.getPixelForValue(iFra-0.5);
+      const xTil=iTil>0?x.getPixelForValue(iTil-0.5):xFra;
       ctx.save();
-      // Stiplet skillelinje — stopper ved x-aksen
-      ctx.beginPath();
-      ctx.moveTo(xPos,y.top);
-      ctx.lineTo(xPos,y.bottom);
+      // Overgangssone når selskapene har ulik horisont
+      if(xTil>xFra+1){
+        ctx.fillStyle='rgba(100,116,139,0.08)';
+        ctx.fillRect(xFra,y.top,xTil-xFra,y.bottom-y.top);
+      }
       ctx.strokeStyle='rgba(100,116,139,0.45)';
       ctx.lineWidth=1.5;
       ctx.setLineDash([5,4]);
-      ctx.stroke();
+      [xFra,xTil].forEach((xp,i)=>{
+        if(i===1&&xTil<=xFra+1)return;
+        ctx.beginPath();ctx.moveTo(xp,y.top);ctx.lineTo(xp,y.bottom);ctx.stroke();
+      });
       ctx.setLineDash([]);
-      // Små etiketter i toppen av grafen, én på hver side
       ctx.font='500 9.5px Segoe UI,sans-serif';
       ctx.fillStyle='rgba(100,116,139,0.72)';
-      const _pad=7;
       ctx.textAlign='right';
-      ctx.fillText('OS',xPos-_pad,y.top+13);
+      ctx.fillText('OS',xFra-7,y.top+13);
       ctx.textAlign='left';
-      ctx.fillText('Kontrakter',xPos+_pad,y.top+13);
+      ctx.fillText('Kontrakter',xTil+7,y.top+13);
       ctx.restore();
     }
   };
@@ -1516,7 +1569,20 @@ function updateChart(){
   lh+=`<span><span class="ldot" style="background:#cbd5e1;border:1px solid #94a3b8"></span>Ledig</span>`;
   if(maxKap>0) lh+=`<span><span class="ldot" style="background:#C8102E;border-radius:0;height:2px;margin-top:6px"></span>Maks kap. (${maxKap})</span>`;
   if(hasGap&&activeFilter!=='all') lh+=`<span><span class="ldot" style="background:#f97316;border-radius:0;height:2px;margin-top:6px"></span>Bemanningsgap</span>`;
-  lh+=`<span style="color:#64748b;font-size:.72rem;opacity:.85" title="I-OS-prosjekter telles i OS-laget de første 3 ukene, deretter fra kontraktsdetaljene">📡 Stiplet linje: OS-horisont (3 uker)</span>`;
+  {
+    const _sp=splitPerCo||{};
+    const _uker=activeFilter!=='all'
+      ? [ (_sp[activeFilter]||{}).uker ].filter(u=>u!=null)
+      : Object.values(_sp).map(s=>s.uker).filter(u=>u!=null);
+    if(_uker.length){
+      const _min=Math.min(..._uker),_maks=Math.max(..._uker);
+      const _tekst=_min===_maks?`${_min} uker`:`${_min}–${_maks} uker`;
+      const _tip=activeFilter!=='all'
+        ? `Målt fra faktiske OS-registreringer for ${activeFilter}. Etter dette punktet brukes kontraktsdetaljene.`
+        : 'Hvert selskap har sin egen grense, målt fra faktiske OS-registreringer. Båndet viser spennet fra tidligste til seneste.';
+      lh+=`<span style="color:#64748b;font-size:.72rem;opacity:.85" title="${_tip}">📡 OS-horisont: ${_tekst} (målt)</span>`;
+    }
+  }
   document.getElementById('leg').innerHTML=lh;
 }
 
@@ -3019,9 +3085,10 @@ async function refreshAll(){
   results.forEach((res,i)=>{
     const co=companies[i];
     if(res.status==='fulfilled'){
-      const {real,items,totalUsers,workersByOrdre}=res.value;
+      const {real,items,totalUsers,workersByOrdre,osHorisont}=res.value;
       const st=real?'ok':'demo';
-      coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items)};
+      coData[co.navn]={status:st,totalUsers:totalUsers||0,items:expandWeeks(items),
+        osHorisont:(osHorisont!=null?osHorisont:OS_STANDARD_UKER)};
       real?ok++:demo++;
       // Merge workersByOrdre (Sets) inn i global lookup
       if(workersByOrdre){
