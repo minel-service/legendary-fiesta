@@ -451,7 +451,7 @@ async function fetchUserCompany() {
       </div>
     </div>
     <div class="hactions">
-      <div class="sp-status" id="spStatus" title="SharePoint-synkroniseringsstatus">☁ Starter...</div>
+      <div class="sp-status" id="spStatus" title="Status for lagring mot server">☁ Starter...</div>
       <div class="who-pill" id="whoPill" onclick="visTilgang()" title="Klikk for å se hva du har tilgang til">
         <span class="who-dot" id="whoDot"></span>
         <span id="whoName"></span>
@@ -647,7 +647,18 @@ async function fetchUserCompany() {
 
     <div class="help-section">
       <div class="help-h">🏠 Hva er dette?</div>
-      <p class="help-p">Minel Kapasitetsprognose er et internt styringsverktøy som kombinerer mannskapsprognose, kontraktsoppfølging og Ordrestyring-data i ett bilde. Applikasjonen lagrer data i SharePoint og lokalt i nettleseren slik at den alltid er tilgjengelig, selv uten nettforbindelse.</p>
+      <p class="help-p">Minel Kapasitetsprognose er et internt styringsverktøy som kombinerer mannskapsprognose, kontraktsoppfølging og Ordrestyring-data i ett bilde. Data lagres på Minels egen lagringskonto i Azure, og i tillegg lokalt i nettleseren din slik at tallene er tilgjengelige selv uten nettforbindelse.</p>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">👁 Hva du ser og hvor du registrerer</div>
+      <p class="help-p">Alle ansatte ser <strong>hele konsernet</strong>: mannskapsbehov, ordrereserve og samtlige kontrakter for alle ni selskaper. Konserntallene er poenget med verktøyet, og de er ikke skjult for noen.</p>
+      <p class="help-p">Å <strong>registrere</strong> nye kontrakter gjør du derimot kun på ditt eget selskap. Det er ikke en hemmelighold-sperre, men en kanalisering — så alle vet hvor tallene skal inn.</p>
+      <dl class="help-kv">
+        <dt>Pillen øverst til høyre</dt><dd>Klikk på den for å se din egen tilgang: hvilket selskap du tilhører, hva du ser, og hvor du kan registrere.</dd>
+        <dt>Konsern</dt><dd>Ansatte registrert på Minel AS ser og registrerer på alle selskaper.</dd>
+        <dt>Feil selskap?</dt><dd>Tilhørigheten hentes fra Ordrestyring. Står du feil, si fra til Øyvind Sæthersmoen — da rettes det i OS, ikke i denne appen.</dd>
+      </dl>
     </div>
 
     <div class="help-section">
@@ -659,7 +670,9 @@ async function fetchUserCompany() {
         <dt>↺ Tilbakestill</dt><dd>Nullstiller datovelgerne tilbake til standardvisning.</dd>
         <dt>Selskapsfilter</dt><dd>Klikk på et selskap i fanebladraden for å isolere ett selskap. Kun ved selskapsfilter vises bemanningsgap-linjen (oransje).</dd>
         <dt>Oransje linje — Bemanningsgap</dt><dd>Vises kun per selskap. Viser totalt antall mann du har kontrahert på prosjekter der OS ikke bekrefter tilsvarende antall ressurser. Høy linje = manglende bemanning eller oppdatering av kortene.</dd>
+        <dt>Stiplet sone — «kontraktstall tar over»</dt><dd>Til venstre for sonen bygger prognosen på reelle registreringer i ressursplanleggeren i Ordrestyring. Til høyre finnes det nesten ingen registreringer, så da brukes mannskapstallene fra kontraktsdetaljene i stedet.</dd>
       </dl>
+      <p class="help-p" style="margin-top:6px">Grensen måles automatisk per selskap, ut fra hvor langt frem OS-registreringene faktisk rekker. Den settes der dekningen faller under 40 % av dagens nivå og blir der. Målt 13.09.2026 varierte det fra 1 uke (Land, Drøbak) til 5 uker (Elmontasje, Elverum, Gudbrandsdal) — derfor én grense per selskap, ikke én felles. Ser du på alle selskaper vises spennet som en sone; filtrerer du på ett selskap blir det én strek.</p>
     </div>
 
     <div class="help-section">
@@ -680,7 +693,7 @@ async function fetchUserCompany() {
         <dt>Beregning</dt><dd>Forbruk beregnes automatisk lineært: andel gjennomførte/pågående uker av total avtaleperiode × kontraktssum. Ingen OS-ordrenummer nødvendig.</dd>
         <dt>Ordrereserven</dt><dd>Oppdateres ukentlig i takt med gjennomføring — viser gjenværende verdi i avtalen.</dd>
       </dl>
-      <div class="help-note">💡 Rammeavtale-innstillingen lagres separat i nettleseren og mistes ikke ved oppdatering eller synkronisering mot SharePoint.</div>
+      <div class="help-note">💡 Rammeavtale-innstillingen lagres separat i nettleseren og mistes ikke ved oppdatering eller synkronisering mot server.</div>
     </div>
 
     <div class="help-section">
@@ -720,21 +733,34 @@ async function fetchUserCompany() {
       <div class="help-h">📅 Kvartal/år-filter på ordrereserven</div>
       <p class="help-p">Filterknappene over ordrereserven lar deg se kumulativt forbruk frem til og med en bestemt periode.</p>
       <dl class="help-kv">
-        <dt><span class="help-tag gray">Alt</span></dt><dd>Viser total kontraktssum uavhengig av tidsperiode (standardvisning).</dd>
-        <dt>Kvartal (K1–K4)</dt><dd>Viser akkumulert forbruk til og med det valgte kvartalet for det valgte året.</dd>
-        <dt>Årsknapper</dt><dd>Velg år for kvartalsfilteret. Klikk på et år uten kvartal for å se hele årets forbruk.</dd>
+        <dt><span class="help-tag gray">Alle</span></dt><dd>Viser hele den gjenstående kontraktsverdien uavhengig av tidsperiode (standardvisning).</dd>
+        <dt>Kvartal (Q1–Q4)</dt><dd>Viser den andelen av verdien som faller i det valgte kvartalet.</dd>
+        <dt>Årsknapper</dt><dd>Velg år. Klikk på et år uten kvartal for å se hele året.</dd>
       </dl>
+      <p class="help-p" style="margin-top:6px">Merk at tallet <strong>vektes mot produksjon</strong> i perioden. Et prosjekt som går fra 2026 til 2028 teller ikke med hele kontraktssummen i 2026 — kun den delen som svarer til mannskapsukene i perioden. Uten dette fikk for eksempel Gjøvik urealistisk høye tall på årsfilteret.</p>
       <p class="help-p" style="margin-top:6px">Nyttig for kvartalsvis rapportering til ledelse eller styret.</p>
     </div>
 
     <div class="help-section">
-      <div class="help-h">☁ SharePoint-synkronisering og lagring</div>
-      <p class="help-p">Alle data lagres dobbelt: i SharePoint (deles på tvers av brukere) og lokalt i nettleseren (offline-sikkerhet).</p>
+      <div class="help-h">☁ Lagring og synkronisering</div>
+      <p class="help-p">Alle data lagres dobbelt: på Minels lagringskonto i Azure (deles på tvers av brukere) og lokalt i nettleseren din (offline-sikkerhet). Mister du nettet, kan du fortsette å jobbe — endringene synkes når forbindelsen er tilbake.</p>
       <dl class="help-kv">
-        <dt><span class="help-tag green">☁ Synket</span></dt><dd>Siste lagring mot SharePoint var vellykket.</dd>
+        <dt><span class="help-tag green">☁ Synket</span></dt><dd>Siste lagring gikk gjennom.</dd>
         <dt><span class="help-tag gray">↻ Lagrer...</span></dt><dd>Synkronisering pågår.</dd>
-        <dt><span class="help-tag amber">⚠ Offline — kun lokalt</span></dt><dd>SharePoint var utilgjengelig. Endringer er tryggt lagret i nettleseren og synkes automatisk ved neste vellykkede forsøk.</dd>
+        <dt><span class="help-tag amber">⚠ Offline — kun lokalt</span></dt><dd>Serveren var utilgjengelig. Endringene er trygt lagret i nettleseren og synkes automatisk ved neste vellykkede forsøk.</dd>
       </dl>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">📸 Historikk — ukentlig snapshot</div>
+      <p class="help-p">Knappen <em>Lagre snapshot nå</em> fryser dagens situasjon: alle kontrakter, mannskapstall og kapasitet slik de står akkurat nå. Ett snapshot per uke, maks ett år tilbake. Nyttig for å se utviklingen over tid, og for å kunne dokumentere hva prognosen sa på et gitt tidspunkt.</p>
+      <p class="help-p" style="margin-top:6px">Knappen er forbeholdt konsern. Finnes det allerede et snapshot for inneværende uke, sier appen fra i stedet for å lage et nytt.</p>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">🔐 Innlogging</div>
+      <p class="help-p">Appen krever Microsoft-innlogging med din @minel.no-konto før noe som helst vises. Er du borte fra fanen lenge, kan innloggingen løpe ut — da laster siden seg selv på nytt og logger deg inn igjen.</p>
+      <p class="help-p" style="margin-top:6px">Ser du ordet <strong>(Demo)</strong> bak selskapsnavnene, eller «0 live» i toppen, er appen ikke koblet til Ordrestyring og tallene er oppdiktede. Last siden på nytt. Vedvarer det, si fra til Øyvind Sæthersmoen.</p>
     </div>
 
     <div class="mfooter">
@@ -2963,7 +2989,7 @@ let _offlineToastTimer=null;
 function _showOfflineToast(){
   clearTimeout(_offlineToastTimer);
   _offlineToastTimer=setTimeout(()=>{
-    showToast('⚠️ SharePoint utilgjengelig — endringer er lagret lokalt og synkes automatisk ved neste vellykket forsøk',false);
+    showToast('⚠️ Serveren er utilgjengelig — endringene er lagret lokalt og synkes automatisk ved neste vellykkede forsøk',false);
   },400); // debounce: vent til alle selskapers forsøk er ferdige
 }
 
@@ -3142,7 +3168,7 @@ function saveProject(){
     if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
     // Lagre og kunngjør parallelt — sett published=true kun om SharePoint svarer ok
     saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
-      .then(ok=>showToast(ok?'Kontrakt lagret ✓':'⚠️ Lokalt lagret – SharePoint utilgjengelig',ok))
+      .then(ok=>showToast(ok?'Kontrakt lagret ✓':'⚠️ Lokalt lagret – serveren er utilgjengelig',ok))
       .catch(()=>showToast('Lagret lokalt',false));
     postBjelle(nyP).then(bjelleOk=>{
       if(bjelleOk){
