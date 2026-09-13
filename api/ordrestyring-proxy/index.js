@@ -1,5 +1,5 @@
 const https = require('https');
-const { sjekkTilgang } = require('../_auth');
+const { sjekkTilgang, sjekkSelskap } = require('../_auth');
 
 // Mapping: selskapsnavn → miljøvariabelnavn
 const KEY_MAP = {
@@ -50,6 +50,14 @@ module.exports = async function (context, req) {
     return;
   }
 
+  // Selskapsskille: hoerer innlogget bruker til selskapet det spoerres om?
+  // Starter i logg-modus sammen med resten — se _auth.js.
+  const selskapsTilgang = await sjekkSelskap(context, req, company, 'ordrestyring-proxy');
+  if (!selskapsTilgang.tillat) {
+    context.res = { status: selskapsTilgang.status, body: { error: selskapsTilgang.melding } };
+    return;
+  }
+
   try {
     const body = JSON.stringify({ query, variables, operationName });
     const response = await fetch('https://elkonor.ordrestyring.no/api/graphql', {
@@ -70,7 +78,8 @@ module.exports = async function (context, req) {
         // Diagnose for logg-modus: lar oss se om ekte trafikk baerer gyldig
         // token uten aa ha Application Insights koblet paa. Klienten logger
         // denne til konsollen. Inneholder ingen tokenverdier.
-        'X-Minel-Tilgang': `${tilgang.modus}/${tilgang.vurdering.grunn}/${tilgang.vurdering.kilde}`
+        'X-Minel-Tilgang': `${tilgang.modus}/${tilgang.vurdering.grunn}/${tilgang.vurdering.kilde}`,
+        'X-Minel-Selskap': `${selskapsTilgang.modus}/${selskapsTilgang.grunn}`
       },
       body: data
     };

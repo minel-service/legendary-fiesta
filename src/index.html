@@ -976,6 +976,12 @@ async function osFetch(url,opts={}){
       console.log('%c[Tilgang] '+v+(ok?' ✓':' ← token nådde ikke frem'),
         'color:'+(ok?'#0d9488':'#C8102E')+';font-weight:600');
     }
+    const s=r.headers.get('X-Minel-Selskap');
+    if(s){
+      const sOk=/\/ok/.test(s);
+      console.log('%c[Selskap] '+s+(sOk?' ✓':' ← ville blitt avvist i streng modus'),
+        'color:'+(sOk?'#0d9488':'#C8102E')+';font-weight:600');
+    }
   }
   return r;
 }
@@ -1536,12 +1542,26 @@ function updateChart(){
         ctx.beginPath();ctx.moveTo(xp,y.top);ctx.lineTo(xp,y.bottom);ctx.stroke();
       });
       ctx.setLineDash([]);
+      // Én forklarende etikett midt i sonen. Tidligere sto det «OS» og
+      // «Kontrakter» på hver side, men de ordene er allerede navn på to
+      // dataserier i grafen — det så ut som de pekte på fargene.
+      const _u=activeFilter!=='all'
+        ? [ (splitPerCo[activeFilter]||{}).uker ].filter(u=>u!=null)
+        : Object.values(splitPerCo||{}).map(s=>s.uker).filter(u=>u!=null);
+      let _txt='kontraktstall tar over';
+      if(_u.length){
+        const _mn=Math.min(..._u),_mx=Math.max(..._u);
+        _txt+=_mn===_mx?` etter ${_mn} uke${_mn===1?'':'r'}`:` (${_mn}–${_mx} uker, varierer per selskap)`;
+      }
+      const _midt=(xFra+xTil)/2;
       ctx.font='500 9.5px Segoe UI,sans-serif';
-      ctx.fillStyle='rgba(100,116,139,0.72)';
-      ctx.textAlign='right';
-      ctx.fillText('OS',xFra-7,y.top+13);
-      ctx.textAlign='left';
-      ctx.fillText('Kontrakter',xTil+7,y.top+13);
+      ctx.textAlign='center';
+      // Lys bakgrunn bak teksten så den ikke drukner i søylene
+      const _br=ctx.measureText(_txt).width+10;
+      ctx.fillStyle='rgba(255,255,255,0.82)';
+      ctx.fillRect(_midt-_br/2,y.top+3,_br,14);
+      ctx.fillStyle='rgba(71,85,105,0.9)';
+      ctx.fillText(_txt,_midt,y.top+13);
       ctx.restore();
     }
   };
@@ -1601,9 +1621,9 @@ function updateChart(){
       const _min=Math.min(..._uker),_maks=Math.max(..._uker);
       const _tekst=_min===_maks?`${_min} uker`:`${_min}–${_maks} uker`;
       const _tip=activeFilter!=='all'
-        ? `Målt fra faktiske OS-registreringer for ${activeFilter}. Etter dette punktet brukes kontraktsdetaljene.`
-        : 'Hvert selskap har sin egen grense, målt fra faktiske OS-registreringer. Båndet viser spennet fra tidligste til seneste.';
-      lh+=`<span style="color:#64748b;font-size:.72rem;opacity:.85" title="${_tip}">📡 OS-horisont: ${_tekst} (målt)</span>`;
+        ? `Ressursplanleggeren i Ordrestyring er fylt ut ${_tekst} frem for ${activeFilter}. Etter det punktet finnes det nesten ingen registreringer, så modellen bruker mannskapstallene fra kontraktsdetaljene i stedet. Grensen måles automatisk fra faktiske registreringer.`
+        : 'Hvert selskap planlegger ulikt langt frem i Ordrestyring. Den stiplede sonen viser hvor de bytter fra OS-registreringer til mannskapstall fra kontraktsdetaljene — første selskap til venstre, siste til høyre. Måles automatisk.';
+      lh+=`<span style="color:#64748b;font-size:.72rem;opacity:.85;cursor:help" title="${_tip}">📡 Bytter til kontraktstall: ${_tekst}</span>`;
     }
   }
   document.getElementById('leg').innerHTML=lh;
