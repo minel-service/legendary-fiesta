@@ -956,6 +956,30 @@ function beregnOsHorisont(serie){
 // ════════════════════════════════════════════
 // ORDRESTYRING API
 // ════════════════════════════════════════════
+// Alle kall til ordrestyring-proxyen går gjennom denne, slik at tokenet følger
+// med og proxyen kan verifisere at kallet kommer fra Elkonor-tenanten.
+// SWA overskriver Authorization-headeren, derfor egen header — se api/_auth.js.
+// Mangler token sendes kallet likevel: proxyen står i logg-modus og skal ikke
+// kunne velte appen før vi bevisst skrur på streng modus.
+let _tilgangLogget=false;
+async function osFetch(url,opts={}){
+  const h={'Content-Type':'application/json',...(opts.headers||{})};
+  try{const t=await getToken(); if(t) h['X-Minel-Token']=t;}catch(_){}
+  const r=await fetch(url,{...opts,headers:h});
+  // Proxyen forteller i en header om tokenet ble godtatt. Logges én gang per
+  // økt, slik at logg-modus kan følges uten Application Insights.
+  if(!_tilgangLogget){
+    const v=r.headers.get('X-Minel-Tilgang');
+    if(v){
+      _tilgangLogget=true;
+      const ok=v.indexOf('/ok/')>-1;
+      console.log('%c[Tilgang] '+v+(ok?' ✓':' ← token nådde ikke frem'),
+        'color:'+(ok?'#0d9488':'#C8102E')+';font-weight:600');
+    }
+  }
+  return r;
+}
+
 // Roller som telles som feltarbeidere i kapasitetsprognosen
 const FELTARBEIDER_ROLLER=['Elektriker','Elektriker (Roar)','Elektriker med faktureringsmulighet','Elektriker med prisrettighet','Grunnleggende rolle','Lærling','Hjelpemontør','Bas'];
 async function fetchSelskap(co){
@@ -974,9 +998,8 @@ async function fetchSelskap(co){
         hourType{name}
       }
     }`;
-    const resp = await fetch(gqlUrl, {
+    const resp = await osFetch(gqlUrl, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         company: co.navn,
         operationName: 'KapPrognose',
@@ -1080,7 +1103,7 @@ async function fetchSelskap(co){
       const gapCtrl=new AbortController();
       const gapTimer=setTimeout(()=>gapCtrl.abort(),20000);
       try{
-        const gr=await fetch(gqlUrl,{method:'POST',headers:{'Content-Type':'application/json'},signal:gapCtrl.signal,body:JSON.stringify({company:co.navn,query:gapQ})});
+        const gr=await osFetch(gqlUrl,{method:'POST',signal:gapCtrl.signal,body:JSON.stringify({company:co.navn,query:gapQ})});
         clearTimeout(gapTimer);
         const gj=await gr.json();
         if(!gj.errors&&Array.isArray(gj.data?.events)){
@@ -2615,9 +2638,8 @@ async function searchOSOrdreNr(id){
         items { caseNumber name economy { revenue } }
       }
     }`;
-    const resp=await fetch('/api/ordrestyring-proxy',{
+    const resp=await osFetch('/api/ordrestyring-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({company:p.company,operationName:'OsSøkCase',query:searchQuery,variables:{}})
     });
     if(!resp.ok){ resBox.innerHTML='<div style="padding:8px 10px;color:#dc2626;font-size:.77rem">Serverfeil ('+resp.status+')</div>'; return; }
@@ -3265,9 +3287,8 @@ async function fetchSingleOSEconomy(company, singleNr, gqlUrl) {
           items { caseNumber economy { revenue revisedOffer } }
         }
       }`;
-      const resp = await fetch(gqlUrl, {
+      const resp = await osFetch(gqlUrl, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ company: co, operationName: 'OsEkonomiSearch', query: searchQuery, variables: {} })
       });
       if (!resp.ok) return null;

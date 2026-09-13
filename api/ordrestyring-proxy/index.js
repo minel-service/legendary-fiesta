@@ -1,4 +1,5 @@
 const https = require('https');
+const { sjekkTilgang } = require('../_auth');
 
 // Mapping: selskapsnavn → miljøvariabelnavn
 const KEY_MAP = {
@@ -14,16 +15,25 @@ const KEY_MAP = {
 };
 
 module.exports = async function (context, req) {
-  // CORS preflight
+  // CORS preflight. Tidligere sto Allow-Origin paa '*', som lot et hvilket
+  // som helst nettsted kalle endepunktet fra en besoekendes nettleser.
+  // Appen kaller alltid same-origin, saa ingen wildcard er noedvendig.
   if (req.method === 'OPTIONS') {
     context.res = {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Headers': 'Content-Type, X-Minel-Token'
       }
     };
+    return;
+  }
+
+  // Tilgangssjekk. Starter i logg-modus: validerer og logger, men slipper alt
+  // gjennom til vi har sett at ekte trafikk baerer gyldig token.
+  const tilgang = sjekkTilgang(context, req, 'ordrestyring-proxy');
+  if (!tilgang.tillat) {
+    context.res = { status: tilgang.status, body: { error: tilgang.melding } };
     return;
   }
 
@@ -57,7 +67,10 @@ module.exports = async function (context, req) {
       status: response.status,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        // Diagnose for logg-modus: lar oss se om ekte trafikk baerer gyldig
+        // token uten aa ha Application Insights koblet paa. Klienten logger
+        // denne til konsollen. Inneholder ingen tokenverdier.
+        'X-Minel-Tilgang': `${tilgang.modus}/${tilgang.vurdering.grunn}/${tilgang.vurdering.kilde}`
       },
       body: data
     };
