@@ -13,19 +13,42 @@ const TENANT = '7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7';
 // Maks ett aar med ukentlige snapshots.
 const MAKS_SNAPSHOTS = 52;
 
-// Sjekker Bearer-token slik broen gjoer: dekoder payload og verifiserer tenant.
+// Azure Static Web Apps bruker Authorization-headeren til sin egen
+// autentisering og erstatter innholdet foer det naar managed functions.
+// MSAL-tokenet sendes derfor i X-Minel-Token, som plattformen lar vaere i fred.
+// Authorization beholdes som reserve.
+function hentRaaToken(req) {
+  const h = (req && req.headers) || {};
+  const egen = h['x-minel-token'] || h['X-Minel-Token'];
+  if (egen) return { raa: String(egen), kilde: 'x-minel-token' };
+  const auth = h.authorization || h.Authorization || '';
+  if (auth.startsWith('Bearer ')) return { raa: auth.slice(7), kilde: 'authorization' };
+  return { raa: '', kilde: 'ingen' };
+}
+
+// Dekoder payload og verifiserer tenant, slik broen gjoer.
 // NB: signaturen verifiseres ikke — samme nivaa som resten av loesningen.
 function sjekkToken(req) {
-  const auth = (req.headers && req.headers.authorization) || '';
-  if (!auth.startsWith('Bearer ')) return { ok: false, status: 401, feil: 'Unauthorized' };
+  const { raa, kilde } = hentRaaToken(req);
+  if (!raa) return { ok: false, status: 401, feil: 'Unauthorized (ingen token-header)' };
   try {
-    const deler = auth.slice(7).split('.');
-    const payload = JSON.parse(Buffer.from(deler[1], 'base64').toString());
-    if (payload.tid !== TENANT) return { ok: false, status: 403, feil: 'Wrong tenant' };
+    const deler = raa.split('.');
+    if (deler.length < 2) return { ok: false, status: 401, feil: 'Bad token (kilde: ' + kilde + ')' };
+    // JWT bruker base64url — bytt tegn og fyll paa padding foer dekoding.
+    let b64 = deler[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    if (payload.tid !== TENANT) {
+      // Diagnose uten aa lekke verdier: hvilken header, og fantes tid i det hele tatt.
+      return {
+        ok: false, status: 403,
+        feil: 'Wrong tenant (kilde: ' + kilde + ', tid: ' + (payload.tid ? 'satt men ulik' : 'mangler') + ')'
+      };
+    }
     if (payload.exp && payload.exp * 1000 < Date.now()) return { ok: false, status: 401, feil: 'Token expired' };
     return { ok: true };
   } catch (e) {
-    return { ok: false, status: 401, feil: 'Bad token' };
+    return { ok: false, status: 401, feil: 'Bad token (kilde: ' + kilde + ')' };
   }
 }
 

@@ -1738,6 +1738,16 @@ function filterTable(){
 // svarte 400 «Invalid file». Se api/historikk/index.js.
 const HIST_URL = '/api/historikk';
 
+// Static Web Apps overskriver Authorization-headeren med sitt eget token før
+// den når managed functions. MSAL-tokenet sendes derfor i en egen header.
+async function histFetch(url,opts={}){
+  const tok=await getToken();
+  if(!tok) return new Response(null,{status:0});
+  const h={'X-Minel-Token':tok,...(opts.headers||{})};
+  if(!h['Content-Type']) h['Content-Type']='application/json';
+  return fetch(url,{...opts,headers:h});
+}
+
 async function saveHistorySnapshot(){
   try{
     const weekStr = wKey(new Date());
@@ -1745,7 +1755,7 @@ async function saveHistorySnapshot(){
     let history = [];
     let serverHadde = false;
     try{
-      const r = await gFetch(HIST_URL);
+      const r = await histFetch(HIST_URL);
       if(r&&r.ok){ const j=await r.json(); if(Array.isArray(j)&&j.length){ history=j; serverHadde=true; } }
     }catch(_){}
     if(!history.length){
@@ -1757,7 +1767,7 @@ async function saveHistorySnapshot(){
       // Har serveren ingenting mens vi har lokal historikk? Dytt den opp (etterslep-synk)
       if(!serverHadde && history.length){
         try{
-          const r2=await gFetch(HIST_URL,
+          const r2=await histFetch(HIST_URL,
             {method:'PUT',body:JSON.stringify(history),headers:{'Content-Type':'application/json'}});
           if(r2&&r2.ok){
             console.log('[Historikk] Lokal historikk synket til server:',history.length);
@@ -1795,7 +1805,7 @@ async function saveHistorySnapshot(){
     const ukeNr=parseInt(weekStr.split('-W')[1]);
     let serverOk=false, serverFeil='';
     try{
-      const rPut=await gFetch(HIST_URL,
+      const rPut=await histFetch(HIST_URL,
         {method:'PUT',body:payload,headers:{'Content-Type':'application/json'}});
       serverOk=!!(rPut&&rPut.ok);
       if(!serverOk){
@@ -1820,7 +1830,7 @@ async function saveHistorySnapshot(){
 
 async function loadHistory(){
   try{
-    const r=await gFetch(HIST_URL);
+    const r=await histFetch(HIST_URL);
     if(r&&r.ok){
       const j=await r.json();
       // Kun returner hvis faktisk har innhold — tom array betyr «ikke funnet på server»
