@@ -1297,8 +1297,25 @@ function updateWhoBar(){
     rb.classList.remove('show');
   }
 
-  // FAB
-  document.getElementById('fab').disabled=false;
+  // «Ny kontrakt»-knappen. Er kontorstedet i Entra ikke gjenkjent, har
+  // brukeren valgt selskap manuelt — og serveren vil avvise lagringen.
+  // Da er det bedre å si fra med én gang enn å la dem fylle ut et skjema
+  // som ikke kan lagres.
+  const fab=document.getElementById('fab');
+  const ukjentKontor=(_userCompany===null);
+  if(fab){
+    fab.disabled=ukjentKontor;
+    fab.title=ukjentKontor
+      ? 'Kontorstedet ditt i Entra er ikke gjenkjent, så du kan ikke registrere kontrakter ennå. Trykk «Hva ser jeg?» for detaljer.'
+      : '';
+    fab.style.opacity=ukjentKontor?'.45':'';
+    fab.style.cursor=ukjentKontor?'not-allowed':'';
+  }
+  if(ukjentKontor){
+    const rn=document.getElementById('restrictName');
+    if(rn) rn.textContent='— (kontorsted ikke gjenkjent)';
+    rb.classList.add('show');
+  }
 }
 
 // ════════════════════════════════════════════
@@ -2981,11 +2998,15 @@ function openProjModal(){
 }
 
 function closeProjModal(){
-  document.getElementById('projOverlay').style.display='none';
+  // NB: her lå et kall til elementet «ordreNrSuggest», som ikke finnes i
+  // HTML-en — en rest etter en fjernet autofullfør-funksjon. Det kastet
+  // TypeError midt i funksjonen, slik at de tre siste linjene aldri kjørte:
+  // rammeavtale-haken ble stående på til neste gang skjemaet ble åpnet.
+  const sett=(id,f)=>{const e=document.getElementById(id);if(e)f(e);};
+  sett('projOverlay',e=>e.style.display='none');
   editingId=null;
-  document.getElementById('pOrdreNr').value='';
-  document.getElementById('ordreNrSuggest').style.display='none';
-  document.getElementById('pAvtaleType').checked=false;
+  sett('pOrdreNr',e=>e.value='');
+  sett('pAvtaleType',e=>e.checked=false);
   toggleRammeavtale(false);
 }
 function toggleRammeavtale(isRamme){
