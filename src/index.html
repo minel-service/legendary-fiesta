@@ -466,7 +466,8 @@ async function fetchUserCompany() {
     ⚠️ DEMO-MODUS — Simulerte data. Fyll inn API-nøkler i CONFIG-blokken for å aktivere live-data.
   </div>
   <div class="restrict-bar" id="restrictBar">
-    🔒 Du er innlogget som <strong id="restrictName"></strong> — du kan kun registrere prosjekter for ditt selskap.
+    👁 Du ser hele konsernet. Nye kontrakter registrerer du på <strong id="restrictName"></strong>.
+    <a href="#" onclick="visTilgang();return false;" style="color:inherit;text-decoration:underline;margin-left:8px;opacity:.85">Hva ser jeg?</a>
   </div>
 
   <div class="wrap">
@@ -622,6 +623,17 @@ async function fetchUserCompany() {
 
 <!-- ── SAVE TOAST ── -->
 <div class="save-toast" id="saveToast"><span id="toastIcon">💾</span><span id="toastMsg">Lagrer...</span></div>
+
+<!-- ── TILGANGSPANEL («Hva ser jeg?») ── -->
+<div class="overlay" id="tilgangOverlay" onclick="if(event.target===this)lukkTilgang()">
+  <div class="modal" style="max-width:520px">
+    <div class="mtitle">👁 Din tilgang</div>
+    <div id="tilgangKropp" style="margin:4px 0 18px"></div>
+    <div style="display:flex;justify-content:flex-end">
+      <button onclick="lukkTilgang()" style="background:#1A2744;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit">Lukk</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── BRUKSANVISNING MODAL ── -->
 <div class="overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
@@ -976,10 +988,12 @@ async function osFetch(url,opts={}){
       console.log('%c[Tilgang] '+v+(ok?' ✓':' ← token nådde ikke frem'),
         'color:'+(ok?'#0d9488':'#C8102E')+';font-weight:600');
     }
+    // Headeren inneholder nå selskapsnavnet, «konsern», eller «ukjent: grunn».
+    // Rødt skal kun bety at oppslaget faktisk mislyktes.
     const s=r.headers.get('X-Minel-Selskap');
     if(s){
-      const sOk=/\/ok/.test(s);
-      console.log('%c[Selskap] '+s+(sOk?' ✓':' ← ville blitt avvist i streng modus'),
+      const sOk=!/^ukjent/i.test(s);
+      console.log('%c[Selskap] '+s+(sOk?' ✓':' ← kontorstedet i Entra mappes ikke'),
         'color:'+(sOk?'#0d9488':'#C8102E')+';font-weight:600');
     }
   }
@@ -1256,10 +1270,11 @@ function updateWhoBar(){
   document.getElementById('whoDot').style.background=dotColor;
   document.getElementById('whoName').textContent=label;
 
-  // Restrict bar
+  // Stripe som forklarer hva du ser og hvor du registrerer. Vises for alle
+  // som ikke er konsern, slik at ingen må gjette seg til hvilken kanal de er i.
   const rb=document.getElementById('restrictBar');
   if(!isAdmin){
-    document.getElementById('restrictName').textContent=currentCompany;
+    document.getElementById('restrictName').textContent=currentCompany||'—';
     rb.classList.add('show');
   }else{
     rb.classList.remove('show');
@@ -2194,10 +2209,11 @@ function setOreTimeFilter(enc){
 
 function updateOrdrereserve(){
   const isAdmin=currentCompany==='__admin__';
-  // Filtrer til aktuelle prosjekter (vis alle selskaper alltid — konsernperspektiv)
-  const baseProjects=isAdmin
-    ? allProjects
-    : allProjects.filter(p=>!p.company||p.company===currentCompany);
+  // Alle ser hele konsernets ordrereserve og alle kontrakter (besluttet
+  // 13.09.2026). Tidligere så en Gjøvik-ansatt kun Gjøviks tall, noe som
+  // motsa kommentaren som allerede sto her. Det er selve konserntallene som
+  // er interessante — begrensningen ligger på input, ikke på innsyn.
+  const baseProjects=allProjects;
 
   // Tidsfilter: kun prosjekter med produksjonsaktivitet i valgt periode
   const visMp=baseProjects.filter(p=>projectInPeriod(p,_oreTimeFilter));
@@ -3527,13 +3543,67 @@ function openHelp(){document.getElementById('helpOverlay').classList.add('open')
 function closeHelp(){document.getElementById('helpOverlay').classList.remove('open');}
 
 // ════════════════════════════════════════════
-// TILGANGSTEST — kjøres av brukeren selv
+// «HVA SER JEG?» — tilgangspanel i grensesnittet
 // ════════════════════════════════════════════
-// Skriv minelTilgangstest() i konsollen (F12). Viser hva Entra sier om deg,
-// hvordan kontorstedet mappes, og om serveren er enig. Laget fordi mappingen
-// krever eksakt treff på officeLocation — en variant som «372 Minel» i stedet
-// for «372 Minel AS» gir ingen tilgang i det hele tatt, og det er umulig å
-// gjette seg til uten å se verdien.
+// Ingen ansatt skal måtte åpne utviklerverktøy for å forstå egen tilgang.
+// Panelet forklarer i klartekst hva man ser, hvor man registrerer, og — hvis
+// kontorstedet i Entra ikke mappes — nøyaktig hva det skulle stått.
+async function visTilgang(){
+  const el=document.getElementById('tilgangOverlay');
+  const kropp=document.getElementById('tilgangKropp');
+  el.classList.add('open');
+  kropp.innerHTML='<p style="color:#64748b;margin:0">Henter…</p>';
+
+  const rad=(n,v,f)=>`<div style="display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #f1f5f9">
+    <div style="width:118px;color:#64748b;flex:none;font-size:.83rem">${n}</div>
+    <div style="font-weight:600;color:${f||'#1A2744'};font-size:.87rem">${v}</div></div>`;
+
+  let me=null;
+  try{
+    const tok=await getToken();
+    if(tok){
+      const r=await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,userPrincipalName,mail,officeLocation',
+        {headers:{Authorization:'Bearer '+tok}});
+      if(r.ok) me=await r.json();
+    }
+  }catch(e){}
+
+  if(!me){
+    kropp.innerHTML='<p style="margin:0;color:#C8102E">Fikk ikke kontakt med Microsoft. Prøv å laste siden på nytt.</p>';
+    return;
+  }
+
+  const raa=me.officeLocation;
+  const norm=String(raa||'').trim().toLowerCase();
+  const mappet=OFFICE_MAP[norm]||null;
+  let h=rad('Innlogget som',(me.displayName||'—'));
+  h+=rad('Kontorsted',raa?raa:'<em style="font-weight:400;color:#94a3b8">ikke satt i Entra</em>');
+
+  if(mappet==='__admin__'){
+    h+=rad('Tilhører','Minel konsern','#0d9488');
+    h+=rad('Du ser','Alle ni selskaper','#0d9488');
+    h+=rad('Du registrerer','Alle selskaper','#0d9488');
+  } else if(mappet){
+    h+=rad('Tilhører',mappet,'#0d9488');
+    h+=rad('Du ser','Hele konsernet — ordrereserve, kontrakter og mannskapsbehov for alle ni selskaper','#0d9488');
+    h+=rad('Du registrerer',mappet,'#0d9488');
+  } else {
+    const nr=(norm.match(/^\d+/)||[''])[0];
+    const nære=nr?Object.keys(OFFICE_MAP).filter(k=>k.startsWith(nr)):[];
+    h+=rad('Tilhører','Ikke gjenkjent','#C8102E');
+    h+=`<div style="margin-top:14px;padding:12px 14px;background:#fef2f2;border-left:3px solid #C8102E;border-radius:0 6px 6px 0">
+      <p style="margin:0 0 6px;font-weight:600;color:#991b1b;font-size:.87rem">Kontorstedet ditt gjenkjennes ikke</p>
+      <p style="margin:0;color:#7f1d1d;font-size:.83rem;line-height:1.5">
+      ${nære.length
+        ? 'I Entra står det <strong>«'+(raa||'')+'»</strong>. Det skulle vært <strong>«'+nære[0]+'»</strong>.'
+        : 'Feltet «Kontorsted» på brukeren din i Entra er tomt eller ukjent.'}
+      Ta kontakt med Øyvind Sæthersmoen, så rettes det. Inntil videre må du velge selskap manuelt.</p></div>`;
+  }
+  kropp.innerHTML=h;
+}
+function lukkTilgang(){document.getElementById('tilgangOverlay').classList.remove('open');}
+
+// Beholdes for feilsøking fra konsollen — brukerne trenger den ikke.
 async function minelTilgangstest(){
   const L=(t,f)=>console.log('%c'+t,'color:'+(f||'#334155')+';font-weight:600');
   console.log('%c─── Minel tilgangstest ───','color:#C8102E;font-weight:700;font-size:13px');
