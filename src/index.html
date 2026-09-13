@@ -993,10 +993,36 @@ function beregnOsHorisont(serie){
 // Mangler token sendes kallet likevel: proxyen står i logg-modus og skal ikke
 // kunne velte appen før vi bevisst skrur på streng modus.
 let _tilgangLogget=false;
+
+// Static Web Apps sender 401 videre til Microsoft-innlogging (regelen i
+// staticwebapp.config.json). Det er riktig når nettleseren navigerer, men et
+// fetch-kall kan ikke følge en omdirigering til et annet domene — det stoppes
+// av CORS, kallet feiler, og appen faller til demo-data uten å si fra.
+// Når plattform-sesjonen løper ut mens fanen står åpen, laster vi derfor siden
+// på nytt. Da går navigeringen den veien den skal, brukeren blir logget inn,
+// og kommer tilbake med ekte data. Én gang per økt, så vi aldri looper.
+function sesjonUtloept(){
+  if(sessionStorage.getItem('minel_reautentisert')) return false;
+  sessionStorage.setItem('minel_reautentisert','1');
+  console.warn('[Tilgang] Innloggingen har løpt ut — laster siden på nytt for å fornye den.');
+  location.reload();
+  return true;
+}
+
 async function osFetch(url,opts={}){
   const h={'Content-Type':'application/json',...(opts.headers||{})};
   try{const t=await getToken(); if(t) h['X-Minel-Token']=t;}catch(_){}
-  const r=await fetch(url,{...opts,headers:h});
+  let r;
+  try{
+    r=await fetch(url,{...opts,headers:h});
+  }catch(e){
+    // TypeError her betyr i praksis at kallet ble omdirigert til innlogging.
+    if(sesjonUtloept()) return new Response(null,{status:0});
+    throw e;
+  }
+  if(r.status===401||r.type==='opaqueredirect'){
+    if(sesjonUtloept()) return new Response(null,{status:0});
+  }
   // Proxyen forteller i en header om tokenet ble godtatt. Logges én gang per
   // økt, slik at logg-modus kan følges uten Application Insights.
   if(!_tilgangLogget){
@@ -1905,7 +1931,14 @@ async function histFetch(url,opts={}){
   if(!tok) return new Response(null,{status:0});
   const h={'X-Minel-Token':tok,...(opts.headers||{})};
   if(!h['Content-Type']) h['Content-Type']='application/json';
-  return fetch(url,{...opts,headers:h});
+  try{
+    const r=await fetch(url,{...opts,headers:h});
+    if(r.status===401&&sesjonUtloept()) return new Response(null,{status:0});
+    return r;
+  }catch(e){
+    if(sesjonUtloept()) return new Response(null,{status:0});
+    throw e;
+  }
 }
 
 async function saveHistorySnapshot(){
