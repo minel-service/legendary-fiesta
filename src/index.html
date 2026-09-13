@@ -2280,21 +2280,25 @@ function updateOrdrereserve(){
     const q=f.quarter?`Q${f.quarter} `:'';
     return `vektet mot produksjon i ${q}${f.year}`;
   };
-  const adminClick=isAdmin?`onclick="openOreDrawer('__all__')" title="Klikk for å se og redigere alle kontrakter" style="cursor:pointer"`:'';
+  // Alle kan åpne og se alle kontrakter. Redigering er gatet per prosjekt
+  // lenger nede (canEdit), så dette gir innsyn uten å gi skrivetilgang.
+  const adminClick=`onclick="openOreDrawer('__all__')" title="Klikk for å se alle kontrakter i konsernet" style="cursor:pointer"`;
   let html=`<div class="ore-total" ${adminClick}>
     <div>
       <div class="ore-total-lbl">Total ordrereserve — ${periodLabel(_oreTimeFilter)}</div>
       <div class="ore-total-val">${formatKr(grandTotal)}</div>
       <div style="font-size:.73rem;opacity:.75;margin-top:3px">${visMp.length} kontrakt${visMp.length!==1?'er':''}${periodSub(_oreTimeFilter)?' '+periodSub(_oreTimeFilter):''}</div>
     </div>
-      ${isAdmin?'<div style="font-size:.68rem;opacity:.65;margin-top:5px">▶ Klikk for å se alle kontrakter</div>':''}
+      <div style="font-size:.68rem;opacity:.65;margin-top:5px">▶ Klikk for å se alle kontrakter</div>
   </div><div class="ore-grid">`;
 
   companies.forEach((co,i)=>{
     const v=byCo[co.navn];
     const n=allProjects.filter(p=>p.company===co.navn).length;
     const pct=maxCo>0?Math.round(v/maxCo*100):0;
-    if(v===0&&n===0&&!isAdmin) return; // skjul tomme for selskapbruker
+    // Tomme selskaper vises for alle. Skjulte vi dem for vanlige ansatte,
+    // ville konsernbildet deres hatt hull sammenlignet med ledelsens — og
+    // «ingen kontrakter» er i seg selv informasjon verdt å se.
     const hint=n>0?`<div class="ore-hint">▶ Se og rediger kontraktene</div>`:'';
     html+=`<div class="ore-item" onclick="openOreDrawer('${co.navn.replace(/'/g,"\\'")}',${i})" data-co="${co.navn}">
       <div class="ore-co"><span style="width:10px;height:10px;border-radius:3px;background:${col(i)};display:inline-block;flex-shrink:0"></span>${co.navn}</div>
