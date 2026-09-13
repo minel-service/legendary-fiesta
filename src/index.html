@@ -3526,6 +3526,66 @@ function viaInfoText(project){
 function openHelp(){document.getElementById('helpOverlay').classList.add('open');}
 function closeHelp(){document.getElementById('helpOverlay').classList.remove('open');}
 
+// ════════════════════════════════════════════
+// TILGANGSTEST — kjøres av brukeren selv
+// ════════════════════════════════════════════
+// Skriv minelTilgangstest() i konsollen (F12). Viser hva Entra sier om deg,
+// hvordan kontorstedet mappes, og om serveren er enig. Laget fordi mappingen
+// krever eksakt treff på officeLocation — en variant som «372 Minel» i stedet
+// for «372 Minel AS» gir ingen tilgang i det hele tatt, og det er umulig å
+// gjette seg til uten å se verdien.
+async function minelTilgangstest(){
+  const L=(t,f)=>console.log('%c'+t,'color:'+(f||'#334155')+';font-weight:600');
+  console.log('%c─── Minel tilgangstest ───','color:#C8102E;font-weight:700;font-size:13px');
+  let tok=null;
+  try{tok=await getToken();}catch(e){}
+  if(!tok){L('✗ Ingen token — du er ikke innlogget.','#C8102E');return;}
+
+  // 1. Hva Entra sier om deg
+  let me=null;
+  try{
+    const r=await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,userPrincipalName,mail,officeLocation',
+      {headers:{Authorization:'Bearer '+tok}});
+    if(!r.ok){L('✗ Graph svarte HTTP '+r.status,'#C8102E');return;}
+    me=await r.json();
+  }catch(e){L('✗ Kunne ikke nå Graph: '+e.message,'#C8102E');return;}
+
+  const raa=me.officeLocation;
+  const norm=String(raa||'').trim().toLowerCase();
+  const mappet=OFFICE_MAP[norm]||null;
+  L('Bruker:        '+(me.displayName||'—')+' <'+(me.userPrincipalName||me.mail||'—')+'>');
+  L('Kontorsted:    '+(raa===null||raa===undefined?'(ikke satt)':'"'+raa+'"'));
+  if(!mappet){
+    L('Mappes til:    INGEN TREFF','#C8102E');
+    // Foreslå riktig verdi ut fra kontornummeret — det er den delen som skiller
+    const nr=(norm.match(/^\d+/)||[''])[0];
+    const nære=nr?Object.keys(OFFICE_MAP).filter(k=>k.startsWith(nr)):[];
+    if(nære.length) L('Skulle vært:   '+nære.map(k=>'"'+k+'"').join('  eller  '),'#b45309');
+    else L('Ingen kjent verdi starter på "'+(nr||norm)+'".','#b45309');
+    L('→ Du får ikke hentet data. Kontorstedet i Entra må rettes til en av verdiene over.','#C8102E');
+  } else if(mappet==='__admin__'){
+    L('Mappes til:    KONSERN (full tilgang)','#0d9488');
+  } else {
+    L('Mappes til:    '+mappet,'#0d9488');
+  }
+
+  // 2. Hva serveren mener
+  try{
+    const r2=await osFetch('/api/ordrestyring-proxy',{method:'POST',
+      body:JSON.stringify({company:'Minel Gjøvik AS',operationName:'TilgangsTest',
+        query:'query TilgangsTest($fra:Int!,$til:Int!){events(between:{field:startTime,from:$fra,to:$til}){identifier}}',
+        variables:{fra:Math.floor((Date.now()-864e5)/1000),til:Math.floor(Date.now()/1000)}})});
+    const tg=r2.headers.get('X-Minel-Tilgang')||'—';
+    const sk=r2.headers.get('X-Minel-Selskap')||'—';
+    L('Server sier:   tilgang='+tg+'  selskap='+sk, r2.ok?'#0d9488':'#C8102E');
+    L('Leser data:    '+(r2.ok?'JA — konsernbildet er tilgjengelig':'NEI — HTTP '+r2.status), r2.ok?'#0d9488':'#C8102E');
+  }catch(e){ L('✗ Serverkall feilet: '+e.message,'#C8102E'); }
+
+  L('Input:         '+(mappet==='__admin__'?'alle selskaper':(mappet||'ingen')),'#334155');
+  console.log('%c──────────────────────────','color:#C8102E');
+}
+window.minelTilgangstest=minelTilgangstest;
+
 </script>
 </body>
 </html>

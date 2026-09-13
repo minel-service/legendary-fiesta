@@ -168,6 +168,12 @@ async function hentBrukerSelskap(raa) {
 
 // Sjekker at innlogget bruker faktisk hoerer til selskapet det spoerres om.
 // Admin (372 Minel AS) naar alle. Foelger samme logg/streng-modus.
+//
+// NB: brukes IKKE paa lesende endepunkter. Tilgangsmodellen fra 13.09.2026 er
+// at alle innloggede Minel-ansatte skal se konsernbildet, alle selskapers
+// ordrereserve og prosjektlister. Denne er til INPUT-veier — altsaa naar noen
+// skal endre data. Per i dag lagres prosjekter via broen minel-sp-bridge, som
+// ikke kan endres, saa input-sperren finnes foreloepig kun i klienten.
 async function sjekkSelskap(context, req, onsketSelskap, endepunkt) {
   const m = modus();
   const { raa, kilde } = hentRaaToken(req);
@@ -187,4 +193,4 @@ async function sjekkSelskap(context, req, onsketSelskap, endepunkt) {
   return loggOgSvar(false, 'feil selskap', ` bruker=${b.epost} hoerer_til=${b.selskap}`);
 }
 
-module.exports = { sjekkTilgang, sjekkSelskap, hentBrukerSelskap, vurderToken, modus, TENANT, OFFICE_MAP };
+module.exports = { sjekkTilgang, sjekkSelskap, hentBrukerSelskap, hentRaaToken, vurderToken, modus, TENANT, OFFICE_MAP };

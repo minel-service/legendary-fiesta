@@ -1,5 +1,5 @@
 const https = require('https');
-const { sjekkTilgang, sjekkSelskap } = require('../_auth');
+const { sjekkTilgang, hentRaaToken, hentBrukerSelskap } = require('../_auth');
 
 // Mapping: selskapsnavn → miljøvariabelnavn
 const KEY_MAP = {
@@ -50,13 +50,16 @@ module.exports = async function (context, req) {
     return;
   }
 
-  // Selskapsskille: hoerer innlogget bruker til selskapet det spoerres om?
-  // Starter i logg-modus sammen med resten — se _auth.js.
-  const selskapsTilgang = await sjekkSelskap(context, req, company, 'ordrestyring-proxy');
-  if (!selskapsTilgang.tillat) {
-    context.res = { status: selskapsTilgang.status, body: { error: selskapsTilgang.melding } };
-    return;
-  }
+  // TILGANGSMODELL (besluttet 13.09.2026):
+  // LESING er aapen for alle innloggede Minel-ansatte. Konsernbildet, alle
+  // selskapers ordrereserve og prosjektlister skal vaere synlig for alle —
+  // det er hele poenget med verktoeyet.
+  // INPUT er derimot selskapsavgrenset. Dette endepunktet er rent lesende
+  // (GraphQL-spoerringer mot Ordrestyring), saa her blokkeres ingenting.
+  // Vi slaar likevel opp hvem som spoer, slik at det kan vises i diagnosen.
+  const { raa } = hentRaaToken(req);
+  let hvem = { grunn: 'ikke slaatt opp' };
+  if (raa) { try { hvem = await hentBrukerSelskap(raa); } catch (e) { hvem = { grunn: 'oppslag feilet' }; } }
 
   try {
     const body = JSON.stringify({ query, variables, operationName });
@@ -79,7 +82,9 @@ module.exports = async function (context, req) {
         // token uten aa ha Application Insights koblet paa. Klienten logger
         // denne til konsollen. Inneholder ingen tokenverdier.
         'X-Minel-Tilgang': `${tilgang.modus}/${tilgang.vurdering.grunn}/${tilgang.vurdering.kilde}`,
-        'X-Minel-Selskap': `${selskapsTilgang.modus}/${selskapsTilgang.grunn}`
+        // Diagnose: hvilket selskap den innloggede mappes til. Brukes av
+        // selvtesten i klienten, og blokkerer ingenting.
+        'X-Minel-Selskap': hvem.ok ? (hvem.admin ? 'konsern' : hvem.selskap) : ('ukjent: ' + hvem.grunn)
       },
       body: data
     };
