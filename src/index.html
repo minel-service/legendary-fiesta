@@ -452,10 +452,12 @@ async function fetchUserCompany() {
     </div>
     <div class="hactions">
       <div class="sp-status" id="spStatus" title="SharePoint-synkroniseringsstatus">☁ Starter...</div>
-      <div class="who-pill" id="whoPill" onclick="logout()" title="Klikk for å bytte selskap">
+      <div class="who-pill" id="whoPill" onclick="visTilgang()" title="Klikk for å se hva du har tilgang til">
         <span class="who-dot" id="whoDot"></span>
         <span id="whoName"></span>
-        <span style="opacity:.6;font-size:.7rem">✕ bytt</span>
+        <span style="opacity:.55;font-size:.7rem;margin-left:2px">ⓘ</span>
+        <span onclick="event.stopPropagation();logout()" title="Bytt selskap / logg ut"
+              style="opacity:.6;font-size:.7rem;margin-left:7px;padding-left:7px;border-left:1px solid rgba(255,255,255,.3)">✕ bytt</span>
       </div>
       <button class="hbtn" onclick="openHelp()" title="Bruksanvisning">📖 Hjelp</button>
       <button class="hbtn" onclick="window.print()" title="Skriv ut / lagre som PDF">🖨 PDF</button>
