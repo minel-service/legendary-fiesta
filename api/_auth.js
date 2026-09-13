@@ -116,6 +116,76 @@ const OFFICE_MAP = {
 };
 const BLOKKERTE = ['jonas.prestkvern@minel.no'];
 
+// ── Ansattoppslag mot Ordrestyring ──────────────────────────────────────
+// Kontorsted i Entra er et fritekstfelt uten eierskap. Ordrestyring
+// vedlikeholdes derimot daglig, fordi ordrer og timer avhenger av det.
+// Maalt 13.09.2026: 335 aktive ansatte, 248 med @minel.no-adresse, og kun
+// ÉN e-post som gaar igjen i to selskaper. Vi bruker derfor OS som kilde,
+// med kontorsted som reserve.
+const OS_KEYS = {
+  'Minel Drøbak Elektriske AS':     process.env.ORDRESTYRING_DROBAK,
+  'Minel Kreativ Elektro Ski AS':   process.env.ORDRESTYRING_KREATIV_SKI,
+  'Minel Elmontasje AS':            process.env.ORDRESTYRING_ELMONTASJE,
+  'Minel Elmontasje Elverum AS':    process.env.ORDRESTYRING_ELMONTASJE_ELVERUM,
+  'Minel Gjøvik AS':                process.env.ORDRESTYRING_GJOVIK,
+  'Minel Ainstall AS':              process.env.ORDRESTYRING_AINSTALL,
+  'Minel Land Elektriske AS':       process.env.ORDRESTYRING_LAND_ELEKTRISKE,
+  'Minel Skogvang Installasjon AS': process.env.ORDRESTYRING_SKOGVANG,
+  'Minel Gudbrandsdal AS':          process.env.ORDRESTYRING_GUDBRANDSDAL,
+};
+const OS_URL = 'https://elkonor.ordrestyring.no/api/graphql';
+const ANSATT_TTL = 30 * 60 * 1000;
+let _ansattKart = null;      // { epost: selskap }  — tvetydige er utelatt
+let _ansattTid = 0;
+let _ansattHenter = null;    // hindrer at ti samtidige kall bygger kartet ti ganger
+
+async function hentAnsatteFor(selskap, noekkel) {
+  const r = await fetch(OS_URL, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + noekkel, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ operationName: 'Ansatte', query: 'query Ansatte { users { items { email active } } }', variables: {} })
+  });
+  const j = await r.json();
+  const items = (j && j.data && j.data.users && j.data.users.items) || [];
+  return items.filter(u => u.active)
+    .map(u => String(u.email || '').toLowerCase().trim())
+    .filter(e => e.includes('@'));
+}
+
+async function byggAnsattKart(context) {
+  const par = Object.entries(OS_KEYS).filter(([, k]) => k);
+  const res = await Promise.allSettled(par.map(([s, k]) => hentAnsatteFor(s, k)));
+  const treff = {};      // epost -> [selskap, ...]
+  res.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return;
+    const selskap = par[i][0];
+    r.value.forEach(e => { (treff[e] = treff[e] || []).push(selskap); });
+  });
+  const kart = {};
+  let tvetydige = 0;
+  Object.entries(treff).forEach(([e, liste]) => {
+    const unike = [...new Set(liste)];
+    // Staar en person i to selskaper kan vi ikke avgjoere. Da utelates de her
+    // og faller tilbake paa kontorsted, i stedet for aa gjette.
+    if (unike.length === 1) kart[e] = unike[0]; else tvetydige++;
+  });
+  if (context && context.log) {
+    context.log(`[ansattkart] ${Object.keys(kart).length} e-poster fra ${res.filter(r => r.status === 'fulfilled').length}/${par.length} selskaper, ${tvetydige} tvetydige`);
+  }
+  return kart;
+}
+
+async function ansattKart(context) {
+  if (_ansattKart && Date.now() - _ansattTid < ANSATT_TTL) return _ansattKart;
+  if (!_ansattHenter) {
+    _ansattHenter = byggAnsattKart(context)
+      .then(k => { _ansattKart = k; _ansattTid = Date.now(); return k; })
+      .catch(e => { if (context && context.log) context.log.warn('[ansattkart] feilet: ' + e.message); return _ansattKart || {}; })
+      .finally(() => { _ansattHenter = null; });
+  }
+  return _ansattHenter;
+}
+
 // Cache saa vi ikke slaar opp mot Graph for hvert eneste kall. En full
 // oppdatering i klienten gjoer ~20 kall; uten cache ble det 20 Graph-kall.
 const _cache = new Map();
@@ -130,7 +200,7 @@ function cacheNokkel(raa) {
 // Dette er samtidig ekte verifisering: vi kan ikke sjekke signaturen paa et
 // Graph-token selv, men Microsoft gjoer det naar tokenet faktisk brukes.
 // Et forfalsket token gir 401 fra Graph og slipper dermed ikke gjennom.
-async function hentBrukerSelskap(raa) {
+async function hentBrukerSelskap(raa, context) {
   const n = cacheNokkel(raa);
   const traff = _cache.get(n);
   if (traff && Date.now() - traff.tid < CACHE_MS) return traff.svar;
@@ -147,14 +217,35 @@ async function hentBrukerSelskap(raa) {
     } else {
       const me = await r.json();
       const epost = String(me.userPrincipalName || me.mail || '').toLowerCase();
-      if (BLOKKERTE.includes(epost)) {
+      const altEpost = String(me.mail || '').toLowerCase();
+      if (BLOKKERTE.includes(epost) || (altEpost && BLOKKERTE.includes(altEpost))) {
         svar = { ok: false, grunn: 'bruker sperret' };
       } else {
         const loc = String(me.officeLocation || '').trim().toLowerCase();
-        const selskap = OFFICE_MAP[loc] || null;
-        svar = selskap
-          ? { ok: true, selskap, admin: selskap === '__admin__', epost }
-          : { ok: false, grunn: 'ukjent kontorsted', epost };
+        const viaKontor = OFFICE_MAP[loc] || null;
+
+        // 1) Konsern foerst. Ordrestyring har ikke noe konsernbegrep — slo OS
+        //    til foerst, ville de tjue konsernkontoene blitt degradert til ett
+        //    enkeltselskap.
+        if (viaKontor === '__admin__') {
+          svar = { ok: true, selskap: '__admin__', admin: true, epost, kilde: 'kontorsted' };
+        } else {
+          // 2) Ordrestyring — den kilden som faktisk vedlikeholdes.
+          let viaOs = null;
+          try {
+            const kart = await ansattKart(context);
+            viaOs = kart[epost] || (altEpost ? kart[altEpost] : null) || null;
+          } catch (e) { /* faller videre til kontorsted */ }
+
+          if (viaOs) {
+            svar = { ok: true, selskap: viaOs, admin: false, epost, kilde: 'ordrestyring' };
+          } else if (viaKontor) {
+            // 3) Kontorsted som reserve.
+            svar = { ok: true, selskap: viaKontor, admin: false, epost, kilde: 'kontorsted' };
+          } else {
+            svar = { ok: false, grunn: 'ikke funnet i Ordrestyring eller kontorsted', epost };
+          }
+        }
       }
     }
   } catch (e) {
@@ -186,10 +277,10 @@ async function sjekkSelskap(context, req, onsketSelskap, endepunkt) {
   if (!raa) return loggOgSvar(false, 'ingen token', ' kilde=' + kilde);
   if (!onsketSelskap) return loggOgSvar(false, 'mangler selskap i forespoerselen');
 
-  const b = await hentBrukerSelskap(raa);
+  const b = await hentBrukerSelskap(raa, context);
   if (!b.ok) return loggOgSvar(false, b.grunn, b.epost ? ' bruker=' + b.epost : '');
   if (b.admin) return loggOgSvar(true, 'ok (admin)', ' bruker=' + b.epost);
-  if (b.selskap === onsketSelskap) return loggOgSvar(true, 'ok', ' bruker=' + b.epost);
+  if (b.selskap === onsketSelskap) return loggOgSvar(true, 'ok', ` bruker=${b.epost} kilde=${b.kilde}`);
   return loggOgSvar(false, 'feil selskap', ` bruker=${b.epost} hoerer_til=${b.selskap}`);
 }
 

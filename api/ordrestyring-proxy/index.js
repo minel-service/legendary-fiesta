@@ -59,7 +59,7 @@ module.exports = async function (context, req) {
   // Vi slaar likevel opp hvem som spoer, slik at det kan vises i diagnosen.
   const { raa } = hentRaaToken(req);
   let hvem = { grunn: 'ikke slaatt opp' };
-  if (raa) { try { hvem = await hentBrukerSelskap(raa); } catch (e) { hvem = { grunn: 'oppslag feilet' }; } }
+  if (raa) { try { hvem = await hentBrukerSelskap(raa, context); } catch (e) { hvem = { grunn: 'oppslag feilet' }; } }
 
   try {
     const body = JSON.stringify({ query, variables, operationName });
@@ -84,7 +84,9 @@ module.exports = async function (context, req) {
         'X-Minel-Tilgang': `${tilgang.modus}/${tilgang.vurdering.grunn}/${tilgang.vurdering.kilde}`,
         // Diagnose: hvilket selskap den innloggede mappes til. Brukes av
         // selvtesten i klienten, og blokkerer ingenting.
-        'X-Minel-Selskap': hvem.ok ? (hvem.admin ? 'konsern' : hvem.selskap) : ('ukjent: ' + hvem.grunn)
+        'X-Minel-Selskap': hvem.ok
+          ? (hvem.admin ? 'konsern' : hvem.selskap) + ' (' + (hvem.kilde || '?') + ')'
+          : ('ukjent: ' + hvem.grunn)
       },
       body: data
     };
