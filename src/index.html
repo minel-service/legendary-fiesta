@@ -341,31 +341,14 @@ if(_scopes.some(s=>s.includes('Sites.Selected'))){
   _scopes=_scopes.filter(s=>!s.includes('Sites.Selected'));
 }
 
-// ⚠️ KAPPLØPSVAKT FOR INNLOGGING — IKKE FJERN.
-// getToken() starter selv en innlogging når det ikke finnes en konto, og den
-// kalles av hvert API-kall ved oppstart. Uten denne vakten kunne ti kall og
-// «Logg inn»-knappen starte hver sin omdirigering samtidig. MSAL tåler ikke
-// det: tilstanden i sessionStorage blir overskrevet, og brukeren kommer
-// tilbake fra Microsoft uten å være innlogget — om og om igjen.
-// Atle Jensen låste seg ute på nøyaktig dette 14.09.2026.
-let _loginStartet=false;
-async function startInnlogging(){
-  if(_loginStartet) return null;              // samme sidevisning
-  if(sessionStorage.getItem('msal_login_paagaar')) return null;  // overlevde reload
-  _loginStartet=true;
-  try{ sessionStorage.setItem('msal_login_paagaar','1'); }catch(_){}
-  try{
-    await msalApp.loginRedirect({scopes:_scopes});
-  }catch(e){
-    // Slipp vakten om omdirigeringen ikke kom i gang, ellers sitter brukeren fast.
-    _loginStartet=false;
-    try{ sessionStorage.removeItem('msal_login_paagaar'); }catch(_){}
-    throw e;
-  }
-  return null;
-}
+// MERK 14.09.2026: her lå en «kappløpsvakt» som skulle hindre flere samtidige
+// innloggingsforsøk. Den gjorde vondt verre — flagget ble stående i
+// sessionStorage, og da kalte «Logg inn»-knappen aldri loginRedirect igjen.
+// Brukeren ble permanent låst ute i stedet for forbigående. Fjernet.
+// Skal dette løses, må det gjøres med MSAL sin egen tilstand, ikke et eget
+// flagg ved siden av — og det må testes fra tom tilstand før utrulling.
 try{msalApp=new msal.PublicClientApplication({auth:{clientId:'f5b4bfe7-8fec-496c-a1e1-8d519666ab45',authority:'https://login.microsoftonline.com/7ee2ac67-421e-4ac2-8998-f1f3e0c10fa7',redirectUri:location.origin+'/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});console.log('[MSAL] OK');}catch(e){console.warn('[MSAL]:',e.message);}
-async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');return await startInnlogging();}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){if(e instanceof msal.InteractionRequiredAuthError||e.name==='InteractionRequiredAuthError'){const _rp=await msalApp.acquireTokenPopup({scopes:_scopes,account:accs[0]});return _rp.accessToken;}sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
+async function getToken(){if(!msalApp)throw new Error('N/A');const accs=msalApp.getAllAccounts();if(accs.length===0){sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.loginRedirect({scopes:_scopes});return null;}try{const r=await msalApp.acquireTokenSilent({scopes:_scopes,account:accs[0]});return r.accessToken;}catch(e){if(e instanceof msal.InteractionRequiredAuthError||e.name==='InteractionRequiredAuthError'){const _rp=await msalApp.acquireTokenPopup({scopes:_scopes,account:accs[0]});return _rp.accessToken;}sessionStorage.setItem('msal_post_login',localStorage.getItem('minel_company')||'');await msalApp.acquireTokenRedirect({scopes:_scopes});return null;}}
 async function gFetch(url,opts={}){const tok=await getToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
 async function spFetch(url,opts={}){const tok=await getSpToken();if(!tok)return new Response(null,{status:0});const h={'Authorization':'Bearer '+tok,...(opts.headers||{})};if(!opts.headers||!opts.headers['Content-Type'])h['Content-Type']='application/json';return fetch(url,{...opts,headers:h});}
 function auditUser(){const accs=msalApp?msalApp.getAllAccounts():[];if(!accs.length)return'ukjent';const acc=accs[0];if(acc.name&&acc.name!=='unknown'&&!acc.name.includes('#'))return acc.name;const local=(acc.username||'').split('@')[0];return local.split('.').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ');}
@@ -1058,22 +1041,12 @@ let _tilgangLogget=false;
 // brukeren havnet tilbake på innloggingsskjermen — om og om igjen.
 // Derfor: aldri reload uten at vi faktisk ER innlogget i MSAL, og aldri
 // mens et redirect-svar ligger i URL-en.
-function sesjonUtloept(){
-  // 1) Ligger det et autentiseringssvar i URL-en? Da er MSAL midt i noe.
-  const h=location.hash||'';
-  if(/(^|[#&])(code|id_token|access_token|state|error)=/.test(h)) return false;
-  // 2) Har vi i det hele tatt en innlogget konto? Uten en er ikke dette en
-  //    utløpt sesjon — da er vi bare ikke ferdig innlogget ennå.
-  let harKonto=false;
-  try{ harKonto=!!(msalApp && msalApp.getAllAccounts().length); }catch(_){}
-  if(!harKonto) return false;
-  // 3) Maks én gang per økt.
-  if(sessionStorage.getItem('minel_reautentisert')) return false;
-  sessionStorage.setItem('minel_reautentisert','1');
-  console.warn('[Tilgang] Innloggingen har løpt ut — laster siden på nytt for å fornye den.');
-  location.reload();
-  return true;
-}
+// MERK 14.09.2026: her lå en automatisk reload som skulle fornye en utløpt
+// innlogging. Den kunne avbryte MSAL midt i en pågående innlogging, og var
+// uansett bygget for plattform-innloggingen som nå er rullet tilbake.
+// Fjernet. Appen faller til lokale data ved feil, slik den alltid har gjort,
+// og brukeren laster selv siden på nytt.
+function sesjonUtloept(){ return false; }
 
 async function osFetch(url,opts={}){
   const h={'Content-Type':'application/json',...(opts.headers||{})};
@@ -3403,17 +3376,7 @@ async function postToSharePointList(p){
 // STARTUP
 // ════════════════════════════════════════════
 (async()=>{
-  if(msalApp){
-    try{
-      const resp=await msalApp.handleRedirectPromise();
-      if(resp)console.log('[MSAL] OK:',resp.account?.username);
-    }catch(e){console.warn('[MSAL]',e);}
-    // Omdirigeringen er ferdig behandlet — slipp kappløpsvakten. Gjøres her,
-    // etter handleRedirectPromise, slik at den står låst så lenge innloggingen
-    // faktisk pågår, men aldri blir hengende og sperre neste forsøk.
-    try{ sessionStorage.removeItem('msal_login_paagaar'); }catch(_){}
-    _loginStartet=false;
-  }
+  if(msalApp){try{const resp=await msalApp.handleRedirectPromise();if(resp)console.log('[MSAL] OK:',resp.account?.username);}catch(e){console.warn('[MSAL]',e);}}
   buildLoginGrid();
   const accs=msalApp?msalApp.getAllAccounts():[];
   if(msalApp&&accs.length===0){
@@ -3440,7 +3403,7 @@ async function postToSharePointList(p){
     }
   }
 })();
-async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await startInnlogging();}catch(e){alert('Innlogging feilet: '+e.message);}}
+async function msLogin(){try{sessionStorage.setItem('msal_post_login','');await msalApp.loginRedirect({scopes:_scopes});}catch(e){alert('Innlogging feilet: '+e.message);}}
 
 
 async function getSpToken(){
