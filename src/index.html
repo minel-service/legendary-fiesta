@@ -1027,7 +1027,23 @@ let _tilgangLogget=false;
 // Når plattform-sesjonen løper ut mens fanen står åpen, laster vi derfor siden
 // på nytt. Da går navigeringen den veien den skal, brukeren blir logget inn,
 // og kommer tilbake med ekte data. Én gang per økt, så vi aldri looper.
+// VIKTIG: denne må ALDRI kjøre mens MSAL holder på med innlogging.
+// 14.09.2026 låste Atle Jensen seg ute i en løkke fordi et API-kall feilet
+// før MSAL hadde behandlet svaret fra Microsoft. Reloaden slettet URL-en
+// med autentiseringssvaret, handleRedirectPromise() fullførte aldri, og
+// brukeren havnet tilbake på innloggingsskjermen — om og om igjen.
+// Derfor: aldri reload uten at vi faktisk ER innlogget i MSAL, og aldri
+// mens et redirect-svar ligger i URL-en.
 function sesjonUtloept(){
+  // 1) Ligger det et autentiseringssvar i URL-en? Da er MSAL midt i noe.
+  const h=location.hash||'';
+  if(/(^|[#&])(code|id_token|access_token|state|error)=/.test(h)) return false;
+  // 2) Har vi i det hele tatt en innlogget konto? Uten en er ikke dette en
+  //    utløpt sesjon — da er vi bare ikke ferdig innlogget ennå.
+  let harKonto=false;
+  try{ harKonto=!!(msalApp && msalApp.getAllAccounts().length); }catch(_){}
+  if(!harKonto) return false;
+  // 3) Maks én gang per økt.
   if(sessionStorage.getItem('minel_reautentisert')) return false;
   sessionStorage.setItem('minel_reautentisert','1');
   console.warn('[Tilgang] Innloggingen har løpt ut — laster siden på nytt for å fornye den.');
