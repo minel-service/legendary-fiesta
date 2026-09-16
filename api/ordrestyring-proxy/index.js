@@ -44,6 +44,20 @@ module.exports = async function (context, req) {
     return;
   }
 
+  // ── MUTASJONSSPERRE ──────────────────────────────────────────────
+  // Proxyen er kun ment for lesing. Uten denne kunne en innlogget bruker
+  // sende en GraphQL-mutasjon og ENDRE data i Ordrestyring gjennom oss —
+  // med selskapets egen API-noekkel, som ligger server-side.
+  // Hvitliste, ikke svarteliste: vi slipper bare gjennom det vi kjenner
+  // igjen som en spoerring. Alt annet avvises.
+  const spoerring = String(query).trim().replace(/^#[^\n]*\n/gm, '').trim();
+  const erLesing = /^query\b/i.test(spoerring) || spoerring.startsWith('{');
+  if (!erLesing) {
+    context.log.warn(`[proxy] avviste ikke-lesende operasjon mot ${company} (op=${operationName || '-'})`);
+    context.res = { status: 403, body: { error: 'Bare lesing er tillatt gjennom denne proxyen' } };
+    return;
+  }
+
   const apiKey = KEY_MAP[company];
   if (!apiKey) {
     context.res = { status: 403, body: { error: `Ukjent selskap: ${company}` } };
