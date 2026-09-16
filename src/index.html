@@ -3046,6 +3046,9 @@ async function initApp(){
   sel.disabled=(currentCompany!=='__admin__');
   renderAll();
   await refreshAll();
+  // Etterslepsvakt: send kunngjøringer som mangler. Ligger sist, etter at
+  // prosjektene er lastet, og forstyrrer ikke oppstarten om den feiler.
+  kunngjorEtterslep();
 }
 
 // ════════════════════════════════════════════
@@ -3179,18 +3182,22 @@ function saveProject(){
     closeProjModal();
     renderAll();
     if(oreDrawerCo===company||oreDrawerCo==='__all__') renderOreDrawer();
-    // Lagre og kunngjør parallelt — sett published=true kun om SharePoint svarer ok
-    saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
-      .then(ok=>showToast(ok?'Kontrakt lagret ✓':'⚠️ Lokalt lagret – serveren er utilgjengelig',ok))
-      .catch(()=>showToast('Lagret lokalt',false));
-    postBjelle(nyP).then(bjelleOk=>{
-      if(bjelleOk){
-        nyP.published=true;
-        saveCompanyProjects(company,allProjects.filter(p=>p.company===company));
-        renderAll();
-        showToast('🔔 Kunngjort på intranettet!',true);
-      }
-    });
+    // ⚠️ IKKE lagre parallelt her. Fram til 16.09.2026 kjørte lagringen og
+    // kunngjøringen samtidig, og begge skrev HELE selskapslista. Kom det
+    // første svaret sist, overskrev det versjonen med published=true — og
+    // flagget forsvant. Resultatet var 14 kontrakter som lå ute på
+    // intranettet uten å være merket i appen.
+    // Nå kunngjøres det først, og så lagres alt én gang.
+    (async()=>{
+      let kunngjort=false;
+      try{ kunngjort=await postBjelle(nyP); }catch(_){}
+      if(kunngjort) nyP.published=true;
+      const lagret=await saveCompanyProjects(company,allProjects.filter(p=>p.company===company))
+        .catch(()=>false);
+      renderAll();
+      if(kunngjort) showToast('🔔 Kontrakt lagret og kunngjort på intranettet',true);
+      else showToast(lagret?'Kontrakt lagret ✓':'⚠️ Lokalt lagret – serveren er utilgjengelig',lagret);
+    })();
     return;
   }
   closeProjModal();
@@ -3311,6 +3318,108 @@ function oreAdjustWeeks(id){
 // ════════════════════════════════════════════
 // SLAG I BJELLA — varsling ved ny kontrakt
 // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// AUTOMATISK KUNNGJØRING — etterslepsvakt
+// ════════════════════════════════════════════
+// Bakgrunn (16.09.2026): 32 av 35 kontrakter sto upublisert. Kanalen mot
+// intranettet virket hele tiden — problemet var at postBjelle kun ble kalt
+// idet en kontrakt ble opprettet. Feilet det ett sekund, eller ble kontrakten
+// laget før funksjonen fantes, ble den stående upublisert for alltid og måtte
+// klikkes manuelt.
+// Nå ser appen etter upubliserte kontrakter og sender dem selv.
+//
+// GRENSEDATO: kontrakter opprettet FØR denne datoen regnes som ferdigbehandlet
+// og sendes ikke. Uten dette ville 32 gamle kunngjøringer rullet ut på én gang.
+// Besluttet med Øyvind 16.09.2026.
+const KUNNGJORING_FRA = '2026-09-16T00:00:00.000Z';
+
+function trengerKunngjoring(p){
+  if(!p || p.published===true) return false;
+  if(p.kunngjoringHoppetOver===true) return false;   // bevisst utelatt
+  const opprettet = p.created || p.createdAt;
+  if(!opprettet) return false;                       // ukjent alder — la stå
+  return opprettet >= KUNNGJORING_FRA;
+}
+
+// Markerer alt gammelt som ferdigbehandlet, én gang, uten å sende noe.
+// Da slipper vi å vurdere dem på nytt ved hver innlasting.
+async function merkGammeltSomBehandlet(){
+  const gamle=allProjects.filter(p=>p.published!==true && p.kunngjoringHoppetOver!==true
+    && (p.created||p.createdAt||'') < KUNNGJORING_FRA);
+  if(!gamle.length) return;
+  gamle.forEach(p=>{p.kunngjoringHoppetOver=true;});
+  const selskaper=[...new Set(gamle.map(p=>p.company).filter(Boolean))];
+  console.log(`[Kunngjøring] ${gamle.length} eldre kontrakter markert som ferdigbehandlet (sendes ikke)`);
+  for(const co of selskaper){
+    if(currentCompany==='__admin__'||currentCompany===co){
+      await saveCompanyProjects(co, allProjects.filter(p=>p.company===co), true);
+    }
+  }
+}
+
+// Henter titlene som allerede ligger på intranettet.
+// ⚠️ DETTE ER DUPLIKATVERNET. Flagget «published» kan ikke stoles på — målt
+// 16.09.2026 lå 14 kontrakter ute på intranettet uten å være merket i appen.
+// Sender vi basert på flagget alene, får folk dobbelt varsel. Fasit er hva
+// som faktisk står i lista, ikke hva appen tror.
+async function hentKunngjorteTitler(){
+  try{
+    const r=await spFetch(`${GRAPH}/sites/${SP_SITE}/lists/${CONFIG.spKunngjøringer}/items?expand=fields(select=Title)&$top=500`);
+    if(!r||!r.ok) return null;                      // null = «vet ikke» → ikke send
+    const j=await r.json();
+    return (j.value||[]).map(i=>String((i.fields&&i.fields.Title)||'').toLowerCase().replace(/\s+/g,' ').trim());
+  }catch(e){ console.warn('[Kunngjøring] kunne ikke lese lista:',e.message); return null; }
+}
+
+let _kunngjorKjorer=false;
+async function kunngjorEtterslep(){
+  if(_kunngjorKjorer) return;
+  _kunngjorKjorer=true;
+  try{
+    const titler=await hentKunngjorteTitler();
+    // Får vi ikke lest lista, sender vi ingenting. Heller ingen kunngjøring
+    // enn en dobbel — en manglende kan sendes manuelt, en dobbel kan ikke tas tilbake.
+    if(titler===null){ console.warn('[Kunngjøring] fikk ikke lest intranettlista — hopper over'); return; }
+
+    const staarUte=p=>{
+      const n=String(p.name||'').toLowerCase().replace(/\s+/g,' ').trim();
+      return n && titler.some(t=>t.includes(n));
+    };
+
+    // 1) Reparer flagget for alt som beviselig ligger ute
+    const feilmerket=allProjects.filter(p=>p.published!==true && staarUte(p));
+    feilmerket.forEach(p=>{p.published=true;});
+    if(feilmerket.length) console.log(`[Kunngjøring] ${feilmerket.length} lå ute uten å være merket — rettet`);
+
+    // 2) Marker gamle, usendte som ferdigbehandlet (uten å sende)
+    await merkGammeltSomBehandlet();
+
+    // 3) Send det som faktisk mangler
+    const mangler=allProjects.filter(p=>trengerKunngjoring(p) && !staarUte(p));
+    let sendt=0;
+    for(const p of mangler){
+      if(currentCompany!=='__admin__' && currentCompany!==p.company) continue;
+      p._stilleKunngjoring=true;
+      const ok=await postBjelle(p);
+      delete p._stilleKunngjoring;
+      if(ok){ p.published=true; sendt++; }
+      else break;   // feiler én, feiler trolig resten — prøv igjen neste gang
+    }
+
+    if(feilmerket.length||sendt){
+      const berort=[...new Set([...feilmerket,...mangler.filter(p=>p.published)].map(p=>p.company).filter(Boolean))];
+      for(const co of berort){
+        if(currentCompany==='__admin__'||currentCompany===co){
+          await saveCompanyProjects(co, allProjects.filter(p=>p.company===co), true);
+        }
+      }
+      renderAll();
+      if(sendt) showToast(`🔔 ${sendt} kontrakt${sendt>1?'er':''} kunngjort på intranettet`,true);
+    }
+  }catch(e){ console.warn('[Kunngjøring] etterslep feilet:',e.message); }
+  finally{ _kunngjorKjorer=false; }
+}
+
 async function postBjelle(p){
   const tasks=[];
   if(CONFIG.teamsWebhook)    tasks.push(postToTeams(p));
@@ -3370,7 +3479,13 @@ async function postToSharePointList(p){
     if(!r||!r.ok)throw new Error('HTTP '+(r?.status||0));
     console.log('[Graph kunngjøringer] ✅ Sendt');
     return true;
-  }catch(e){console.error('[Graph Kunngjøringer] ❌',e.message);showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);return false;}
+  }catch(e){
+    console.error('[Graph Kunngjøringer] ❌',e.message);
+    // Stille i bakgrunnen: etterslepsvakten prøver igjen neste gang, og
+    // brukeren skal ikke få rød boks for noe de ikke har bedt om.
+    if(!p||!p._stilleKunngjoring) showToast('⚠️ Kunngjøring til intranett feilet: '+e.message,false);
+    return false;
+  }
 }
 
 // STARTUP
