@@ -305,15 +305,21 @@ const CONFIG = {
   // maxAnsatte: totalt antall ansatte i selskapet (brukes til «Ledig»-beregning).
   // Sett til 0 for å la dashbordet telle automatisk fra API-data.
   selskaper: [
-    { navn: 'Minel Drøbak Elektriske AS',     apiKey: 'FzmySlRzW72gOBAb', maxAnsatte: 0 },
-    { navn: 'Minel Kreativ Elektro Ski AS',   apiKey: 'qYtkWAowUUo2PbaE', maxAnsatte: 0 },
-    { navn: 'Minel Elmontasje AS',            apiKey: 'rPuAsfNqjpyoeBdV', maxAnsatte: 0 },
-    { navn: 'Minel Elmontasje Elverum AS',    apiKey: 'CmJHRiMNdn68RWZM', maxAnsatte: 0 },
-    { navn: 'Minel Gjøvik AS',                apiKey: 'edewj6APD4wb8uD5', maxAnsatte: 0 },
-    { navn: 'Minel Ainstall AS',              apiKey: 'OhCnVeTrqWU7dOK7', maxAnsatte: 0 },
-    { navn: 'Minel Land Elektriske AS',       apiKey: 'yOVFmYixo35RnY6l', maxAnsatte: 0 },
-    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'TxE4TJAk6eeWUqQY', maxAnsatte: 0, ekstraRoller: ['Prosjektleder'] },
-    { navn: 'Minel Gudbrandsdal AS',          apiKey: 'yEEdLNDUCssPuhOl', maxAnsatte: 0 },
+    // ⚠️ INGEN EKTE NØKLER HER — repoet er offentlig og fila serveres til
+    // alle besøkende. Fram til 16.09.2026 lå de ni Ordrestyring-nøklene i
+    // klartekst på disse linjene. De ble aldri brukt til noe: alle kall går
+    // gjennom /api/ordrestyring-proxy med nøkler fra appinnstillingene.
+    // Feltet leses kun av demo-banneret, som bare sjekker at det er utfylt.
+    // De gamle nøklene må anses som kompromittert og byttes i Ordrestyring.
+    { navn: 'Minel Drøbak Elektriske AS',     apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Kreativ Elektro Ski AS',   apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje AS',            apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Elmontasje Elverum AS',    apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Gjøvik AS',                apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Ainstall AS',              apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Land Elektriske AS',       apiKey: 'via-proxy', maxAnsatte: 0 },
+    { navn: 'Minel Skogvang Installasjon AS', apiKey: 'via-proxy', maxAnsatte: 0, ekstraRoller: ['Prosjektleder'] },
+    { navn: 'Minel Gudbrandsdal AS',          apiKey: 'via-proxy', maxAnsatte: 0 },
   ],
 
   // ── Varsler ────────────────────────────────
