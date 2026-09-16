@@ -2,12 +2,24 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-echo Sletter lock-filer...
+echo Rydder lock-filer og OneDrive-rester...
 del /f /q ".git\HEAD.lock" 2>nul
 del /f /q ".git\index.lock" 2>nul
 del /f /q ".git\refs\heads\main.lock" 2>nul
 del /f /q ".git\objects\maintenance.lock" 2>nul
-echo Lock-filer slettet.
+
+REM ── OneDrive-rester ──────────────────────────────────────────────
+REM Repoet ligger i en OneDrive-synket mappe. OneDrive lager .bak-kopier
+REM av filer den tror er i konflikt, ogsaa inne i .git. Git leser ALT i
+REM refs\heads som en referanse, og kveler paa filer som
+REM "main.lock.bak" med: fatal: bad object refs/heads/main.lock.bak
+REM Slett dem, ellers stopper hver eneste henting.
+del /f /q ".git\refs\heads\*.bak" 2>nul
+del /f /q ".git\refs\heads\*.lock" 2>nul
+del /f /q ".git\refs\remotes\origin\*.bak" 2>nul
+del /f /q ".git\*.bak" 2>nul
+for /d %%D in (".git\refs\heads\*") do del /f /q "%%D\*.bak" 2>nul
+echo Opprydding ferdig.
 
 echo.
 echo Leter etter GitHub Desktop git...
